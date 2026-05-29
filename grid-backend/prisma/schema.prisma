@@ -1,0 +1,218 @@
+// The Grid — Prisma Schema
+// Run `npm run db:generate` after changes
+// Run `npm run db:migrate` to create a migration
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")   // Supabase pooled URL (port 6543) — used at runtime
+  directUrl = env("DIRECT_URL")     // Supabase direct URL (port 5432) — used for migrations
+}
+
+// ─── Auth ─────────────────────────────────────────────────────────────────────
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  name         String?
+  googleId     String?  @unique @map("google_id")
+  passwordHash String?  @map("password_hash")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  profile       UserProfile?
+  habits        Habit[]
+  habitLogs     HabitLog[]
+  gymSplits     GymSplit[]
+  gymLogs       GymLog[]
+  budgetCategories BudgetCategory[]
+  transactions  Transaction[]
+  calendarEvents CalendarEvent[]
+  projects      Project[]
+  resumeData    ResumeData?
+
+  @@map("users")
+}
+
+// ─── Profile ──────────────────────────────────────────────────────────────────
+
+model UserProfile {
+  id         String   @id @default(uuid())
+  userId     String   @unique @map("user_id")
+  dob        String?  // stored as YYYY-MM-DD string
+  gender     String?
+  city       String?
+  occupation String?
+  heightCm   Float?   @map("height_cm")
+  weightKg   Float?   @map("weight_kg")
+  bio        String?
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_profiles")
+}
+
+// ─── Habits ───────────────────────────────────────────────────────────────────
+
+model Habit {
+  id          String   @id @default(uuid())
+  userId      String   @map("user_id")
+  name        String
+  icon        String?
+  color       String?
+  frequency   String   @default("daily") // daily | weekly | custom
+  targetDays  Json?    @map("target_days") // [0,1,2,3,4,5,6] — day indices
+  sortOrder   Int      @default(0) @map("sort_order")
+  archived    Boolean  @default(false)
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  user User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  logs HabitLog[]
+
+  @@map("habits")
+}
+
+model HabitLog {
+  id          String   @id @default(uuid())
+  habitId     String   @map("habit_id")
+  userId      String   @map("user_id")
+  loggedDate  String   @map("logged_date") // YYYY-MM-DD
+  completed   Boolean  @default(true)
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  habit Habit @relation(fields: [habitId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([habitId, loggedDate])
+  @@map("habit_logs")
+}
+
+// ─── Gym ──────────────────────────────────────────────────────────────────────
+
+model GymSplit {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  name      String   @default("My Split")
+  days      Json     // array of { title, muscles, exercises[] }
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  gymLogs GymLog[]
+
+  @@map("gym_splits")
+}
+
+model GymLog {
+  id          String   @id @default(uuid())
+  userId      String   @map("user_id")
+  splitId     String?  @map("split_id")
+  workoutDate String   @map("workout_date") // YYYY-MM-DD
+  dayIndex    Int?     @map("day_index")    // which day of the split (0–6)
+  exercises   Json     // [{ name, sets: [{ reps, weight, done }] }]
+  notes       String?
+  durationMin Int?     @map("duration_min")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  user  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  split GymSplit? @relation(fields: [splitId], references: [id], onDelete: SetNull)
+
+  @@map("gym_logs")
+}
+
+// ─── Finance ──────────────────────────────────────────────────────────────────
+
+model BudgetCategory {
+  id           String   @id @default(uuid())
+  userId       String   @map("user_id")
+  name         String
+  type         String   // income | expense
+  color        String?
+  budgetAmount Float?   @map("budget_amount")
+  sortOrder    Int      @default(0) @map("sort_order")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions Transaction[]
+
+  @@map("budget_categories")
+}
+
+model Transaction {
+  id           String   @id @default(uuid())
+  userId       String   @map("user_id")
+  categoryId   String?  @map("category_id")
+  amount       Float
+  description  String?
+  date         String   // YYYY-MM-DD
+  type         String   // income | expense
+  recurring    Boolean  @default(false)
+  recurringFreq String? @map("recurring_freq") // monthly | weekly | yearly
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  user     User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category BudgetCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  @@map("transactions")
+}
+
+// ─── Calendar ─────────────────────────────────────────────────────────────────
+
+model CalendarEvent {
+  id          String   @id @default(uuid())
+  userId      String   @map("user_id")
+  title       String
+  description String?
+  startTime   DateTime @map("start_time")
+  endTime     DateTime? @map("end_time")
+  allDay      Boolean  @default(false) @map("all_day")
+  color       String?
+  recurrence  Json?    // { rule: 'weekly', days: [1,3,5] } etc
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("calendar_events")
+}
+
+// ─── Work / Projects ──────────────────────────────────────────────────────────
+
+model Project {
+  id          String   @id @default(uuid())
+  userId      String   @map("user_id")
+  title       String
+  description String?
+  status      String   @default("active") // active | on-hold | completed | archived
+  priority    String?  // high | medium | low
+  deadline    String?  // YYYY-MM-DD
+  color       String?
+  tasks       Json?    // [{ id, title, done, dueDate }]
+  notes       String?
+  sortOrder   Int      @default(0) @map("sort_order")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("projects")
+}
+
+// ─── Resume ───────────────────────────────────────────────────────────────────
+
+model ResumeData {
+  id        String   @id @default(uuid())
+  userId    String   @unique @map("user_id")
+  sections  Json     // { experience: [], education: [], skills: [], links: {} }
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("resume_data")
+}
