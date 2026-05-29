@@ -5917,22 +5917,28 @@ html, body {
   }
 })();
 
+// ─── API Client ───────────────────────────────────────────────────────────────
+const GRID_API = 'https://the-grid-1t3x.vercel.app';
+
+async function gridFetch(path, options = {}) {
+  const res = await fetch(GRID_API + path, {
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
+    ...options,
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw { status: res.status, message: data.error || 'Request failed' };
+  return data;
+}
+
 function handleLogout() {
+  gridFetch('/api/auth/logout', { method: 'POST' }).catch(() => {});
   sessionStorage.removeItem('gridUser');
+  sessionStorage.removeItem('gridUserId');
+  sessionStorage.removeItem('gridUserName');
   localStorage.removeItem('gridUser');
   sessionStorage.removeItem('gridMode');
   localStorage.removeItem('gridActiveMode');
-  
-  // Wipe any user backups
-  const keysToWipe = [
-    'gymDBVersion', 'gymSplitData', 'gymExerciseRegistry', 'gymMuscleGroups', 'gymLogs',
-    'rwProjects', 'rsTabData', 'gridEntries', 'gridHabits', 'gridBudget', 'gridTxLog', 'gridFinTelemetry',
-    'gridFinRecurItems', 'gridFinDebtItems', 'gridQueueItems', 'gridRsStackData', 'gridFocusLogs', 'gridWorkProjectsList'
-  ];
-  keysToWipe.forEach(k => {
-    localStorage.removeItem('userBackup_' + k);
-  });
-  
   location.reload();
 }
 
@@ -5996,7 +6002,7 @@ function checkAuthStrength(val) {
   }
 }
 
-function handleSPALogin() {
+async function handleSPALogin() {
   const email = document.getElementById('loginEmail').value.trim();
   const pw    = document.getElementById('loginPw').value;
   let ok = true;
@@ -6005,38 +6011,25 @@ function handleSPALogin() {
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { document.getElementById('loginEmailErr').style.display='block'; ok=false; }
   if (!pw) { document.getElementById('loginPwErr').style.display='block'; ok=false; }
   if (!ok) return;
-  
+
   setAuthLoading('login', true);
-  setTimeout(() => {
-    localStorage.setItem('gridUser', email);
-    sessionStorage.setItem('gridUser', email);
+  try {
+    const data = await gridFetch('/api/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ email, password: pw }),
+    });
+    sessionStorage.setItem('gridUser', data.user.email);
+    sessionStorage.setItem('gridUserId', data.user.id);
+    sessionStorage.setItem('gridUserName', data.user.name || '');
     localStorage.setItem('gridActiveMode', 'user');
-
-    // Clear all data keys so demo sample data re-seeds on next load
-    localStorage.removeItem('gymDBVersion');
-    localStorage.removeItem('gymLogs');
-    localStorage.removeItem('gymExerciseRegistry');
-    localStorage.removeItem('gymMuscleGroups');
-    localStorage.removeItem('gymSplitData');
-    localStorage.removeItem('gridEntries');
-    localStorage.removeItem('gridHabits');
-    localStorage.removeItem('gridBudget');
-    localStorage.removeItem('gridTxLog');
-    localStorage.removeItem('rwProjects');
-    localStorage.removeItem('rsTabData');
-    localStorage.removeItem('gridFinTelemetry');
-    localStorage.removeItem('gridFinRecurItems');
-    localStorage.removeItem('gridFinDebtItems');
-    localStorage.removeItem('gridQueueItems');
-    localStorage.removeItem('gridRsStackData');
-    localStorage.removeItem('gridFocusLogs');
-    localStorage.removeItem('gridWorkProjectsList');
-
     location.reload();
-  }, 1000);
+  } catch (err) {
+    setAuthLoading('login', false);
+    showAccessToast(err.message?.toUpperCase() || 'LOGIN FAILED — CHECK YOUR CREDENTIALS');
+  }
 }
 
-function handleSPASignup() {
+async function handleSPASignup() {
   const first  = document.getElementById('suFirst').value.trim();
   const email  = document.getElementById('suEmail').value.trim();
   const pw     = document.getElementById('suPw').value;
@@ -6050,71 +6043,29 @@ function handleSPASignup() {
   if (!terms)  { showAccessToast('AGREE TO TERMS TO CONTINUE'); ok=false; }
   if (!first)  { showAccessToast('FIRST NAME REQUIRED'); ok=false; }
   if (!ok) return;
-  
+
   setAuthLoading('signup', true);
-  setTimeout(() => {
-    localStorage.setItem('gridUser', email);
-    sessionStorage.setItem('gridUser', email);
+  try {
+    const data = await gridFetch('/api/auth/register', {
+      method: 'POST',
+      body: JSON.stringify({ email, password: pw, name: first }),
+    });
+    sessionStorage.setItem('gridUser', data.user.email);
+    sessionStorage.setItem('gridUserId', data.user.id);
+    sessionStorage.setItem('gridUserName', data.user.name || '');
     localStorage.setItem('gridActiveMode', 'user');
-
-    // Clear all data keys so demo sample data re-seeds on next load
-    localStorage.removeItem('gymDBVersion');
-    localStorage.removeItem('gymLogs');
-    localStorage.removeItem('gymExerciseRegistry');
-    localStorage.removeItem('gymMuscleGroups');
-    localStorage.removeItem('gymSplitData');
-    localStorage.removeItem('gridEntries');
-    localStorage.removeItem('gridHabits');
-    localStorage.removeItem('gridBudget');
-    localStorage.removeItem('gridTxLog');
-    localStorage.removeItem('rwProjects');
-    localStorage.removeItem('rsTabData');
-    localStorage.removeItem('gridFinTelemetry');
-    localStorage.removeItem('gridFinRecurItems');
-    localStorage.removeItem('gridFinDebtItems');
-    localStorage.removeItem('gridQueueItems');
-    localStorage.removeItem('gridRsStackData');
-    localStorage.removeItem('gridFocusLogs');
-    localStorage.removeItem('gridWorkProjectsList');
-
     location.reload();
-  }, 1000);
+  } catch (err) {
+    setAuthLoading('signup', false);
+    showAccessToast(err.message?.toUpperCase() || 'SIGNUP FAILED — TRY AGAIN');
+  }
 }
 
 function handleSPAGoogle() {
   setAuthLoading('login', true);
   setAuthLoading('signup', true);
-  showAccessToast('BYPASSING AUTHENTICATION — INITIALISING FRESH GRID...');
-  
-  setTimeout(() => {
-    // Generate a placeholder mock user node
-    const mockUser = 'google-user@grid.os';
-    localStorage.setItem('gridUser', mockUser);
-    sessionStorage.setItem('gridUser', mockUser);
-    localStorage.setItem('gridActiveMode', 'user');
-
-    // Clear all data keys so demo sample data re-seeds on next load
-    localStorage.removeItem('gymDBVersion');
-    localStorage.removeItem('gymLogs');
-    localStorage.removeItem('gymExerciseRegistry');
-    localStorage.removeItem('gymMuscleGroups');
-    localStorage.removeItem('gymSplitData');
-    localStorage.removeItem('gridEntries');
-    localStorage.removeItem('gridHabits');
-    localStorage.removeItem('gridBudget');
-    localStorage.removeItem('gridTxLog');
-    localStorage.removeItem('rwProjects');
-    localStorage.removeItem('rsTabData');
-    localStorage.removeItem('gridFinTelemetry');
-    localStorage.removeItem('gridFinRecurItems');
-    localStorage.removeItem('gridFinDebtItems');
-    localStorage.removeItem('gridQueueItems');
-    localStorage.removeItem('gridRsStackData');
-    localStorage.removeItem('gridFocusLogs');
-    localStorage.removeItem('gridWorkProjectsList');
-
-    location.reload();
-  }, 1000);
+  // Redirect to backend Google OAuth — on success backend redirects back with ?auth=success
+  window.location.href = GRID_API + '/api/auth/google';
 }
 
 function launchDemo() {
@@ -10376,24 +10327,59 @@ setInterval(updateClocks, 1000);
 updateClocks();
 
 // ── INIT ───────────────────────────────────────────
-function checkSPAAuth() {
+function mountApp() {
+  document.getElementById('access-terminal').style.display = 'none';
+  document.getElementById('app').style.display = 'grid';
+  try { initGymData(); } catch(e) { console.warn('initGymData error:', e); }
+  try { if (typeof renderWeeklySplit === 'function') renderWeeklySplit(); } catch(e) {}
+  try { renderCalendar(); } catch(e) { console.warn('renderCalendar error:', e); }
+  navigate('home');
+  try { initTopbar(); } catch(e) {}
+}
+
+async function checkSPAAuth() {
   const sessionUser = sessionStorage.getItem('gridUser');
-  const gridMode = sessionStorage.getItem('gridMode') || (new URLSearchParams(window.location.search)).get('mode');
-  
-  if (sessionUser || gridMode === 'demo') {
-    document.getElementById('access-terminal').style.display = 'none';
-    document.getElementById('app').style.display = 'grid';
-    
-    // Initialize authenticated workspace
-    try { initGymData(); } catch(e) { console.warn('initGymData error:', e); }
-    try { if (typeof renderWeeklySplit === 'function') renderWeeklySplit(); } catch(e) {}
-    try { renderCalendar(); } catch(e) { console.warn('renderCalendar error:', e); }
-    navigate('home');
-    try { initTopbar(); } catch(e) {}
-  } else {
-    document.getElementById('app').style.display = 'none';
-    document.getElementById('access-terminal').style.display = 'grid';
+  const gridMode    = sessionStorage.getItem('gridMode') || (new URLSearchParams(window.location.search)).get('mode');
+
+  // Handle Google OAuth callback (?auth=success)
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.get('auth') === 'success') {
+    try {
+      const data = await gridFetch('/api/auth/me');
+      sessionStorage.setItem('gridUser', data.user.email);
+      sessionStorage.setItem('gridUserId', data.user.id);
+      sessionStorage.setItem('gridUserName', data.user.name || '');
+      localStorage.setItem('gridActiveMode', 'user');
+      window.history.replaceState({}, '', '/');
+      mountApp();
+      return;
+    } catch(e) {
+      window.history.replaceState({}, '', '/');
+    }
   }
+
+  // Demo mode — no API check needed
+  if (gridMode === 'demo') {
+    mountApp();
+    return;
+  }
+
+  // Already have a session — show app immediately, verify in background
+  if (sessionUser) {
+    mountApp();
+    // Background verify — if token expired, silently log out
+    gridFetch('/api/auth/me').catch(() => {
+      sessionStorage.removeItem('gridUser');
+      sessionStorage.removeItem('gridUserId');
+      sessionStorage.removeItem('gridUserName');
+      location.reload();
+    });
+    return;
+  }
+
+  // No session — show login
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('access-terminal').style.display = 'grid';
 }
 
 // ══════════════════════════════════════════════════════
