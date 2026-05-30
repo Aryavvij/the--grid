@@ -4427,7 +4427,7 @@ html, body {
             Personal Asset Management and Sector Budgets
           </div>
         </div>
-        <button class="arc-stitch-btn" onclick="hasUnsavedChanges=false;alert('Finances stitched successfully!')">STITCH INTO THE GRID</button>
+        <button class="arc-stitch-btn" onclick="hasUnsavedChanges=false;saveFinanceData();if(typeof gymShowToast==='function')gymShowToast('FINANCES STITCHED — Data saved successfully.','var(--green)');">STITCH INTO THE GRID</button>
       </div>
 
       <!-- 4 stat cards -->
@@ -4467,7 +4467,7 @@ html, body {
               <canvas id="spendDonut" width="160" height="160"></canvas>
               <div class="fin-donut-center">
                 <div class="fin-donut-center-label">TOTAL EXP</div>
-                <div class="fin-donut-center-val" id="finDonutVal">₹2,840</div>
+                <div class="fin-donut-center-val" id="finDonutVal">—</div>
               </div>
             </div>
             <div class="fin-legend">
@@ -5952,7 +5952,7 @@ function handleExitDemo() {
     const keysToRestore = [
       'gymDBVersion', 'gymSplitData', 'gymExerciseRegistry', 'gymMuscleGroups', 'gymLogs',
       'rwProjects', 'rsTabData', 'gridEntries', 'gridHabits', 'gridBudget', 'gridTxLog', 'gridFinTelemetry',
-      'gridFinRecurItems', 'gridFinDebtItems', 'gridQueueItems', 'gridRsStackData', 'gridFocusLogs', 'gridWorkProjectsList'
+      'gridFinRecurItems', 'gridFinDebtItems', 'gridQueueItems', 'gridRsStackData', 'gridFocusLogs', 'gridWorkProjectsList', 'gridKanbanTasks', 'gridSleepData'
     ];
     keysToRestore.forEach(k => {
       const val = localStorage.getItem('userBackup_' + k);
@@ -6074,7 +6074,7 @@ function launchDemo() {
     const keysToBackup = [
       'gymDBVersion', 'gymSplitData', 'gymExerciseRegistry', 'gymMuscleGroups', 'gymLogs',
       'rwProjects', 'rsTabData', 'gridEntries', 'gridHabits', 'gridBudget', 'gridTxLog', 'gridFinTelemetry',
-      'gridFinRecurItems', 'gridFinDebtItems', 'gridQueueItems', 'gridRsStackData', 'gridFocusLogs', 'gridWorkProjectsList'
+      'gridFinRecurItems', 'gridFinDebtItems', 'gridQueueItems', 'gridRsStackData', 'gridFocusLogs', 'gridWorkProjectsList', 'gridKanbanTasks', 'gridSleepData'
     ];
     keysToBackup.forEach(k => {
       const val = localStorage.getItem(k);
@@ -6091,7 +6091,7 @@ function launchDemo() {
   const keysToWipe = [
     'gymDBVersion', 'gymSplitData', 'gymExerciseRegistry', 'gymMuscleGroups', 'gymLogs',
     'rwProjects', 'rsTabData', 'gridEntries', 'gridHabits', 'gridBudget', 'gridTxLog', 'gridFinTelemetry',
-    'gridFinRecurItems', 'gridFinDebtItems', 'gridQueueItems', 'gridRsStackData', 'gridFocusLogs', 'gridWorkProjectsList'
+    'gridFinRecurItems', 'gridFinDebtItems', 'gridQueueItems', 'gridRsStackData', 'gridFocusLogs', 'gridWorkProjectsList', 'gridKanbanTasks', 'gridSleepData'
   ];
   keysToWipe.forEach(k => localStorage.removeItem(k));
   
@@ -6224,8 +6224,38 @@ const today = new Date();
 let viewYear  = today.getFullYear();
 let viewMonth = today.getMonth(); // 0-indexed
 
-// entries: { 'YYYY-MM-DD': [{type, title, time, notes}] }
+/// entries: { 'YYYY-MM-DD': [{id?, type, title, time, notes}] }
 let entries = JSON.parse(localStorage.getItem('gridEntries') || '{}');
+let _calLoaded = false;
+
+async function loadCalendarFromAPI() {
+  if (_calLoaded || sessionStorage.getItem('gridMode') === 'demo') return;
+  _calLoaded = true;
+  try {
+    const now  = new Date();
+    const from = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString();
+    const to   = new Date(now.getFullYear(), now.getMonth() + 3, 0).toISOString();
+    const eventsData = await gridFetch(`/api/calendar/events?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`);
+    entries = {};
+    eventsData.forEach(ev => {
+      const dateKey = ev.startTime.split('T')[0];
+      if (!entries[dateKey]) entries[dateKey] = [];
+      entries[dateKey].push({
+        id:    ev.id,
+        type:  ev.color === 'blue' ? 'cls' : ev.color === 'green' ? 'task' : 'ev',
+        title: ev.title,
+        time:  ev.allDay ? '' : (ev.startTime.split('T')[1] || '').slice(0, 5),
+        notes: ev.description || '',
+      });
+    });
+    localStorage.setItem('gridEntries', JSON.stringify(entries));
+    renderCalendar();
+  } catch(e) {
+    console.warn('Calendar API load failed, using localStorage:', e);
+    entries = JSON.parse(localStorage.getItem('gridEntries') || '{}');
+    _calLoaded = false;
+  }
+}
 
 const MONTHS = ['JANUARY','FEBRUARY','MARCH','APRIL','MAY','JUNE',
                 'JULY','AUGUST','SEPTEMBER','OCTOBER','NOVEMBER','DECEMBER'];
@@ -6264,6 +6294,7 @@ function navigate(page) {
 
 // ── CALENDAR RENDER ────────────────────────────────
 function renderCalendar() {
+  loadCalendarFromAPI(); // async, re-renders when done
   document.getElementById('calMonthLabel').textContent =
     MONTHS[viewMonth] + ' ' + viewYear;
 
@@ -6437,16 +6468,17 @@ function openDrawer(dateStr, day) {
   document.getElementById('dayDrawer').classList.add('open');
 }
 
-function drwSaveEvent() {
-  const title = document.getElementById('drwEvTitle').value.trim();
-  const time  = document.getElementById('drwEvTime').value;
+async function drwSaveEvent() {
+  const title   = document.getElementById('drwEvTitle').value.trim();
+  const time    = document.getElementById('drwEvTime').value;
   const dateStr = window._drawerDateStr;
+  const isDemo  = sessionStorage.getItem('gridMode') === 'demo';
   if (!title || !dateStr) return;
   if (!entries[dateStr]) entries[dateStr] = [];
-  entries[dateStr].push({ type:'ev', title, time });
+  const newEntry = { type:'ev', title, time };
+  entries[dateStr].push(newEntry);
   localStorage.setItem('gridEntries', JSON.stringify(entries));
   renderCalendar();
-  // Refresh events column
   const evts = entries[dateStr].filter(e => e.type === 'ev');
   document.getElementById('drawerEvents').innerHTML = evts.map(e => `
     <div class="drawer-item ev-item">
@@ -6457,6 +6489,17 @@ function drwSaveEvent() {
   document.getElementById('drwEvTime').value = '';
   document.getElementById('drwEvForm').style.display = 'none';
   document.getElementById('drwEvToggle').style.display = 'block';
+  if (!isDemo) {
+    try {
+      const startISO = time ? `${dateStr}T${time}:00` : `${dateStr}T00:00:00`;
+      const created  = await gridFetch('/api/calendar/events', {
+        method: 'POST',
+        body: JSON.stringify({ title, startTime: startISO, allDay: !time }),
+      });
+      newEntry.id = created.id;
+      localStorage.setItem('gridEntries', JSON.stringify(entries));
+    } catch(e) { console.warn('Drawer event save failed:', e); }
+  }
 }
 
 function closeDrawer() {
@@ -6486,12 +6529,13 @@ function closeAddModal() {
   document.getElementById('addModal').classList.remove('open');
 }
 
-function saveEntry() {
+async function saveEntry() {
   const type  = document.getElementById('entryType').value;
   const title = document.getElementById('entryTitle').value.trim();
   const date  = document.getElementById('entryDate').value;
   const time  = document.getElementById('entryTime').value;
   const notes = document.getElementById('entryNotes').value.trim();
+  const isDemo = sessionStorage.getItem('gridMode') === 'demo';
 
   if (!title || !date) {
     document.getElementById('entryTitle').style.borderColor = '#ef4444';
@@ -6500,11 +6544,23 @@ function saveEntry() {
   }
 
   if (!entries[date]) entries[date] = [];
-  entries[date].push({ type, title, time, notes });
+  const newEntry = { type, title, time, notes };
+  entries[date].push(newEntry);
   localStorage.setItem('gridEntries', JSON.stringify(entries));
-
   closeAddModal();
   renderCalendar();
+
+  if (!isDemo) {
+    try {
+      const startISO = time ? `${date}T${time}:00` : `${date}T00:00:00`;
+      const created  = await gridFetch('/api/calendar/events', {
+        method: 'POST',
+        body: JSON.stringify({ title, description: notes, startTime: startISO, allDay: !time, color: type === 'cls' ? 'blue' : type === 'task' ? 'green' : null }),
+      });
+      newEntry.id = created.id;
+      localStorage.setItem('gridEntries', JSON.stringify(entries));
+    } catch(e) { console.warn('Calendar save failed:', e); }
+  }
 }
 
 // Close modal on overlay click
@@ -7051,15 +7107,21 @@ function saveSplitModal() {
 
       const newSplit = { title, sub, days: finalDays };
       localStorage.setItem('gymSplitData', JSON.stringify(newSplit));
-      
-      finalDays.forEach((d, idx) => {
-        gymDaySplits[idx] = d.title;
-      });
+
+      finalDays.forEach((d, idx) => { gymDaySplits[idx] = d.title; });
+
+      // Sync to API
+      const isDemo = sessionStorage.getItem('gridMode') === 'demo';
+      if (!isDemo) {
+        gridFetch('/api/gym/split', {
+          method: 'PUT',
+          body: JSON.stringify({ name: title, days: finalDays }),
+        }).catch(e => console.warn('Gym split API sync failed:', e));
+      }
 
       initGymData();
       renderWeeklySplit();
       document.getElementById('gymSplitModal').classList.remove('open');
-      
       gymShowToast(`SPLIT COMPILED — "${title}" loaded successfully.`);
     }
   } catch (err) {
@@ -7525,23 +7587,33 @@ function commitWorkoutLog() {
   if (sessionLog.exercises.length > 0) {
     const logs = JSON.parse(localStorage.getItem('gymLogs') || '[]');
     logs.push(sessionLog);
-    
     localStorage.setItem('gymLogs', JSON.stringify(logs));
     localStorage.setItem('gymExerciseRegistry', JSON.stringify(reg));
     localStorage.setItem('gymMuscleGroups', JSON.stringify(muscleGroups));
-    
-    // Sync telemetry changes
+
     initGymData();
     initGymChart();
     renderLogDiary();
     renderLoggerPanel();
     buildMuscleGrid();
-    
     gymShowToast(`SESSION LOGGED — ${d.title} recorded at UTC ${new Date().toISOString().substring(11,19)}`);
-
-    // Clear logging inputs
     document.querySelectorAll('.logger-weight-input').forEach(i => i.value = '');
     document.querySelectorAll('.logger-reps-input').forEach(i => i.value = '');
+
+    // Persist to API
+    const isDemo = sessionStorage.getItem('gridMode') === 'demo';
+    if (!isDemo) {
+      gridFetch('/api/gym/logs', {
+        method: 'POST',
+        body: JSON.stringify({
+          workoutDate: sessionLog.date,
+          dayIndex:    sessionLog.dayIndex,
+          exercises:   sessionLog.exercises,
+          notes:       sessionLog.notes || '',
+          durationMin: sessionLog.durationMin || null,
+        }),
+      }).catch(e => console.warn('Gym log API save failed:', e));
+    }
   }
 }
 
@@ -7550,10 +7622,29 @@ function loadMoreLogDiary() {
   renderLogDiary(false);
 }
 
-function renderLogDiary(reset = true) {
+async function renderLogDiary(reset = true) {
   if (reset) logDiaryShown = 10;
   initGymData();
-  const logs = JSON.parse(localStorage.getItem('gymLogs') || '[]');
+  const isDemo = sessionStorage.getItem('gridMode') === 'demo';
+  let logs = JSON.parse(localStorage.getItem('gymLogs') || '[]');
+
+  if (!isDemo) {
+    try {
+      const apiLogs = await gridFetch('/api/gym/logs?limit=200');
+      if (apiLogs.length > 0) {
+        // Map API format to local format
+        const mapped = apiLogs.map(l => ({
+          date:      l.workoutDate,
+          splitName: l.exercises?.[0]?.splitName || 'WORKOUT',
+          dayIndex:  l.dayIndex,
+          exercises: l.exercises || [],
+        }));
+        localStorage.setItem('gymLogs', JSON.stringify(mapped));
+        logs = mapped;
+      }
+    } catch(e) { console.warn('Gym logs API load failed:', e); }
+  }
+
   const countEl = document.getElementById('logDiaryCount');
   if (countEl) countEl.textContent = `${logs.length} Sessions Logged`;
 
@@ -7966,39 +8057,14 @@ const ttData = [
   { 3:'SLEEP',6:'MAINT',8:'RECOVERY',11:'IDLE',14:'SOCIAL' },
 ];
 
-const kanbanTasks = [
-  // MON 07
-  [
-    { type:'neural', name:'Neural Engine Sync', status:'completed', done:true },
-    { type:'code',   name:'Code Audit v4',       status:'pending' },
-  ],
-  // TUE 08
-  [
-    { type:'code',     name:'Grid Optimization', status:'pending' },
-    { type:'physical', name:'Vascular Load',      status:'pending' },
-  ],
-  // WED 09
-  [
-    { type:'neural', name:'Ledger Reconciliation', status:'completed', done:true },
-  ],
-  // THU 10
-  [
-    { type:'code',     name:'Forge Maintenance', status:'pending' },
-    { type:'physical', name:'Strength Cycle',    status:'pending' },
-  ],
-  // FRI 11
-  [
-    { type:'neural', name:'Strategic Blueprinting', status:'critical' },
-  ],
-  // SAT 12
-  [
-    { type:'system', name:'Deep Neural Rest', status:'idle', progress:35 },
-  ],
-  // SUN 13
-  [
-    { type:'code', name:'Weekly Log Archive', status:'idle' },
-  ],
-];
+// Weekly kanban tasks — persisted in localStorage
+let kanbanTasks = JSON.parse(localStorage.getItem('gridKanbanTasks') || JSON.stringify([
+  [], [], [], [], [], [], []
+]));
+
+function saveKanbanTasks() {
+  localStorage.setItem('gridKanbanTasks', JSON.stringify(kanbanTasks));
+}
 
 const WEEK_DAYS = ['MON 07','TUE 08','WED 09','THU 10','FRI 11','SAT 12','SUN 13'];
 const HOURS = Array.from({length:24}, (_,i) => String(i).padStart(2,'0') + ':00'); // 00:00 - 23:00
@@ -8274,6 +8340,7 @@ function saveTaskModal() {
     if (!kanbanTasks[di]) kanbanTasks[di] = [];
     kanbanTasks[di].push(task);
   }
+  saveKanbanTasks();
   closeTaskModal();
   buildKanban();
 }
@@ -8281,16 +8348,17 @@ function saveTaskModal() {
 function deleteTaskModal() {
   if (_tmEditDay < 0 || _tmEditIdx < 0) return;
   kanbanTasks[_tmEditDay].splice(_tmEditIdx, 1);
+  saveKanbanTasks();
   closeTaskModal();
   buildKanban();
 }
 
 // ── Sleep Pattern ──────────────────────────────────
-const sleepData = [
-  {start:0, end:6}, {start:0, end:6}, {start:0, end:6},
-  {start:0, end:6}, {start:0, end:6}, {start:2, end:9},
-  {start:2, end:9}
-];
+let sleepData = JSON.parse(localStorage.getItem('gridSleepData') || JSON.stringify([
+  {start:23, end:7}, {start:23, end:7}, {start:23, end:7},
+  {start:23, end:7}, {start:23, end:7}, {start:23, end:8},
+  {start:23, end:9}
+]));
 const SLEEP_DAYS = ['MON','TUE','WED','THU','FRI','SAT','SUN'];
 
 function buildSleepCfg() {
@@ -8304,9 +8372,9 @@ function buildSleepCfg() {
     return `<div class="sleep-cfg-day">
       <div class="sleep-cfg-day-label">${d}</div>
       <div class="sleep-cfg-sub-label">FROM</div>
-      <select class="sleep-cfg-select" id="sleepStart_${i}" onchange="sleepData[${i}].start=+this.value">${hourOptions}</select>
+      <select class="sleep-cfg-select" id="sleepStart_${i}" onchange="sleepData[${i}].start=+this.value;localStorage.setItem('gridSleepData',JSON.stringify(sleepData))">${hourOptions}</select>
       <div class="sleep-cfg-sub-label">TO</div>
-      <select class="sleep-cfg-select" id="sleepEnd_${i}" onchange="sleepData[${i}].end=+this.value">${hourOptionsE}</select>
+      <select class="sleep-cfg-select" id="sleepEnd_${i}" onchange="sleepData[${i}].end=+this.value;localStorage.setItem('gridSleepData',JSON.stringify(sleepData))">${hourOptionsE}</select>
     </div>`;
   }).join('');
 }
@@ -8645,26 +8713,11 @@ function closeHabitModal() {
 // ═══════════════════════════════════════════════════
 let rwDonutChart = null;
 
-const feedItems = [
-  { name:'PROTOCOL_ALPHA_7', time:'2m ago',  body:'Automated task scrubbing sequence initialized.',         color:'#76b372' },
-  { name:'BLUEPRINT_REMAP',  time:'14m ago', body:'Manual structural adjustment required at node 04.',      color:'#ff4d8f' },
-  { name:'CORE_IDLE',        time:'1h ago',  body:'Energy conservation mode at 40% efficiency.',            color:'#f97316' },
-  { name:'SYNC_COMPLETE',    time:'3h ago',  body:'Local node 09 is now consistent with primary ledger.',   color:'#3b82f6' },
-];
+// Feed is generated dynamically from user actions
+const feedItems = [];
 
 let queueItems = JSON.parse(localStorage.getItem('gridQueueItems') || JSON.stringify({
-  cycle: [
-    { id:'0x44A2', task:'SYNCHRONIZE_DB_09',   date:'2023.11.15', priority:'critical', status:'running' },
-    { id:'0x88F1', task:'REFINE_LLM_WEIGHTS',  date:'2023.12.05', priority:'low',      status:'queued'  },
-    { id:'0xBC04', task:'ARCHIVE_Q3_DOCS',     date:'2023.10.30', priority:'medium',   status:'stalled' },
-  ],
-  day: [
-    { id:'0x11A1', task:'DAILY_STANDUP_LOG',   date:'2023.11.15', priority:'low',      status:'running' },
-  ],
-  annual: [
-    { id:'0xFF00', task:'YEAR_REVIEW_COMPILE', date:'2023.12.31', priority:'medium',   status:'queued'  },
-    { id:'0xFF01', task:'ROADMAP_2024_DRAFT',  date:'2023.12.31', priority:'critical', status:'queued'  },
-  ],
+  cycle: [], day: [], annual: [],
 }));
 
 function saveQueueItems() {
@@ -8673,10 +8726,31 @@ function saveQueueItems() {
 
 let activeQueueTab = 'cycle';
 
-function initRunway() {
+async function initRunway() {
   renderFeed();
   renderQueue(activeQueueTab);
   initRwDonut();
+
+  const isDemo = sessionStorage.getItem('gridMode') === 'demo';
+  if (!isDemo) {
+    try {
+      const projData = await gridFetch('/api/projects');
+      if (projData.length > 0) {
+        rwProjects = projData.map(p => ({
+          _id:      p.id,
+          id:       p.id,
+          name:     p.title,
+          cat:      p.description || 'GENERAL',
+          progress: p.tasks ? Math.round((p.tasks.filter(t => t.done).length / Math.max(p.tasks.length,1)) * 100) : 0,
+          deadline: p.deadline || '2026-12-31',
+          priority: p.priority || 'medium',
+          status:   p.status || 'active',
+        }));
+        saveRwProjects();
+        renderRwProjectsTable();
+      }
+    } catch(e) { console.warn('Projects API load failed:', e); }
+  }
   
   const canvas = document.getElementById('rwDonut');
   if (canvas) {
@@ -8691,7 +8765,42 @@ function initRunway() {
 }
 
 function renderFeed() {
-  document.getElementById('rwFeed').innerHTML = feedItems.map(f => `
+  // Build live feed from real user data
+  const liveFeed = [];
+  const now = Date.now();
+  const relTime = ts => {
+    const diff = Math.floor((now - new Date(ts).getTime()) / 60000);
+    if (diff < 1) return 'just now';
+    if (diff < 60) return `${diff}m ago`;
+    if (diff < 1440) return `${Math.floor(diff/60)}h ago`;
+    return `${Math.floor(diff/1440)}d ago`;
+  };
+
+  try {
+    const gymLogs = JSON.parse(localStorage.getItem('gymLogs') || '[]');
+    gymLogs.slice(-3).reverse().forEach(l => {
+      liveFeed.push({ name: l.splitName || 'WORKOUT', time: relTime(l.date), body: `Session logged — ${l.exercises?.length || 0} exercises recorded.`, color: '#76b372' });
+    });
+  } catch(e) {}
+  try {
+    const txs = JSON.parse(localStorage.getItem('gridTxLog') || '[]');
+    txs.slice(0, 2).forEach(t => {
+      liveFeed.push({ name: t.entity || 'TRANSACTION', time: t.ts || 'Recently', body: `${t.val < 0 ? 'Expense' : 'Income'} logged — ${t.sector}.`, color: '#f97316' });
+    });
+  } catch(e) {}
+  try {
+    const habs = JSON.parse(localStorage.getItem('gridHabits') || '[]');
+    const top = habs.filter(h => h.pct >= 80)[0];
+    if (top) liveFeed.push({ name: top.name, time: 'Today', body: `Habit running at ${top.pct}% consistency this month.`, color: '#3b82f6' });
+  } catch(e) {}
+
+  const el = document.getElementById('rwFeed');
+  if (!el) return;
+  if (liveFeed.length === 0) {
+    el.innerHTML = `<div style="text-align:center;padding:20px;font-size:10px;color:var(--text-muted);">NO ACTIVITY YET — START LOGGING TO SEE FEED</div>`;
+    return;
+  }
+  el.innerHTML = liveFeed.map(f => `
     <div class="rw-feed-item">
       <div class="rw-feed-accent" style="background:${f.color}"></div>
       <div class="rw-feed-content">
@@ -8932,28 +9041,55 @@ function renderRwProjectsTable() {
   `).join('');
 }
 
-function commitRwProject() {
-  const idVal = document.getElementById('rwProjId').value;
-  const name = document.getElementById('rwProjName').value.trim();
-  const cat = document.getElementById('rwProjCat').value;
+async function commitRwProject() {
+  const idVal    = document.getElementById('rwProjId').value;
+  const name     = document.getElementById('rwProjName').value.trim();
+  const cat      = document.getElementById('rwProjCat').value;
   const progress = parseInt(document.getElementById('rwProjProgress').value) || 0;
   const deadline = document.getElementById('rwProjDeadline').value || '2026-12-31';
   const priority = document.getElementById('rwProjPriority').value;
-  const status = document.getElementById('rwProjStatus').value;
-  
+  const status   = document.getElementById('rwProjStatus').value;
+  const isDemo   = sessionStorage.getItem('gridMode') === 'demo';
   if (!name) return;
-  
+
   if (idVal !== '') {
     const idx = parseInt(idVal);
     rwProjects[idx] = { ...rwProjects[idx], name, cat, progress, deadline, priority, status };
+    if (!isDemo && rwProjects[idx]._id) {
+      gridFetch(`/api/projects/${rwProjects[idx]._id}`, {
+        method: 'PUT',
+        body: JSON.stringify({ title: name, description: cat, progress, deadline, priority, status }),
+      }).catch(e => console.warn('Project update failed:', e));
+    }
   } else {
-    const newId = 'PROJ_' + String(Math.floor(Math.random() * 900) + 100);
-    rwProjects.push({ id: newId, name, cat, progress, deadline, priority, status });
+    const newProj = { id: 'PROJ_' + String(Math.floor(Math.random()*900)+100), name, cat, progress, deadline, priority, status };
+    rwProjects.push(newProj);
+    if (!isDemo) {
+      try {
+        const created = await gridFetch('/api/projects', {
+          method: 'POST',
+          body: JSON.stringify({ title: name, description: cat, deadline, priority, status }),
+        });
+        newProj._id = created.id;
+      } catch(e) { console.warn('Project create failed:', e); }
+    }
   }
-  
+
   saveRwProjects();
   renderRwProjectsTable();
   cancelRwProjectEdit();
+}
+
+async function deleteRwProjectAPI(idx) {
+  const isDemo = sessionStorage.getItem('gridMode') === 'demo';
+  const p = rwProjects[idx];
+  if (!isDemo && p._id) {
+    gridFetch(`/api/projects/${p._id}`, { method: 'DELETE' })
+      .catch(e => console.warn('Project delete failed:', e));
+  }
+  rwProjects.splice(idx, 1);
+  saveRwProjects();
+  renderRwProjectsTable();
 }
 
 function editRwProject(idx) {
@@ -8976,9 +9112,7 @@ function editRwProject(idx) {
 
 function deleteRwProject(idx) {
   if (confirm('Delete this project node from pipeline?')) {
-    rwProjects.splice(idx, 1);
-    saveRwProjects();
-    renderRwProjectsTable();
+    deleteRwProjectAPI(idx);
   }
 }
 
@@ -9139,11 +9273,7 @@ function saveFinanceData() {
   localStorage.setItem('gridTxLog', JSON.stringify(txLog));
 }
 
-let finRecurItems = JSON.parse(localStorage.getItem('gridFinRecurItems') || JSON.stringify([
-  { name:'GITHUB COPILOT', amount:'₹820.00',   cat:'DEV_TOOLS',      day:1  },
-  { name:'FITNESS HUB',    amount:'₹1,500.00', cat:'HEALTH',         day:5  },
-  { name:'iCLOUD STORAGE', amount:'₹75.00',    cat:'DATA',           day:15 },
-]));
+let finRecurItems = JSON.parse(localStorage.getItem('gridFinRecurItems') || '[]');
 
 function saveFinRecurItems() {
   localStorage.setItem('gridFinRecurItems', JSON.stringify(finRecurItems));
@@ -9196,7 +9326,7 @@ function populateTxSectorDropdown() {
   select.innerHTML = sectors.map(sec => `<option>${sec}</option>`).join('');
 }
 
-function initFinances() {
+async function initFinances() {
   loadFinTelemetry();
   populateTxSectorDropdown();
   renderRecurringList();
@@ -9204,6 +9334,25 @@ function initFinances() {
   renderBudgetTable();
   renderTxLog();
   initDonutChart();
+
+  const isDemo = sessionStorage.getItem('gridMode') === 'demo';
+  if (!isDemo) {
+    try {
+      const now  = new Date();
+      const from = `${now.getFullYear()}-01-01`;
+      const txData = await gridFetch(`/api/finance/transactions?from=${from}&limit=200`);
+      txLog = txData.map(t => ({
+        id:     t.id,
+        ts:     t.date,
+        entity: t.description?.toUpperCase() || 'ENTRY',
+        sector: t.category?.name || 'OTHER',
+        val:    t.type === 'expense' ? -Math.abs(t.amount) : Math.abs(t.amount),
+        hash:   '0x' + t.id.slice(0,6) + '...' + t.id.slice(-3),
+      }));
+      localStorage.setItem('gridTxLog', JSON.stringify(txLog));
+      renderTxLog();
+    } catch(e) { console.warn('Finance tx load failed:', e); }
+  }
 }
 
 function renderRecurringList() {
@@ -9389,9 +9538,9 @@ function renderBudgetTable() {
     const cls = rem < 0 ? 'neg' : rem > 0 ? 'pos' : '';
     return `<tr>
       <td style="cursor:pointer;" onclick="editBudgetSectorNode(${idx})" title="Click to rename or delete sector">${r.sector} <span style="font-size:9px;color:var(--text-muted);opacity:0.6;">✎</span></td>
-      <td>₹${r.planned.toLocaleString()} <span style="color:var(--text-muted);cursor:pointer;margin-left:4px;" onclick="editSectorPlanned(${idx}); event.stopPropagation();">✎</span></td>
-      <td>₹${r.actual.toLocaleString()} <span style="color:var(--text-muted);cursor:pointer;margin-left:4px;" onclick="editSectorActual(${idx}); event.stopPropagation();">✎</span></td>
-      <td class="${cls}">${rem < 0 ? '-' : ''}₹${Math.abs(rem).toLocaleString()}</td>
+      <td>${getCurrencySymbol()}${r.planned.toLocaleString()} <span style="color:var(--text-muted);cursor:pointer;margin-left:4px;" onclick="editSectorPlanned(${idx}); event.stopPropagation();">✎</span></td>
+      <td>${getCurrencySymbol()}${r.actual.toLocaleString()} <span style="color:var(--text-muted);cursor:pointer;margin-left:4px;" onclick="editSectorActual(${idx}); event.stopPropagation();">✎</span></td>
+      <td class="${cls}">${rem < 0 ? '-' : ''}${getCurrencySymbol()}${Math.abs(rem).toLocaleString()}</td>
     </tr>`;
   }).join('');
 }
@@ -9447,7 +9596,7 @@ function renderTxLog() {
       <td>${t.ts}</td>
       <td class="tx-entity">${t.entity}</td>
       <td class="tx-sector">${t.sector}</td>
-      <td class="${cls}">${sign}₹${Math.abs(t.val).toLocaleString('en-IN', {minimumFractionDigits:2})}</td>
+      <td class="${cls}">${sign}${getCurrencySymbol()}${Math.abs(t.val).toLocaleString('en-IN', {minimumFractionDigits:2})}</td>
       <td class="tx-hash">${t.hash}</td>
     </tr>`;
   }).join('');
@@ -9466,7 +9615,7 @@ function initDonutChart() {
   // Center label inside doughnut
   const centerValEl = document.getElementById('finDonutVal');
   if (centerValEl) {
-    centerValEl.textContent = '₹' + totalActual.toLocaleString('en-IN', { maximumFractionDigits: 0 });
+    centerValEl.textContent = getCurrencySymbol() + totalActual.toLocaleString('en-IN', { maximumFractionDigits: 0 });
   }
 
   // Telemetry Stat Card "ACTUAL SPENT"
@@ -9518,31 +9667,41 @@ function initDonutChart() {
   });
 }
 
-function commitTransaction() {
+async function commitTransaction() {
   const label  = document.getElementById('txLabel').value.trim();
   const amount = parseFloat(document.getElementById('txAmount').value);
   const sector = document.getElementById('txSector').value;
+  const isDemo = sessionStorage.getItem('gridMode') === 'demo';
   if (!label || isNaN(amount) || amount === 0) return;
 
-  const now = new Date();
-  const ts = `${String(now.getDate()).padStart(2,'0')}.${String(now.getMonth()+1).padStart(2,'0')}.${String(now.getFullYear()).slice(2)} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+  const now  = new Date();
+  const ts   = `${String(now.getDate()).padStart(2,'0')}.${String(now.getMonth()+1).padStart(2,'0')}.${String(now.getFullYear()).slice(2)} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
   const hash = '0x' + Math.random().toString(16).slice(2,8) + '...' + Math.random().toString(16).slice(2,5);
+  const dateISO = now.toISOString().split('T')[0];
 
-  txLog.unshift({ ts, entity: label.toUpperCase(), sector, val: -Math.abs(amount), hash });
-  
-  // Dynamic update to budgetData actual spent if matching sector is found
+  const entry = { ts, entity: label.toUpperCase(), sector, val: -Math.abs(amount), hash };
+  txLog.unshift(entry);
+
   const budgetSector = budgetData.find(b => b.sector === sector);
-  if (budgetSector) {
-    budgetSector.actual += Math.abs(amount);
-  }
+  if (budgetSector) budgetSector.actual += Math.abs(amount);
 
   saveFinanceData();
   renderTxLog();
   renderBudgetTable();
   initDonutChart();
-
-  document.getElementById('txLabel').value = '';
+  document.getElementById('txLabel').value  = '';
   document.getElementById('txAmount').value = '';
+
+  if (!isDemo) {
+    try {
+      const created = await gridFetch('/api/finance/transactions', {
+        method: 'POST',
+        body: JSON.stringify({ amount: Math.abs(amount), description: label, date: dateISO, type: 'expense' }),
+      });
+      entry.id = created.id;
+      localStorage.setItem('gridTxLog', JSON.stringify(txLog));
+    } catch(e) { console.warn('Transaction API save failed:', e); }
+  }
 }
 
 function exportCSV() {
@@ -9625,12 +9784,7 @@ function closeBudgetModal() {
 // ══════════════════════════════════════════════════════
 
 let rsActiveTab = 'projects';
-let rsStackData = JSON.parse(localStorage.getItem('gridRsStackData') || JSON.stringify([
-  { name: 'C++ / LOW_LEVEL_ARCHITECTURE',  hrs: 1420 },
-  { name: 'PYTHON / NEURAL_LOGIC',         hrs: 1150 },
-  { name: 'REACT / NEXTJS_FRAMEWORKS',     hrs: 980  },
-  { name: 'POSTGRESQL / DATA_RELATIONS',   hrs: 450  }
-]));
+let rsStackData = JSON.parse(localStorage.getItem('gridRsStackData') || '[]');
 
 function saveRsStackData() {
   localStorage.setItem('gridRsStackData', JSON.stringify(rsStackData));
@@ -9678,15 +9832,33 @@ let rsTabData = JSON.parse(localStorage.getItem('rsTabData')) || {
   ]
 };
 
-function initResume() {
+async function initResume() {
   renderRsStack();
-  
-  const saved = localStorage.getItem('rsTabData');
-  if (saved) {
-    rsTabData = JSON.parse(saved);
+
+  const isDemo = sessionStorage.getItem('gridMode') === 'demo';
+  const saved  = localStorage.getItem('rsTabData');
+  if (saved) rsTabData = JSON.parse(saved);
+
+  if (!isDemo) {
+    try {
+      const sections = await gridFetch('/api/resume');
+      if (sections && Object.keys(sections).length > 0 &&
+          (sections.projects?.length || sections.experience?.length || sections.courses?.length)) {
+        rsTabData = sections;
+        localStorage.setItem('rsTabData', JSON.stringify(rsTabData));
+      }
+    } catch(e) { console.warn('Resume API load failed:', e); }
   }
-  
+
   renderRsContent(rsActiveTab);
+}
+
+function _syncResumeToAPI() {
+  if (sessionStorage.getItem('gridMode') === 'demo') return;
+  gridFetch('/api/resume', {
+    method: 'PUT',
+    body: JSON.stringify({ sections: rsTabData }),
+  }).catch(e => console.warn('Resume API sync failed:', e));
 }
 
 function renderRsStack() {
@@ -9915,6 +10087,7 @@ function commitRsItem() {
   }
   
   localStorage.setItem('rsTabData', JSON.stringify(rsTabData));
+  _syncResumeToAPI();
   renderRsProfileList();
   cancelRsEdit();
 }
@@ -9940,6 +10113,7 @@ function deleteRsItem(cat, idx) {
   if (confirm('Delete this resume item from database?')) {
     rsTabData[cat].splice(idx, 1);
     localStorage.setItem('rsTabData', JSON.stringify(rsTabData));
+    _syncResumeToAPI();
     renderRsProfileList();
   }
 }
@@ -10674,6 +10848,17 @@ function saveSetting(key, value) {
   localStorage.setItem('gridSettings', JSON.stringify(s));
 }
 
+function getCurrencySymbol() {
+  const s = JSON.parse(localStorage.getItem('gridSettings') || '{}');
+  const map = { INR: '₹', USD: '$', EUR: '€', GBP: '£' };
+  return map[s.currency || 'INR'] || '₹';
+}
+
+function formatCurrency(amount) {
+  const sym = getCurrencySymbol();
+  return `${sym}${parseFloat(amount).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
 function settingsExportData() {
   const keys = ['gymLogs','gymExerciseRegistry','gymMuscleGroups','gymSplitData',
                  'gridEntries','gridHabits','gridBudget','gridTxLog',
@@ -10738,9 +10923,31 @@ function settingsClearAll() {
 
 // ── PROFILE ────────────────────────────────────────────
 
-function openProfile() {
+async function openProfile() {
   populateProfile();
   openPanel('panelProfile');
+
+  // Load latest profile from API in background and refresh panel
+  const isDemo = sessionStorage.getItem('gridMode') === 'demo';
+  if (!isDemo) {
+    try {
+      const data = await gridFetch('/api/profile');
+      if (data.profile) {
+        const pd = {
+          name:       data.name || '',
+          dob:        data.profile.dob || '',
+          gender:     data.profile.gender || '',
+          city:       data.profile.city || '',
+          occupation: data.profile.occupation || '',
+          height:     data.profile.heightCm || '',
+          weight:     data.profile.weightKg || '',
+          bio:        data.profile.bio || '',
+        };
+        localStorage.setItem('gridUserProfile', JSON.stringify(pd));
+        populateProfile(); // refresh panel with latest data
+      }
+    } catch(e) { console.warn('Profile API load failed:', e); }
+  }
 }
 
 function populateProfile() {
@@ -10896,6 +11103,24 @@ function saveProfileDetails() {
     bio:        get('pdEditBio'),
   };
   localStorage.setItem('gridUserProfile', JSON.stringify(pd));
+
+  // Sync to API
+  const isDemo = sessionStorage.getItem('gridMode') === 'demo';
+  if (!isDemo) {
+    gridFetch('/api/profile', {
+      method: 'PUT',
+      body: JSON.stringify({
+        name:       pd.name,
+        dob:        pd.dob,
+        gender:     pd.gender,
+        city:       pd.city,
+        occupation: pd.occupation,
+        heightCm:   pd.height ? parseFloat(pd.height) : null,
+        weightKg:   pd.weight ? parseFloat(pd.weight) : null,
+        bio:        pd.bio,
+      }),
+    }).catch(e => console.warn('Profile API save failed:', e));
+  }
 
   // Refresh hero name + avatar if name changed
   if (pd.name) {
