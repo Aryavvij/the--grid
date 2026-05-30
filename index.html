@@ -3657,7 +3657,7 @@ html, body {
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
           <div class="field">
             <label class="field-label" for="suFirst">FIRST NAME <span>*</span></label>
-            <input class="field-input" id="suFirst" type="text" placeholder="ARYAV" autocomplete="given-name" />
+            <input class="field-input" id="suFirst" type="text" placeholder="FIRST NAME" autocomplete="given-name" />
           </div>
           <div class="field">
             <label class="field-label" for="suLast">LAST NAME</label>
@@ -3701,7 +3701,7 @@ html, body {
 
         <div class="terms-row">
           <input type="checkbox" id="suTerms" />
-          <span>I agree to the <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a>. All data is stored locally on your device.</span>
+          <span>I agree to the <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a>. Your data is securely stored and private to your account.</span>
         </div>
 
         <button class="btn-primary" id="signupBtn" onclick="handleSPASignup()">
@@ -4434,22 +4434,22 @@ html, body {
       <div class="fin-stat-row">
         <div class="fin-stat-card" onclick="editStat('assets')">
           <div class="fin-stat-label">LIQUID ASSETS</div>
-          <div class="fin-stat-val" id="fStatAssets">₹12,450.00</div>
+          <div class="fin-stat-val" id="fStatAssets">—</div>
           <div class="fin-stat-edit">✎</div>
         </div>
         <div class="fin-stat-card" onclick="editStat('debt')">
           <div class="fin-stat-label">DEBT RATIO</div>
-          <div class="fin-stat-val red" id="fStatDebt">12.4%</div>
+          <div class="fin-stat-val red" id="fStatDebt">—</div>
           <div class="fin-stat-edit">✎</div>
         </div>
         <div class="fin-stat-card" onclick="editStat('budget')">
           <div class="fin-stat-label">MONTHLY BUDGETED</div>
-          <div class="fin-stat-val" id="fStatBudget">₹6,000.00</div>
+          <div class="fin-stat-val" id="fStatBudget">—</div>
           <div class="fin-stat-edit">✎</div>
         </div>
         <div class="fin-stat-card" onclick="editStat('spent')">
           <div class="fin-stat-label">ACTUAL SPENT</div>
-          <div class="fin-stat-val" id="fStatSpent">₹2,840.00</div>
+          <div class="fin-stat-val" id="fStatSpent">—</div>
           <div class="fin-stat-edit">✎</div>
         </div>
       </div>
@@ -9945,10 +9945,22 @@ function generateResumePdf() {
     }
   });
   
+  // Pull contact info from saved profile
+  const _rsPd = JSON.parse(localStorage.getItem('gridUserProfile') || '{}');
+  const _rsName  = _rsPd.name  || sessionStorage.getItem('gridUserName') || 'YOUR NAME';
+  const _rsEmail = sessionStorage.getItem('gridUser') || '';
+  const _rsCity  = _rsPd.city  || '';
+  const _rsOcc   = _rsPd.occupation || '';
+  const _rsContactParts = [
+    _rsEmail && `Email: ${_rsEmail}`,
+    _rsCity  && _rsCity,
+    _rsOcc   && _rsOcc,
+  ].filter(Boolean).join(' • ');
+
   sheet.innerHTML = `
-    <h1>Aryav Vij</h1>
+    <h1>${_rsName}</h1>
     <div class="rs-pdf-contact">
-      Email: aryav.vij@university.edu • Mobile: +91 98765 43210 • GitHub: github.com/aryavvij • Website: grid-os.io
+      ${_rsContactParts || 'Add your contact info in Profile → Edit Details'}
     </div>
     ${content.join('') || '<div style="text-align:center; padding:100px; color:#888;">Select items from categories above and click Compile to synthesize your Resume sheet.</div>'}
   `;
