@@ -4663,26 +4663,26 @@ html, body {
                   <svg viewBox="0 0 24 24" width="14" height="14" stroke="var(--green)" fill="none" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
                   <span class="gym-tel-title">VOLUME TELEMETRY</span>
                 </div>
-                <div class="gym-tel-sub">Weekly Completion: 85% of Split Logged</div>
+                <div class="gym-tel-sub" id="gymTelSubText">WEEK COMPLETION: — OF SPLIT LOGGED</div>
               </div>
               <div class="gym-tel-stats">
                 <div class="gym-tel-stat">
                   <div class="hb-stat-label">TOTAL WEEKLY SETS</div>
                   <div style="display:flex;align-items:baseline;gap:8px">
-                    <div class="gym-tel-big">114</div>
-                    <div class="gym-tel-delta">+12%</div>
+                    <div class="gym-tel-big" id="gymTelWeeklySets">0</div>
+                    <div class="gym-tel-delta" id="gymTelDelta">—</div>
                   </div>
                 </div>
                 <div class="gym-tel-stat">
                   <div class="hb-stat-label">RECOVERY SCORE</div>
                   <div style="display:flex;align-items:baseline;gap:8px">
-                    <div class="gym-tel-big">88%</div>
-                    <div class="gym-tel-tag">OPTIMAL</div>
+                    <div class="gym-tel-big" id="gymTelRecovery">—</div>
+                    <div class="gym-tel-tag" id="gymTelRecoveryTag">NO DATA</div>
                   </div>
                 </div>
                 <div class="gym-tel-stat" style="flex:1">
                   <div class="hb-stat-label">PROGRESSION QUOTA</div>
-                  <div class="rw-agg-bar" style="margin-top:10px;width:100%"><div class="rw-agg-fill" style="width:78%"></div></div>
+                  <div class="rw-agg-bar" style="margin-top:10px;width:100%"><div class="rw-agg-fill" id="gymTelProgressBar" style="width:0%"></div></div>
                 </div>
               </div>
             </div>
@@ -4785,12 +4785,15 @@ html, body {
           
           <!-- Right: Session Logger panel -->
           <div class="gym-telemetry" style="padding: 20px; display:flex; flex-direction:column;">
-            <div class="gym-tel-head">
-              <div style="display:flex;align-items:center;gap:8px">
+            <div style="margin-bottom:14px;">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
                 <svg viewBox="0 0 24 24" width="14" height="14" stroke="var(--green)" fill="none" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="9" x2="15" y2="9"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/></svg>
                 <span class="gym-tel-title">WORKOUT SESSION LOGGER</span>
               </div>
-              <select class="form-select" id="loggerDaySelect" onchange="renderLoggerPanel()" style="width:130px; font-size:10px; padding:4px 8px; height:24px; border-radius:4px; margin-left:auto;"></select>
+              <div style="display:flex;align-items:center;gap:10px;">
+                <span style="font-size:9px;color:var(--text-muted);letter-spacing:1.5px;white-space:nowrap;">SELECT DAY</span>
+                <select class="form-select" id="loggerDaySelect" onchange="renderLoggerPanel()" style="flex:1; font-size:10px; padding:4px 8px; height:28px; border-radius:4px;"></select>
+              </div>
             </div>
             <div id="loggerExercisesContainer" style="flex:1; overflow-y:auto; max-height:220px; padding-right:4px;">
               <!-- Dynamically rendered inputs per exercise -->
@@ -5695,19 +5698,9 @@ html, body {
       <label class="form-label">Exercise Name</label>
       <input class="form-input" id="gexName" placeholder="e.g. INCLINE DB PRESS" />
     </div>
-    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
-      <div class="form-group">
-        <label class="form-label">Badge Type</label>
-        <select class="form-select" id="gexBadge">
-          <option value="COMPOUND_HEAVY">COMPOUND_HEAVY</option>
-          <option value="COMPOUND_AUX">COMPOUND_AUX</option>
-          <option value="ISOLATION">ISOLATION</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Icon / Emoji</label>
-        <input class="form-input" id="gexIcon" value="🏋" placeholder="Emoji icon" />
-      </div>
+    <div class="form-group">
+      <label class="form-label">Badge Type</label>
+      <input class="form-input" id="gexBadge" placeholder="e.g. COMPOUND_HEAVY" />
     </div>
     <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
       <div class="form-group">
@@ -5716,7 +5709,7 @@ html, body {
       </div>
       <div class="form-group">
         <label class="form-label">PR Date</label>
-        <input class="form-input" id="gexPRDate" placeholder="e.g. 27 MAY 2026" />
+        <input class="form-input" id="gexPRDate" placeholder="e.g. 07 JUN 2026" />
       </div>
     </div>
     <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
@@ -5727,20 +5720,6 @@ html, body {
       <div class="form-group">
         <label class="form-label">PR Reps</label>
         <input class="form-input" type="number" id="gexPRReps" value="0" />
-      </div>
-    </div>
-    <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:8px;">
-      <div class="form-group">
-        <label class="form-label">Target Act %</label>
-        <input class="form-input" type="number" id="gexActTarget" value="50" min="0" max="100" />
-      </div>
-      <div class="form-group">
-        <label class="form-label">Sec Act %</label>
-        <input class="form-input" type="number" id="gexActSecondary" value="30" min="0" max="100" />
-      </div>
-      <div class="form-group">
-        <label class="form-label">Syn Act %</label>
-        <input class="form-input" type="number" id="gexActSynergy" value="20" min="0" max="100" />
       </div>
     </div>
     <div class="modal-actions">
@@ -6617,66 +6596,7 @@ const defaultSplit = {
   ]
 };
 
-const initialLogs = [
-  {
-    date: '2026-05-04',
-    splitName: 'PUSH A',
-    exercises: [
-      { name: 'BENCH PRESS', sets: [{ weight: 95, reps: 10, orm: 126.7 }, { weight: 95, reps: 10, orm: 126.7 }, { weight: 100, reps: 8, orm: 126.7 }], sessionMax1RM: 126.7 },
-      { name: 'OHP PRESS', sets: [{ weight: 55, reps: 10, orm: 73.3 }, { weight: 60, reps: 8, orm: 76.0 }], sessionMax1RM: 76.0 },
-      { name: 'LATERAL RAISES', sets: [{ weight: 12.5, reps: 15, orm: 18.8 }], sessionMax1RM: 18.8 },
-      { name: 'TRICEP PUSH', sets: [{ weight: 30, reps: 12, orm: 42.0 }], sessionMax1RM: 42.0 }
-    ]
-  },
-  {
-    date: '2026-05-06',
-    splitName: 'LEGS A',
-    exercises: [
-      { name: 'SQUATS', sets: [{ weight: 100, reps: 8, orm: 126.7 }, { weight: 105, reps: 6, orm: 126.0 }], sessionMax1RM: 126.7 },
-      { name: 'LUNGES', sets: [{ weight: 20, reps: 12, orm: 28.0 }], sessionMax1RM: 28.0 },
-      { name: 'LEG CURLS', sets: [{ weight: 40, reps: 15, orm: 60.0 }], sessionMax1RM: 60.0 },
-      { name: 'CALF RAISES', sets: [{ weight: 50, reps: 20, orm: 83.3 }], sessionMax1RM: 83.3 }
-    ]
-  },
-  {
-    date: '2026-05-11',
-    splitName: 'PUSH A',
-    exercises: [
-      { name: 'BENCH PRESS', sets: [{ weight: 100, reps: 8, orm: 126.7 }, { weight: 102.5, reps: 8, orm: 129.8 }], sessionMax1RM: 129.8 },
-      { name: 'OHP PRESS', sets: [{ weight: 60, reps: 8, orm: 76.0 }, { weight: 62.5, reps: 8, orm: 79.2 }], sessionMax1RM: 79.2 }
-    ]
-  },
-  {
-    date: '2026-05-13',
-    splitName: 'LEGS A',
-    exercises: [
-      { name: 'SQUATS', sets: [{ weight: 105, reps: 8, orm: 133.0 }], sessionMax1RM: 133.0 }
-    ]
-  },
-  {
-    date: '2026-05-18',
-    splitName: 'PUSH A',
-    exercises: [
-      { name: 'BENCH PRESS', sets: [{ weight: 102.5, reps: 8, orm: 129.8 }, { weight: 105, reps: 8, orm: 133.0 }], sessionMax1RM: 133.0 },
-      { name: 'OHP PRESS', sets: [{ weight: 62.5, reps: 8, orm: 79.2 }, { weight: 65, reps: 8, orm: 82.3 }], sessionMax1RM: 82.3 }
-    ]
-  },
-  {
-    date: '2026-05-20',
-    splitName: 'LEGS A',
-    exercises: [
-      { name: 'SQUATS', sets: [{ weight: 110, reps: 8, orm: 139.3 }], sessionMax1RM: 139.3 }
-    ]
-  },
-  {
-    date: '2026-05-25',
-    splitName: 'PUSH A',
-    exercises: [
-      { name: 'BENCH PRESS', sets: [{ weight: 105, reps: 8, orm: 133.0 }, { weight: 107.5, reps: 8, orm: 136.2 }], sessionMax1RM: 136.2 },
-      { name: 'OHP PRESS', sets: [{ weight: 65, reps: 8, orm: 82.3 }, { weight: 67.5, reps: 8, orm: 85.5 }], sessionMax1RM: 85.5 }
-    ]
-  }
-];
+const initialLogs = [];
 
 let muscleGroups = JSON.parse(localStorage.getItem('gymMuscleGroups') || JSON.stringify([
   { name:'CHEST',     growth:'+2%',  muscles:'Upper, Middle and Lower Chest',         id:'001', bars:[30,42,35,50,45,60,55,70,65,80] },
@@ -6690,54 +6610,29 @@ let muscleGroups = JSON.parse(localStorage.getItem('gymMuscleGroups') || JSON.st
 ]));
 
 let exerciseRegistry = JSON.parse(localStorage.getItem('gymExerciseRegistry') || JSON.stringify({
-  CHEST: {
-    exercises: [
-      { name:'BENCH PRESS', badge:'COMPOUND_HEAVY', icon:'🏋', pr:'115.0', orm:'122.5', prDate:'23 OCT 2023', delta:'+2.5% VS PREV', target:'MID-PECS', bars:[40,50,45,60,55,72,65,80], segs:[45,35,20] },
-      { name:'DB INCLINE', badge:'COMPOUND_AUX',   icon:'📈', pr:'40.0',  orm:'44.0',  prDate:'12 NOV 2023', delta:'+1.0% VS PREV', target:'UPPER-PECS', bars:[30,40,38,50,48,60,58,70], segs:[55,30,15] },
-      { name:'CABLE FLYES',      badge:'ISOLATION',      icon:'⚙',  pr:'18.0',  orm:'20.5',  prDate:'05 NOV 2023', delta:'STABLE',         target:'INNER-PECS', bars:[35,38,40,42,44,45,46,48], segs:[30,50,20] }
-    ]
-  },
-  BACK:      { exercises:[
-    { name:'DEADLIFT',   badge:'COMPOUND_HEAVY', icon:'🏋', pr:'140.0', orm:'155.0', prDate:'20 NOV 2023', delta:'+3.0% VS PREV', target:'LATS',    bars:[50,55,60,65,70,75,80,90], segs:[50,35,15] },
-    { name:'PULL UPS',   badge:'ISOLATION',      icon:'💪', pr:'0.0',   orm:'0.0',   prDate:'—',           delta:'NEW ENTRY',        target:'LATS',    bars:[10,10,10,10,10,10,10,10], segs:[60,25,15] },
-    { name:'SEATED ROW', badge:'COMPOUND_AUX',   icon:'⚙',  pr:'60.0',  orm:'68.0',  prDate:'14 NOV 2023', delta:'STABLE',           target:'MID-BACK',bars:[30,35,38,42,45,50,55,60], segs:[50,35,15] },
-    { name:'BB ROWS',    badge:'COMPOUND_AUX',   icon:'🏋', pr:'80.0',  orm:'90.0',  prDate:'10 NOV 2023', delta:'+2.0% VS PREV',    target:'MID-BACK',bars:[35,40,42,48,50,56,60,68], segs:[45,40,15] },
-    { name:'LAT PULLS',  badge:'ISOLATION',      icon:'💪', pr:'70.0',  orm:'78.0',  prDate:'18 NOV 2023', delta:'STABLE',           target:'LATS',    bars:[28,32,35,38,42,45,48,52], segs:[65,25,10] }
-  ] },
-  LEGS:      { exercises:[
-    { name:'SQUATS',      badge:'COMPOUND_HEAVY', icon:'🏋', pr:'120.0', orm:'132.0', prDate:'18 NOV 2023', delta:'+1.5% VS PREV', target:'QUADS',   bars:[45,50,52,58,60,65,70,78], segs:[60,30,10] },
-    { name:'LUNGES',      badge:'COMPOUND_AUX',   icon:'🦵', pr:'24.0',  orm:'28.0',  prDate:'12 NOV 2023', delta:'STABLE',           target:'QUADS',   bars:[15,20,22,30,28,40,42,55], segs:[50,30,20] },
-    { name:'LEG CURLS',   badge:'ISOLATION',      icon:'⚙',  pr:'45.0',  orm:'52.0',  prDate:'15 NOV 2023', delta:'STABLE',           target:'HAMSTRINGS',bars:[25,32,35,45,42,55,52,62], segs:[35,35,30] },
-    { name:'CALF RAISES', badge:'ISOLATION',      icon:'🦵', pr:'60.0',  orm:'70.0',  prDate:'16 NOV 2023', delta:'+5.0% VS PREV',    target:'CALVES',  bars:[35,35,40,38,45,42,50,48], segs:[70,20,10] }
-  ] },
-  SHOULDERS: { exercises:[
-    { name:'OHP PRESS',    badge:'COMPOUND_HEAVY', icon:'🏋', pr:'72.5',  orm:'80.0',  prDate:'15 NOV 2023', delta:'+2.0% VS PREV', target:'DELTS',   bars:[30,35,38,42,45,50,55,62], segs:[50,35,15] },
-    { name:'ARNOLD PRESS', badge:'COMPOUND_AUX',   icon:'📈', pr:'30.0',  orm:'34.0',  prDate:'17 NOV 2023', delta:'STABLE',           target:'DELTS',   bars:[20,25,28,32,36,40,48,58], segs:[55,30,15] },
-    { name:'LATERAL RAISES',badge:'ISOLATION',     icon:'💪', pr:'15.0',  orm:'18.0',  prDate:'19 NOV 2023', delta:'+1.0% VS PREV',    target:'LAT-DELTS',bars:[25,30,28,40,38,50,48,60], segs:[60,25,15] },
-    { name:'FACE PULLS',   badge:'ISOLATION',      icon:'⚙',  pr:'20.0',  orm:'22.0',  prDate:'22 NOV 2023', delta:'STABLE',           target:'POST-DELTS',bars:[15,20,22,30,28,40,42,55], segs:[50,30,20] }
-  ] },
-  BICEPS:    { exercises:[{ name:'HAMMER CURL',badge:'ISOLATION',     icon:'💪', pr:'25.0',  orm:'28.0',  prDate:'17 NOV 2023', delta:'+1.0% VS PREV', target:'BRACHII', bars:[28,32,35,38,42,45,48,52], segs:[60,25,15] }] },
-  TRICEPS:   { exercises:[
-    { name:'TRICEP PUSH',  badge:'ISOLATION',      icon:'⚙',  pr:'35.0',  orm:'40.0',  prDate:'16 NOV 2023', delta:'+2.5% VS PREV', target:'TRICEPS',  bars:[35,40,42,48,50,56,60,68], segs:[45,40,15] },
-    { name:'DIPS',         badge:'COMPOUND_AUX',   icon:'💪', pr:'0.0',   orm:'0.0',   prDate:'—',           delta:'NEW ENTRY',        target:'TRICEPS',  bars:[10,10,10,10,10,10,10,10], segs:[50,30,20] }
-  ] },
-  ABS:       { exercises:[{ name:'CABLE CRUNCH',badge:'ISOLATION',     icon:'⚙', pr:'60.0',  orm:'65.0',     prDate:'14 NOV 2023', delta:'STABLE',         target:'RECTUS',  bars:[40,42,44,44,46,46,48,50], segs:[70,20,10] }] },
-  FOREARMS:  { exercises:[{ name:'WRIST CURL', badge:'ISOLATION',      icon:'💪', pr:'25.0',  orm:'27.0',  prDate:'13 NOV 2023', delta:'+5.0% VS PREV', target:'BRACHIO', bars:[20,25,28,32,36,40,48,58], segs:[65,25,10] }] }
+  CHEST:     { exercises: [] },
+  BACK:      { exercises: [] },
+  LEGS:      { exercises: [] },
+  SHOULDERS: { exercises: [] },
+  BICEPS:    { exercises: [] },
+  TRICEPS:   { exercises: [] },
+  ABS:       { exercises: [] },
+  FOREARMS:  { exercises: [] }
 }));
 
 let activeGymGroup = 'CHEST';
-let logDiaryShown = 10; // pagination: shown entries in log diary
+let logDiaryShown = 4; // pagination: shown entries in log diary
 
 function initGymData() {
   // Database version checker
   const dbVer = localStorage.getItem('gymDBVersion');
-  if (dbVer !== '2.6') {
-    // Wipe old keys and re-seed with sample data
+  if (dbVer !== '3.0') {
+    // Wipe old keys on version bump — user starts with a clean slate
     localStorage.removeItem('gymSplitData');
     localStorage.removeItem('gymExerciseRegistry');
     localStorage.removeItem('gymLogs');
     localStorage.removeItem('gymMuscleGroups');
-    localStorage.setItem('gymDBVersion', '2.6');
+    localStorage.setItem('gymDBVersion', '3.0');
   }
 
   if (!localStorage.getItem('gymSplitData')) {
@@ -6768,6 +6663,7 @@ function initGym() {
   initGymData();
   renderWeeklySplit();
   renderLogDiary();
+  updateVolumeTelemetry();
   buildMuscleGrid();
 }
 
@@ -6782,6 +6678,7 @@ function gymTab(el, tab) {
   if (tab === 'split') {
     renderWeeklySplit();
     renderLogDiary();
+    updateVolumeTelemetry();
   } else if (tab === 'muscle') {
     buildMuscleGrid();
   } else if (tab === 'log') {
@@ -6884,8 +6781,7 @@ function editExerciseNode(mg, idx) {
     title: `EDIT EXERCISE: ${ex.name}`,
     fields: [
       { id: 'name', label: 'Exercise Name', type: 'text', value: ex.name },
-      { id: 'badge', label: 'Badge (e.g. COMPOUND_HEAVY)', type: 'text', value: ex.badge },
-      { id: 'icon', label: 'Icon Symbol', type: 'text', value: ex.icon },
+      { id: 'badge', label: 'Badge Type', type: 'text', value: ex.badge },
       { id: 'pr', label: 'Personal Record (PR)', type: 'text', value: ex.pr },
       { id: 'orm', label: '1 Rep Max (1RM)', type: 'text', value: ex.orm },
       { id: 'target', label: 'Target Muscle Part', type: 'text', value: ex.target }
@@ -6895,7 +6791,6 @@ function editExerciseNode(mg, idx) {
       if (!name) return;
       ex.name = name.toUpperCase();
       ex.badge = data.badge.trim() || 'COMPOUND_HEAVY';
-      ex.icon = data.icon.trim() || '🏋';
       ex.pr = data.pr.trim() || '0.0';
       ex.orm = data.orm.trim() || '0.0';
       ex.target = data.target.trim() || 'TARGET';
@@ -6936,7 +6831,7 @@ function gymShowRegistry(name, id) {
       <div class="gym-ex-card" onclick="editExerciseNode('${name}', ${idx})" style="cursor:pointer;" title="Click to edit or delete exercise">
         <div class="gym-ex-card-head">
           <span class="gym-ex-badge">${ex.badge}</span>
-          <span class="gym-ex-card-icon">${ex.icon} <span style="font-size:9px;color:var(--text-muted);opacity:0.6;">✎</span></span>
+          <span style="font-size:9px;color:var(--text-muted);opacity:0.6;">✎ EDIT</span>
         </div>
         <div class="gym-ex-title">${ex.name}</div>
         <div class="gym-ex-metrics">
@@ -7594,6 +7489,7 @@ function commitWorkoutLog() {
     initGymData();
     initGymChart();
     renderLogDiary();
+    updateVolumeTelemetry();
     renderLoggerPanel();
     buildMuscleGrid();
     gymShowToast(`SESSION LOGGED — ${d.title} recorded at UTC ${new Date().toISOString().substring(11,19)}`);
@@ -7618,12 +7514,88 @@ function commitWorkoutLog() {
 }
 
 function loadMoreLogDiary() {
-  logDiaryShown += 10;
+  logDiaryShown += 4;
   renderLogDiary(false);
 }
 
+async function updateVolumeTelemetry() {
+  // Get all gym logs
+  let logs = JSON.parse(localStorage.getItem('gymLogs') || '[]');
+  if (!Array.isArray(logs)) logs = [];
+
+  // Compute current week's Monday
+  const now = new Date();
+  const dow = now.getDay(); // 0=Sun
+  const msSinceMon = (dow === 0 ? 6 : dow - 1) * 86400000;
+  const weekStart = new Date(now.getTime() - msSinceMon);
+  weekStart.setHours(0, 0, 0, 0);
+
+  const prevWeekStart = new Date(weekStart.getTime() - 7 * 86400000);
+
+  const thisWeekLogs = logs.filter(l => new Date(l.date) >= weekStart);
+  const prevWeekLogs = logs.filter(l => {
+    const d = new Date(l.date);
+    return d >= prevWeekStart && d < weekStart;
+  });
+
+  // Count total sets
+  const countSets = arr => arr.reduce((acc, l) =>
+    acc + l.exercises.reduce((a, ex) => a + (ex.sets || []).length, 0), 0);
+  const thisSets = countSets(thisWeekLogs);
+  const prevSets = countSets(prevWeekLogs);
+
+  // Delta string
+  let deltaStr = 'NEW';
+  if (prevSets > 0) {
+    const pct = Math.round(((thisSets - prevSets) / prevSets) * 100);
+    deltaStr = (pct >= 0 ? '+' : '') + pct + '%';
+  } else if (thisSets === 0) {
+    deltaStr = '—';
+  }
+
+  // Progression quota vs split workout days this week
+  const splitData = JSON.parse(localStorage.getItem('gymSplitData') || 'null');
+  const splitDays = splitData?.days || [];
+  const workoutDayCount = splitDays.filter(d => !d.rest).length;
+  const quotaPct = workoutDayCount > 0
+    ? Math.min(100, Math.round((thisWeekLogs.length / workoutDayCount) * 100))
+    : 0;
+
+  // Recovery score: heuristic — penalise consecutive sessions, reward rest days
+  let recoveryScore = 100;
+  if (thisWeekLogs.length > 1) {
+    const sorted = [...thisWeekLogs].sort((a, b) => new Date(a.date) - new Date(b.date));
+    let gaps = [];
+    for (let i = 1; i < sorted.length; i++) {
+      gaps.push((new Date(sorted[i].date) - new Date(sorted[i - 1].date)) / 86400000);
+    }
+    const avgGap = gaps.reduce((a, g) => a + g, 0) / gaps.length;
+    recoveryScore = Math.min(100, Math.max(0, Math.round(50 + avgGap * 25)));
+  } else if (thisWeekLogs.length === 0) {
+    recoveryScore = 100;
+  } else {
+    recoveryScore = 85;
+  }
+  const recoveryTag = recoveryScore >= 80 ? 'OPTIMAL' : recoveryScore >= 60 ? 'FAIR' : 'LOW';
+
+  // Update DOM
+  const q = id => document.getElementById(id);
+  if (q('gymTelWeeklySets')) q('gymTelWeeklySets').textContent = thisSets;
+  if (q('gymTelDelta'))      q('gymTelDelta').textContent = deltaStr;
+  if (q('gymTelRecovery'))   q('gymTelRecovery').textContent = thisSets === 0 ? '—' : recoveryScore + '%';
+  if (q('gymTelRecoveryTag')) {
+    q('gymTelRecoveryTag').textContent = thisSets === 0 ? 'NO DATA' : recoveryTag;
+  }
+  if (q('gymTelProgressBar')) q('gymTelProgressBar').style.width = quotaPct + '%';
+  if (q('gymTelSubText')) {
+    q('gymTelSubText').textContent = workoutDayCount > 0
+      ? `WEEK COMPLETION: ${quotaPct}% OF SPLIT LOGGED (${thisWeekLogs.length}/${workoutDayCount} DAYS)`
+      : 'WEEK COMPLETION: SET UP A SPLIT TO TRACK QUOTA';
+  }
+}
+
 async function renderLogDiary(reset = true) {
-  if (reset) logDiaryShown = 10;
+  if (reset) logDiaryShown = 4;
   initGymData();
   const isDemo = sessionStorage.getItem('gridMode') === 'demo';
   let logs = JSON.parse(localStorage.getItem('gymLogs') || '[]');
@@ -7693,7 +7665,7 @@ async function renderLogDiary(reset = true) {
       <button onclick="loadMoreLogDiary()" style="width:100%;margin-top:4px;padding:9px;background:rgba(255,255,255,0.02);border:1px solid var(--card-border);border-radius:4px;font-family:'Space Mono',monospace;font-size:9px;letter-spacing:1.5px;color:var(--text-muted);cursor:pointer;transition:color .2s,border-color .2s;"
         onmouseover="this.style.color='var(--green)';this.style.borderColor='rgba(118,179,114,0.3)'"
         onmouseout="this.style.color='var(--text-muted)';this.style.borderColor='var(--card-border)'">
-        LOAD 10 MORE &nbsp;·&nbsp; ${remaining} SESSION${remaining !== 1 ? 'S' : ''} REMAINING
+        LOAD MORE &nbsp;·&nbsp; ${remaining} SESSION${remaining !== 1 ? 'S' : ''} REMAINING
       </button>`;
   }
 }
@@ -7701,34 +7673,26 @@ async function renderLogDiary(reset = true) {
 // ── CUSTOM EXERCISE REGISTRY MODAL HANDLERS ──────────
 function gymOpenAddExerciseModal() {
   document.getElementById('gexName').value = '';
-  document.getElementById('gexBadge').value = 'COMPOUND_HEAVY';
-  document.getElementById('gexIcon').value = '🏋';
+  document.getElementById('gexBadge').value = '';
   document.getElementById('gexTarget').value = activeGymGroup;
-  
+
   const todayDate = new Date().toLocaleDateString('en-GB', {day:'2-digit',month:'short',year:'numeric'}).toUpperCase();
   document.getElementById('gexPRDate').value = todayDate;
-  
+
   document.getElementById('gexPRWeight').value = '0.0';
   document.getElementById('gexPRReps').value = '0';
-  document.getElementById('gexActTarget').value = '50';
-  document.getElementById('gexActSecondary').value = '30';
-  document.getElementById('gexActSynergy').value = '20';
-  
+
   document.getElementById('gymExerciseModal').classList.add('open');
 }
 
 function saveExerciseModal() {
   const name = document.getElementById('gexName').value.trim().toUpperCase();
-  const badge = document.getElementById('gexBadge').value;
-  const icon = document.getElementById('gexIcon').value.trim();
+  const badge = document.getElementById('gexBadge').value.trim().toUpperCase() || 'COMPOUND_HEAVY';
   const target = document.getElementById('gexTarget').value.trim().toUpperCase();
   const prDate = document.getElementById('gexPRDate').value.trim().toUpperCase();
-  
+
   const prWt = parseFloat(document.getElementById('gexPRWeight').value) || 0.0;
   const prReps = parseInt(document.getElementById('gexPRReps').value) || 0;
-  const targetAct = parseInt(document.getElementById('gexActTarget').value) || 50;
-  const secAct = parseInt(document.getElementById('gexActSecondary').value) || 30;
-  const synAct = parseInt(document.getElementById('gexActSynergy').value) || 20;
 
   if (!name) {
     alert("Please enter a valid exercise name.");
@@ -7744,14 +7708,13 @@ function saveExerciseModal() {
   reg[activeGymGroup].exercises.push({
     name: name,
     badge: badge,
-    icon: icon || '🏋',
     pr: prWt.toFixed(1),
     orm: calculatedORM.toFixed(1),
     prDate: prDate || new Date().toLocaleDateString('en-GB', {day:'2-digit',month:'short',year:'numeric'}).toUpperCase(),
     delta: "NEW ENTRY",
     target: target || activeGymGroup,
-    bars: [10, 10, 10, 10, 10, 10, Math.round(calculatedORM || 10), Math.round(calculatedORM || 10)],
-    segs: [targetAct, secAct, synAct]
+    bars: [0, 0, 0, 0, 0, 0, Math.round(calculatedORM || 0), Math.round(calculatedORM || 0)],
+    segs: [50, 30, 20]
   });
 
   localStorage.setItem('gymExerciseRegistry', JSON.stringify(reg));
