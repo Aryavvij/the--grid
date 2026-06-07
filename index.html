@@ -4645,7 +4645,7 @@ html, body {
           </div>
           <div class="gym-recal">
             <div class="gym-recal-label">NEXT RECALIBRATION</div>
-            <div class="gym-recal-timer">T-MINUS 04D : 12H</div>
+            <div class="gym-recal-timer" id="gymRecalTimer">—</div>
           </div>
         </div>
 
@@ -5690,10 +5690,10 @@ html, body {
   </div>
 </div>
 
-<!-- ══ REGISTER EXERCISE MODAL ══════════════════════ -->
+<!-- ══ REGISTER / EDIT EXERCISE MODAL ═══════════════ -->
 <div class="modal-overlay" id="gymExerciseModal">
   <div class="modal" style="width: 440px;">
-    <div class="modal-title">REGISTER EXERCISE NODE</div>
+    <div class="modal-title" id="gymExerciseModalTitle">REGISTER EXERCISE NODE</div>
     <div class="form-group">
       <label class="form-label">Exercise Name</label>
       <input class="form-input" id="gexName" placeholder="e.g. INCLINE DB PRESS" />
@@ -5723,6 +5723,7 @@ html, body {
       </div>
     </div>
     <div class="modal-actions">
+      <button id="gexDeleteBtn" class="btn-cancel" onclick="deleteExerciseFromModal()" style="display:none; background:rgba(239,68,68,0.1); border-color:rgba(239,68,68,0.3); color:var(--red); margin-right:auto;">DELETE</button>
       <button class="btn-cancel" onclick="document.getElementById('gymExerciseModal').classList.remove('open')">CANCEL</button>
       <button class="btn-save" onclick="saveExerciseModal()" style="background:var(--green-dim); border-color:var(--green); color:var(--green);">SAVE NODE</button>
     </div>
@@ -6626,13 +6627,10 @@ let logDiaryShown = 4; // pagination: shown entries in log diary
 function initGymData() {
   // Database version checker
   const dbVer = localStorage.getItem('gymDBVersion');
-  if (dbVer !== '3.0') {
-    // Wipe old keys on version bump — user starts with a clean slate
-    localStorage.removeItem('gymSplitData');
+  if (dbVer !== '3.1') {
+    // Only wipe exercise registry — never touch user's split or muscle groups
     localStorage.removeItem('gymExerciseRegistry');
-    localStorage.removeItem('gymLogs');
-    localStorage.removeItem('gymMuscleGroups');
-    localStorage.setItem('gymDBVersion', '3.0');
+    localStorage.setItem('gymDBVersion', '3.1');
   }
 
   if (!localStorage.getItem('gymSplitData')) {
@@ -6665,6 +6663,8 @@ function initGym() {
   renderLogDiary();
   updateVolumeTelemetry();
   buildMuscleGrid();
+  updateRecalTimer();
+  setInterval(updateRecalTimer, 60000); // tick every minute
 }
 
 function gymTab(el, tab) {
@@ -6773,36 +6773,37 @@ function editMuscleGroupNode(event, idx) {
   });
 }
 
+let gexEditMode = false;
+let gexEditMg = '';
+let gexEditIdx = -1;
+
 function editExerciseNode(mg, idx) {
   const reg = JSON.parse(localStorage.getItem('gymExerciseRegistry')) || exerciseRegistry;
   const ex = reg[mg].exercises[idx];
-  
-  showUniversalModal({
-    title: `EDIT EXERCISE: ${ex.name}`,
-    fields: [
-      { id: 'name', label: 'Exercise Name', type: 'text', value: ex.name },
-      { id: 'badge', label: 'Badge Type', type: 'text', value: ex.badge },
-      { id: 'pr', label: 'Personal Record (PR)', type: 'text', value: ex.pr },
-      { id: 'orm', label: '1 Rep Max (1RM)', type: 'text', value: ex.orm },
-      { id: 'target', label: 'Target Muscle Part', type: 'text', value: ex.target }
-    ],
-    onSave: (data) => {
-      const name = data.name.trim();
-      if (!name) return;
-      ex.name = name.toUpperCase();
-      ex.badge = data.badge.trim() || 'COMPOUND_HEAVY';
-      ex.pr = data.pr.trim() || '0.0';
-      ex.orm = data.orm.trim() || '0.0';
-      ex.target = data.target.trim() || 'TARGET';
-      localStorage.setItem('gymExerciseRegistry', JSON.stringify(reg));
-      gymShowRegistry(mg, (JSON.parse(localStorage.getItem('gymMuscleGroups')) || muscleGroups).find(m => m.name === mg)?.id || '000');
-    },
-    onDelete: () => {
-      reg[mg].exercises.splice(idx, 1);
-      localStorage.setItem('gymExerciseRegistry', JSON.stringify(reg));
-      gymShowRegistry(mg, (JSON.parse(localStorage.getItem('gymMuscleGroups')) || muscleGroups).find(m => m.name === mg)?.id || '000');
-    }
-  });
+
+  gexEditMode = true;
+  gexEditMg = mg;
+  gexEditIdx = idx;
+
+  document.getElementById('gymExerciseModalTitle').textContent = `EDIT EXERCISE: ${ex.name}`;
+  document.getElementById('gexName').value = ex.name;
+  document.getElementById('gexBadge').value = ex.badge || '';
+  document.getElementById('gexTarget').value = ex.target || mg;
+  document.getElementById('gexPRDate').value = ex.prDate || '';
+  document.getElementById('gexPRWeight').value = parseFloat(ex.pr) || 0;
+  document.getElementById('gexPRReps').value = 0; // reps not stored; user can update
+  document.getElementById('gexDeleteBtn').style.display = 'block';
+
+  document.getElementById('gymExerciseModal').classList.add('open');
+}
+
+function deleteExerciseFromModal() {
+  if (!gexEditMode) return;
+  const reg = JSON.parse(localStorage.getItem('gymExerciseRegistry')) || exerciseRegistry;
+  reg[gexEditMg].exercises.splice(gexEditIdx, 1);
+  localStorage.setItem('gymExerciseRegistry', JSON.stringify(reg));
+  document.getElementById('gymExerciseModal').classList.remove('open');
+  gymShowRegistry(gexEditMg, (JSON.parse(localStorage.getItem('gymMuscleGroups')) || muscleGroups).find(m => m.name === gexEditMg)?.id || '000');
 }
 
 function gymShowRegistry(name, id) {
@@ -7025,6 +7026,26 @@ function saveSplitModal() {
   }
 }
 
+function updateRecalTimer() {
+  const el = document.getElementById('gymRecalTimer');
+  if (!el) return;
+  const now = new Date();
+  // Next Monday 00:00 local time
+  const nextMonday = new Date(now);
+  const dow = now.getDay(); // 0=Sun
+  nextMonday.setDate(now.getDate() + (dow === 0 ? 1 : 8 - dow));
+  nextMonday.setHours(0, 0, 0, 0);
+  const msLeft = nextMonday - now;
+  if (msLeft <= 0) { el.textContent = 'RECALIBRATING...'; return; }
+  const totalMins = Math.floor(msLeft / 60000);
+  const days  = Math.floor(totalMins / 1440);
+  const hours = Math.floor((totalMins % 1440) / 60);
+  const mins  = totalMins % 60;
+  el.textContent = days > 0
+    ? `T-MINUS ${String(days).padStart(2,'0')}D : ${String(hours).padStart(2,'0')}H`
+    : `T-MINUS ${String(hours).padStart(2,'0')}H : ${String(mins).padStart(2,'0')}M`;
+}
+
 function renderWeeklySplit() {
   initGymData();
   const split = JSON.parse(localStorage.getItem('gymSplitData'));
@@ -7064,14 +7085,9 @@ function renderWeeklySplit() {
       <div class="${colClass}">
         <div class="gym-day-head">
           <div class="gym-day-name">${d.day}</div>
-          <div class="gym-day-icon">${d.icon || '⚡'}</div>
         </div>
         <div class="gym-session-name">${d.title}</div>
         ${exercisesHTML}
-        <div class="gym-day-foot">
-          <span class="gym-status-badge ${d.status}">${d.status}</span>
-          <span class="gym-duration">${d.duration}</span>
-        </div>
       </div>`;
   }).join('');
 }
@@ -7672,6 +7688,12 @@ async function renderLogDiary(reset = true) {
 
 // ── CUSTOM EXERCISE REGISTRY MODAL HANDLERS ──────────
 function gymOpenAddExerciseModal() {
+  gexEditMode = false;
+  gexEditMg = '';
+  gexEditIdx = -1;
+
+  document.getElementById('gymExerciseModalTitle').textContent = 'REGISTER EXERCISE NODE';
+  document.getElementById('gexDeleteBtn').style.display = 'none';
   document.getElementById('gexName').value = '';
   document.getElementById('gexBadge').value = '';
   document.getElementById('gexTarget').value = activeGymGroup;
@@ -7686,41 +7708,67 @@ function gymOpenAddExerciseModal() {
 }
 
 function saveExerciseModal() {
-  const name = document.getElementById('gexName').value.trim().toUpperCase();
-  const badge = document.getElementById('gexBadge').value.trim().toUpperCase() || 'COMPOUND_HEAVY';
-  const target = document.getElementById('gexTarget').value.trim().toUpperCase();
-  const prDate = document.getElementById('gexPRDate').value.trim().toUpperCase();
+  const name    = document.getElementById('gexName').value.trim().toUpperCase();
+  const badge   = document.getElementById('gexBadge').value.trim().toUpperCase() || 'COMPOUND_HEAVY';
+  const target  = document.getElementById('gexTarget').value.trim().toUpperCase();
+  const prDate  = document.getElementById('gexPRDate').value.trim().toUpperCase();
+  const prWt    = parseFloat(document.getElementById('gexPRWeight').value) || 0.0;
+  const prReps  = parseInt(document.getElementById('gexPRReps').value) || 0;
 
-  const prWt = parseFloat(document.getElementById('gexPRWeight').value) || 0.0;
-  const prReps = parseInt(document.getElementById('gexPRReps').value) || 0;
+  if (!name) { alert("Please enter a valid exercise name."); return; }
 
-  if (!name) {
-    alert("Please enter a valid exercise name.");
-    return;
-  }
-
-  // Epley 1RM math: wt * (1 + reps/30)
-  const calculatedORM = parseFloat((prWt * (1 + prReps / 30)).toFixed(1));
+  // Epley 1RM: wt * (1 + reps/30). If reps=0, use existing ORM or prWt.
+  const calculatedORM = prReps > 0
+    ? parseFloat((prWt * (1 + prReps / 30)).toFixed(1))
+    : prWt;
 
   const reg = JSON.parse(localStorage.getItem('gymExerciseRegistry')) || exerciseRegistry;
-  if (!reg[activeGymGroup]) reg[activeGymGroup] = { exercises:[] };
+  const todayStr = new Date().toLocaleDateString('en-GB', {day:'2-digit',month:'short',year:'numeric'}).toUpperCase();
 
-  reg[activeGymGroup].exercises.push({
-    name: name,
-    badge: badge,
-    pr: prWt.toFixed(1),
-    orm: calculatedORM.toFixed(1),
-    prDate: prDate || new Date().toLocaleDateString('en-GB', {day:'2-digit',month:'short',year:'numeric'}).toUpperCase(),
-    delta: "NEW ENTRY",
-    target: target || activeGymGroup,
-    bars: [0, 0, 0, 0, 0, 0, Math.round(calculatedORM || 0), Math.round(calculatedORM || 0)],
-    segs: [50, 30, 20]
-  });
+  if (gexEditMode && gexEditIdx >= 0) {
+    // ── EDIT MODE: update in place ───────────────────
+    const mg = gexEditMg;
+    if (!reg[mg]) reg[mg] = { exercises: [] };
+    const ex = reg[mg].exercises[gexEditIdx];
+    if (!ex) return;
 
-  localStorage.setItem('gymExerciseRegistry', JSON.stringify(reg));
-  initGymData();
-  gymShowRegistry(activeGymGroup, muscleGroups.find(m => m.name === activeGymGroup)?.id || '000');
-  
+    const prevORM = parseFloat(ex.orm) || 0;
+    ex.name   = name;
+    ex.badge  = badge;
+    ex.target = target || mg;
+    ex.prDate = prDate || todayStr;
+    ex.pr     = prWt.toFixed(1);
+    ex.orm    = calculatedORM.toFixed(1);
+    if (calculatedORM > prevORM && prevORM > 0) {
+      ex.delta = `+${((calculatedORM - prevORM) / prevORM * 100).toFixed(1)}% VS PREV`;
+      ex.bars.shift(); ex.bars.push(Math.round(calculatedORM));
+    } else if (prevORM === 0) {
+      ex.delta = 'NEW ENTRY';
+      ex.bars = [0,0,0,0,0,0, Math.round(calculatedORM), Math.round(calculatedORM)];
+    }
+
+    localStorage.setItem('gymExerciseRegistry', JSON.stringify(reg));
+    initGymData();
+    gymShowRegistry(mg, (JSON.parse(localStorage.getItem('gymMuscleGroups')) || muscleGroups).find(m => m.name === mg)?.id || '000');
+  } else {
+    // ── ADD MODE: push new exercise ──────────────────
+    if (!reg[activeGymGroup]) reg[activeGymGroup] = { exercises: [] };
+    reg[activeGymGroup].exercises.push({
+      name:   name,
+      badge:  badge,
+      pr:     prWt.toFixed(1),
+      orm:    calculatedORM.toFixed(1),
+      prDate: prDate || todayStr,
+      delta:  'NEW ENTRY',
+      target: target || activeGymGroup,
+      bars:   [0,0,0,0,0,0, Math.round(calculatedORM || 0), Math.round(calculatedORM || 0)],
+      segs:   [50, 30, 20]
+    });
+    localStorage.setItem('gymExerciseRegistry', JSON.stringify(reg));
+    initGymData();
+    gymShowRegistry(activeGymGroup, muscleGroups.find(m => m.name === activeGymGroup)?.id || '000');
+  }
+
   document.getElementById('gymExerciseModal').classList.remove('open');
 }
 
