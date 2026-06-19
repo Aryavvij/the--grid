@@ -1,13 +1,27 @@
 require('dotenv').config();
 const express      = require('express');
 const cors         = require('cors');
+const helmet       = require('helmet');
 const cookieParser = require('cookie-parser');
 const passport     = require('passport');
+const { globalLimiter } = require('./middleware/security');
 
 const app = express();
 
+// Behind Vercel / Railway proxies — trust the first hop so req.ip reflects the
+// real client (required for correct rate limiting). '1' (not true) avoids the
+// permissive-trust-proxy footgun where X-Forwarded-For could be spoofed.
+app.set('trust proxy', 1);
+
 // ─── Passport config ──────────────────────────────────────────────────────────
 require('./lib/passport');
+
+// ─── Security headers ─────────────────────────────────────────────────────────
+// CORP set to cross-origin: this is a JSON API consumed by a frontend on a
+// different origin; same-origin (helmet's default) would be needlessly strict.
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: 'cross-origin' },
+}));
 
 // ─── Middleware ───────────────────────────────────────────────────────────────
 // Allow multiple origins — comma-separated FRONTEND_URL env var
@@ -24,10 +38,15 @@ app.use(cors({
   },
   credentials: true,
 }));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// Body size caps — block oversized-payload DoS (1mb is well above any text payload).
+app.use(express.json({ limit: '1mb' }));
+app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 app.use(cookieParser());
 app.use(passport.initialize());
+
+// Global rate limit — applied to every route below. At 300/15min the Railway
+// /health probe (~2/min) sits far under the cap, so monitoring is unaffected.
+app.use(globalLimiter);
 
 // ─── Routes ───────────────────────────────────────────────────────────────────
 app.use('/api/auth',     require('./routes/auth'));

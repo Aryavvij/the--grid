@@ -4,6 +4,8 @@ const passport = require('passport');
 const db       = require('../lib/db');
 const { signToken, setTokenCookie, clearTokenCookie } = require('../lib/jwt');
 const { requireAuth } = require('../middleware/auth');
+const { authLimiter } = require('../middleware/security');
+const { validate, registerSchema, loginSchema } = require('../middleware/validate');
 
 const router = express.Router();
 
@@ -23,16 +25,10 @@ function issueTokenAndRespond(res, user) {
 
 // ─── POST /api/auth/register ──────────────────────────────────────────────────
 
-router.post('/register', async (req, res, next) => {
+router.post('/register', authLimiter, validate(registerSchema), async (req, res, next) => {
   try {
+    // email/password/name already validated + normalized by validate(registerSchema)
     const { email, password, name } = req.body;
-
-    if (!email || !password) {
-      return res.status(400).json({ error: 'Email and password are required' });
-    }
-    if (password.length < 8) {
-      return res.status(400).json({ error: 'Password must be at least 8 characters' });
-    }
 
     const existing = await db.user.findUnique({ where: { email } });
     if (existing) {
@@ -57,13 +53,10 @@ router.post('/register', async (req, res, next) => {
 
 // ─── POST /api/auth/login ─────────────────────────────────────────────────────
 
-router.post('/login', async (req, res, next) => {
+router.post('/login', authLimiter, validate(loginSchema), async (req, res, next) => {
   try {
+    // email/password already validated + normalized by validate(loginSchema)
     const { email, password } = req.body;
-
-    if (!email || !password) {
-      return res.status(400).json({ error: 'Email and password are required' });
-    }
 
     const user = await db.user.findUnique({ where: { email } });
 
