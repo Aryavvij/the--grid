@@ -1,7 +1,7 @@
 # GRID — Project Guide for Claude
 
 Personal dashboard for students & adults: habits, gym, finance, calendar, projects, resume.
-Carbon-green aesthetic. Deployed on Vercel (frontend) + Railway (backend).
+Carbon-green aesthetic. Deployed on Vercel (frontend + serverless API). Postgres is hosted on Supabase.
 
 ## Repo layout
 
@@ -25,7 +25,7 @@ Carbon-green aesthetic. Deployed on Vercel (frontend) + Railway (backend).
 ## Backend (`grid-backend/`)
 
 - **Express 4 + Prisma 5 + Postgres.** Entry points both funnel through `src/app.js`:
-  - `src/index.js` — local/Railway long-lived server (`npm start`).
+  - `src/index.js` — local long-lived server (`npm start`).
   - `api/index.js` — Vercel serverless export.
 - **Auth is solid:** passport + Google OAuth + JWT in httpOnly cookie (`grid_token`), bcrypt (12 rounds), constant-time login compare. `requireAuth` middleware (`src/middleware/auth.js`) reads cookie or `Authorization: Bearer`. All data routes call `router.use(requireAuth)`.
 - **Routes** (`src/routes/`): `auth`, `profile`, `habits`, `gym`, `finance`, `calendar`, `projects`, `resume` — mounted under `/api/*`.
@@ -36,6 +36,7 @@ Carbon-green aesthetic. Deployed on Vercel (frontend) + Railway (backend).
 - `helmet` (CORP relaxed to cross-origin for the API), `express-rate-limit` (global 300/15min + strict 10/15min on auth), `zod` validation, 1mb body cap, `trust proxy = 1`.
 - Validation lives in `src/middleware/validate.js` (reusable `validate(schema)` — strips unknown keys, surfaces friendly errors). Limiters in `src/middleware/security.js`.
 - **When adding routes that take user input, validate them with `validate(...)`** following the auth-route pattern.
+- ⚠️ Supabase connection strings: `DATABASE_URL` = transaction pooler (6543), `DIRECT_URL` = session pooler (5432). The legacy `db.<ref>.supabase.co` direct host is retired and no longer resolves.
 - ⚠️ On Vercel, the rate-limiter's in-memory store is per-instance / resets on cold start. For hard guarantees, move to a shared store (Upstash Redis + `rate-limit-redis`).
 
 ## Commands (run inside `grid-backend/`)
