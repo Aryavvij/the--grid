@@ -3692,6 +3692,125 @@ html, body {
 }
 #access-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
+/* ── P4: COMMAND PALETTE + DAILY CONSOLE ──────────────────────── */
+.gk-overlay {
+  position: fixed; inset: 0; z-index: 9000; display: none;
+  background: rgba(0,0,0,0.55); backdrop-filter: blur(3px);
+  align-items: flex-start; justify-content: center; padding-top: 12vh;
+}
+.gk-overlay.open { display: flex; }
+.gk-panel {
+  width: min(640px, 92vw);
+  background: rgba(20,20,20,0.86);
+  backdrop-filter: blur(20px) saturate(1.1);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-top-color: rgba(255,255,255,0.12);
+  border-radius: 12px; box-shadow: 0 24px 64px rgba(0,0,0,0.6);
+  overflow: hidden; animation: gkIn 140ms var(--ease-snap);
+}
+@keyframes gkIn { from { opacity:0; transform: translateY(-8px) scale(.98); } to { opacity:1; transform:none; } }
+.gk-input {
+  width: 100%; background: transparent; border: none; outline: none;
+  padding: 16px 18px; color: var(--text); font-family: var(--font);
+  font-size: 14px; letter-spacing: 0.5px;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+}
+.gk-input::placeholder { color: var(--text-muted); }
+.gk-list { max-height: 46vh; overflow-y: auto; }
+.gk-item {
+  display: flex; align-items: center; gap: 12px; padding: 10px 18px;
+  cursor: pointer; font-size: 12px; letter-spacing: 0.6px; color: var(--text-dim);
+  border-left: 2px solid transparent;
+}
+.gk-item:hover, .gk-item.sel {
+  background: rgba(118,179,114,0.08); color: var(--text);
+  border-left-color: var(--sig-500);
+}
+.gk-item-kind {
+  font-size: 9px; letter-spacing: 1.2px; color: var(--text-muted);
+  margin-left: auto; text-transform: uppercase;
+}
+.gk-empty { padding: 22px 18px; font-size: 11px; color: var(--text-muted); letter-spacing: 1px; }
+.gk-hint {
+  display: flex; gap: 14px; padding: 8px 18px; font-size: 9px;
+  letter-spacing: 1px; color: var(--text-muted);
+  border-top: 1px solid rgba(255,255,255,0.06); background: rgba(0,0,0,0.2);
+}
+.gk-kbd {
+  border: 1px solid rgba(255,255,255,0.14); border-radius: 3px;
+  padding: 0 4px; color: var(--text-dim);
+}
+
+/* Daily Console */
+.dc-panel { width: min(680px, 94vw); }
+.dc-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 18px; border-bottom: 1px solid rgba(255,255,255,0.07);
+}
+.dc-title { font-size: 12px; letter-spacing: 2px; color: var(--sig-500); }
+.dc-date { font-size: 11px; color: var(--text-muted); letter-spacing: 1px; }
+.dc-nav { background: none; border: 1px solid rgba(255,255,255,0.12); color: var(--text-dim);
+  border-radius: 4px; cursor: pointer; padding: 2px 8px; font-family: var(--font); font-size: 11px; }
+.dc-nav:hover { border-color: var(--sig-500); color: var(--sig-500); }
+.dc-body { max-height: 52vh; overflow-y: auto; padding: 6px 0; }
+.dc-row {
+  display: flex; align-items: center; gap: 12px; padding: 9px 18px;
+  font-size: 12px; letter-spacing: 0.5px;
+}
+.dc-row + .dc-row { border-top: 1px solid rgba(255,255,255,0.035); }
+.dc-name { flex: 1; color: var(--text-dim); }
+.dc-row.done .dc-name { color: var(--text); }
+.dc-check {
+  width: 20px; height: 20px; border-radius: 5px; cursor: pointer; flex-shrink: 0;
+  border: 1.5px solid rgba(255,255,255,0.18); background: transparent;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 120ms var(--ease-snap);
+}
+.dc-check:hover { border-color: var(--sig-700); }
+.dc-row.done .dc-check {
+  background: var(--sig-500); border-color: var(--sig-500);
+  box-shadow: var(--sig-glow);
+}
+.dc-check svg { opacity: 0; width: 12px; height: 12px; }
+.dc-row.done .dc-check svg { opacity: 1; }
+.dc-step { display: flex; align-items: center; gap: 8px; }
+.dc-step button {
+  width: 24px; height: 24px; border-radius: 4px; cursor: pointer;
+  background: var(--carbon-3); border: 1px solid rgba(255,255,255,0.1);
+  color: var(--text-dim); font-family: var(--font); line-height: 1;
+}
+.dc-step button:hover { border-color: var(--sig-500); color: var(--sig-500); }
+.dc-step-val { min-width: 76px; text-align: center; color: var(--text);
+  font-variant-numeric: tabular-nums; }
+.dc-scale { display: flex; gap: 5px; }
+.dc-scale span {
+  width: 22px; height: 22px; border-radius: 50%; cursor: pointer; font-size: 10px;
+  border: 1px solid rgba(255,255,255,0.14); display: flex; align-items: center;
+  justify-content: center; color: var(--text-muted);
+}
+.dc-scale span.on { background: var(--sig-500); border-color: var(--sig-500); color: #08110b; }
+.dc-auto { font-size: 9px; letter-spacing: 1px; color: var(--sig-500); }
+.dc-foot { padding: 12px 18px; border-top: 1px solid rgba(255,255,255,0.07); }
+.dc-seal {
+  width: 100%; padding: 11px; cursor: pointer; border-radius: 6px;
+  background: var(--sig-500); border: none; color: #08110b;
+  font-family: var(--font); font-size: 12px; letter-spacing: 2px; font-weight: 700;
+  transition: all 140ms var(--ease-snap);
+}
+.dc-seal:hover { background: var(--sig-700); }
+.dc-seal:disabled { opacity: .45; cursor: default; }
+.dc-seal.sealed { background: var(--sig-900); box-shadow: var(--sig-glow); }
+.dc-status { font-size: 9px; letter-spacing: 1px; color: var(--text-muted); margin-top: 8px; text-align: center; }
+.gk-fab {
+  position: fixed; right: 22px; bottom: 22px; z-index: 8000;
+  width: 46px; height: 46px; border-radius: 50%; cursor: pointer;
+  background: var(--sig-500); border: none; color: #08110b;
+  box-shadow: 0 6px 20px rgba(0,0,0,.45); font-size: 20px; line-height: 1;
+  display: flex; align-items: center; justify-content: center;
+}
+.gk-fab:hover { background: var(--sig-700); transform: translateY(-1px); }
+@media (max-width: 640px) { .gk-overlay { padding-top: 6vh; } .gk-fab { right: 14px; bottom: 14px; } }
+
 </style>
 </head>
 <body>
@@ -11337,6 +11456,388 @@ function hydrateRealStats() {
 
 document.addEventListener('DOMContentLoaded', () => setTimeout(hydrateRealStats, 60));
 
+
+
+/* ══ P4: OFFLINE QUEUE ════════════════════════════════════════════════════════
+   Failed writes persist to IndexedDB and replay on reconnect. Server upserts are
+   idempotent (unique defId+loggedDate), so replay is safe. This is what makes
+   deleting the localStorage fork viable later.                                */
+const GridQueue = (() => {
+  const DB = 'gridQueue', STORE = 'ops';
+  let dbp = null;
+
+  function open() {
+    if (dbp) return dbp;
+    dbp = new Promise((res, rej) => {
+      const r = indexedDB.open(DB, 1);
+      r.onupgradeneeded = () => {
+        if (!r.result.objectStoreNames.contains(STORE))
+          r.result.createObjectStore(STORE, { keyPath: 'seq', autoIncrement: true });
+      };
+      r.onsuccess = () => res(r.result);
+      r.onerror  = () => rej(r.error);
+    });
+    return dbp;
+  }
+
+  function tx(mode, fn) {
+    return open().then(db => new Promise((res, rej) => {
+      const t = db.transaction(STORE, mode);
+      const rq = fn(t.objectStore(STORE));
+      t.oncomplete = () => res(rq && 'result' in rq ? rq.result : undefined);
+      t.onerror    = () => rej(t.error);
+    }));
+  }
+
+  const add    = op  => tx('readwrite', st => st.add({ ...op, at: Date.now() }));
+  const all    = ()  => tx('readonly',  st => st.getAll());
+  const remove = seq => tx('readwrite', st => st.delete(seq));
+
+  async function size() { try { return (await all() || []).length; } catch (e) { return 0; } }
+
+  async function flush() {
+    let ops;
+    try { ops = await all(); } catch (e) { return 0; }
+    if (!ops || !ops.length) return 0;
+    ops.sort((a, b) => a.seq - b.seq);            // preserve write order
+    let done = 0;
+    for (const op of ops) {
+      try {
+        await gridFetch(op.path, { method: op.method, body: JSON.stringify(op.body) });
+        await remove(op.seq);
+        done++;
+      } catch (e) {
+        if (e && e.status >= 400 && e.status < 500) { await remove(op.seq); } // poison op → drop
+        else break;                                                          // still offline → stop
+      }
+    }
+    if (done) console.info('[queue] replayed ' + done + ' op(s)');
+    return done;
+  }
+
+  return { add, flush, size };
+})();
+
+/** gridFetch + durable retry. Use for writes that must not be lost. */
+async function gridWrite(path, body, method = 'POST') {
+  try {
+    return await gridFetch(path, { method, body: JSON.stringify(body) });
+  } catch (e) {
+    if (!e || !e.status || e.status >= 500) {
+      await GridQueue.add({ path, method, body });
+      return { queued: true };
+    }
+    throw e;
+  }
+}
+window.addEventListener('online', () => GridQueue.flush());
+
+/* ══ P4: COMMAND PALETTE (⌘K) ═══════════════════════════════════════════════ */
+let gkItems = [], gkSel = 0;
+
+function gkBuild() {
+  const pages = [
+    ['home','Home / Console'], ['calendar','Calendar'], ['weekly','Weekly'],
+    ['habits','Habits'], ['finances','Finances'], ['workout','Gym'],
+    ['work','Focus'], ['runway','Runway'], ['resume','Resume'],
+  ];
+  const items = pages.map(pair => ({
+    kind: 'page', label: 'Go to ' + pair[1], run: () => navigate(pair[0]),
+  }));
+
+  items.push({ kind: 'action', label: 'Open Daily Console', run: () => dcOpen() });
+  items.push({ kind: 'action', label: 'Start focus timer', run: () => {
+    navigate('work');
+    const b = document.getElementById('nlInitBtn'); if (b) b.click();
+  }});
+
+  // Log any habit straight from the palette — zero navigation.
+  const hs = (typeof habits !== 'undefined' && Array.isArray(habits)) ? habits : [];
+  hs.forEach((h, i) => {
+    items.push({
+      kind: 'log', label: 'Log: ' + h.name,
+      run: () => {
+        try { toggleHabitDay(i, new Date().getDate()); } catch (e) {}
+        try { hydrateRealStats(); } catch (e) {}
+        dcToast('Logged ' + h.name);
+      },
+    });
+  });
+  return items;
+}
+
+function gkRender(filter) {
+  const q = (filter || '').toLowerCase().trim();
+  const list = document.getElementById('gkList');
+  if (!list) return;
+  const shown = gkItems.filter(it => !q || it.label.toLowerCase().includes(q));
+  gkSel = 0;
+  list.innerHTML = shown.length
+    ? shown.map((it, i) =>
+        '<div class="gk-item' + (i === 0 ? ' sel' : '') + '" data-i="' + i + '">' +
+        '<span>' + it.label + '</span><span class="gk-item-kind">' + it.kind + '</span></div>').join('')
+    : '<div class="gk-empty">No matches</div>';
+  list._shown = shown;
+  Array.prototype.forEach.call(list.querySelectorAll('.gk-item'), el => {
+    el.onclick = () => gkRun(shown[+el.dataset.i]);
+  });
+}
+
+function gkRun(item) { if (!item) return; gkClose(); setTimeout(() => item.run(), 60); }
+
+function gkOpen() {
+  gkItems = gkBuild();
+  const ov = document.getElementById('gkOverlay');
+  if (!ov) return;
+  ov.classList.add('open');
+  const inp = document.getElementById('gkInput');
+  if (inp) { inp.value = ''; setTimeout(() => inp.focus(), 30); }
+  gkRender('');
+}
+function gkClose() {
+  const ov = document.getElementById('gkOverlay');
+  if (ov) ov.classList.remove('open');
+}
+
+function gkMove(d) {
+  const list = document.getElementById('gkList');
+  if (!list) return;
+  const els = Array.prototype.slice.call(list.querySelectorAll('.gk-item'));
+  if (!els.length) return;
+  if (els[gkSel]) els[gkSel].classList.remove('sel');
+  gkSel = (gkSel + d + els.length) % els.length;
+  els[gkSel].classList.add('sel');
+  els[gkSel].scrollIntoView({ block: 'nearest' });
+}
+
+document.addEventListener('keydown', e => {
+  const gkEl = document.getElementById('gkOverlay');
+  const dcEl = document.getElementById('dcOverlay');
+  const openPalette = gkEl && gkEl.classList.contains('open');
+  const openConsole = dcEl && dcEl.classList.contains('open');
+
+  if ((e.metaKey || e.ctrlKey) && String(e.key).toLowerCase() === 'k') {
+    e.preventDefault(); openPalette ? gkClose() : gkOpen(); return;
+  }
+  if (e.key === 'Escape') { if (openPalette) gkClose(); if (openConsole) dcClose(); return; }
+  if (!openPalette) return;
+
+  if (e.key === 'ArrowDown')      { e.preventDefault(); gkMove(1); }
+  else if (e.key === 'ArrowUp')   { e.preventDefault(); gkMove(-1); }
+  else if (e.key === 'Enter')     {
+    e.preventDefault();
+    const list = document.getElementById('gkList');
+    gkRun((list && list._shown || [])[gkSel]);
+  }
+});
+
+/* ══ P4: DAILY CONSOLE ══════════════════════════════════════════════════════ */
+let dcDateStr = null, dcDraft = {};
+
+function dcToday() {
+  const d = new Date();
+  return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+}
+function dcDayOf(str) { return new Date(str + 'T00:00:00').getDate(); }
+
+function dcToast(msg) {
+  const el = document.getElementById('dcStatus');
+  if (!el) return;
+  el.textContent = msg;
+  clearTimeout(dcToast._t);
+  dcToast._t = setTimeout(() => { if (el.textContent === msg) el.textContent = ''; }, 2600);
+}
+
+function dcOpen(date) {
+  dcDateStr = date || dcToday();
+  dcDraft = {};
+  const ov = document.getElementById('dcOverlay');
+  if (ov) ov.classList.add('open');
+  dcRender();
+}
+function dcClose() {
+  const ov = document.getElementById('dcOverlay');
+  if (ov) ov.classList.remove('open');
+}
+
+function dcShift(delta) {
+  const d = new Date(dcDateStr + 'T00:00:00');
+  d.setDate(d.getDate() + delta);
+  const next = new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+  if (next > dcToday()) return;                 // never log the future
+  dcDateStr = next; dcDraft = {}; dcRender();
+}
+
+/** Items come from local habits today; the metrics API takes over post-migration. */
+function dcItems() {
+  const hs = (typeof habits !== 'undefined' && Array.isArray(habits)) ? habits : [];
+  const day = dcDayOf(dcDateStr);
+  return hs.map((h, i) => ({
+    idx: i, name: h.name,
+    done: (h.checked || []).indexOf(day) !== -1,
+  }));
+}
+
+function dcRender() {
+  const body = document.getElementById('dcBody');
+  const dEl  = document.getElementById('dcDate');
+  const seal = document.getElementById('dcSeal');
+  if (!body || !dEl || !seal) return;
+
+  const items = dcItems();
+  dEl.textContent = dcDateStr === dcToday()
+    ? 'TODAY · ' + dcDateStr
+    : new Date(dcDateStr + 'T00:00:00')
+        .toLocaleDateString(undefined, { weekday: 'short', day: '2-digit', month: 'short' })
+        .toUpperCase();
+
+  if (!items.length) {
+    body.innerHTML = '<div class="gk-empty">No metrics yet — add one on the Habits page, ' +
+                     'then log your whole day from here in seconds.</div>';
+    seal.disabled = true;
+    seal.textContent = 'SEAL DAY';
+    seal.classList.remove('sealed');
+    return;
+  }
+  seal.disabled = false;
+
+  body.innerHTML = items.map(it => {
+    const on = (it.idx in dcDraft) ? dcDraft[it.idx] : it.done;
+    return '<div class="dc-row' + (on ? ' done' : '') + '" data-idx="' + it.idx + '">' +
+      '<button class="dc-check" onclick="dcToggle(' + it.idx + ')" aria-label="toggle ' + it.name + '">' +
+      '<svg viewBox="0 0 24 24" stroke="#08110b" fill="none" stroke-width="3.5">' +
+      '<polyline points="20 6 9 17 4 12"/></svg></button>' +
+      '<span class="dc-name">' + it.name + '</span></div>';
+  }).join('');
+
+  const done = items.filter(it => (it.idx in dcDraft) ? dcDraft[it.idx] : it.done).length;
+  seal.textContent = done === items.length ? 'SEAL DAY ▰▰▰▰▰' : 'SEAL DAY · ' + done + '/' + items.length;
+  seal.classList.toggle('sealed', done === items.length);
+}
+
+function dcToggle(idx) {
+  const cur = dcItems().find(i => i.idx === idx);
+  if (!cur) return;
+  const now = (idx in dcDraft) ? dcDraft[idx] : cur.done;
+  dcDraft[idx] = !now;                          // optimistic — UI responds instantly
+  dcRender();
+}
+
+/**
+ * Set a habit's state for a given day. Mutates the model directly, keeps pct in
+ * sync, persists locally, and syncs to the API through the offline queue.
+ * Returns true if the model now reflects the requested state.
+ */
+function dcSetHabit(idx, day, on) {
+  const h = (typeof habits !== 'undefined' && habits) ? habits[idx] : null;
+  if (!h) return false;
+
+  const at = h.checked.indexOf(day);
+  if (on && at === -1)       h.checked.push(day);
+  else if (!on && at !== -1) h.checked.splice(at, 1);
+
+  const dim = (typeof DAYS_IN_MONTH === 'number' && DAYS_IN_MONTH) ? DAYS_IN_MONTH : 30;
+  h.pct = Math.round((h.checked.length / dim) * 100);
+
+  try { if (typeof saveHabits === 'function') saveHabits(); } catch (e) {}
+
+  const isDemo = sessionStorage.getItem('gridMode') === 'demo';
+  if (!isDemo && h.id) {
+    // Durable: enqueued and replayed if the network is down.
+    gridWrite('/api/habits/' + h.id + '/log', { date: dcDateStr, completed: !!on })
+      .catch(e => console.warn('habit sync failed', e));
+  }
+  return h.checked.indexOf(day) !== -1 === !!on;
+}
+
+async function dcCommit() {
+  const items = dcItems();
+  const changed = Object.keys(dcDraft).filter(k => {
+    const it = items.find(i => i.idx === +k);
+    return it && dcDraft[k] !== it.done;
+  });
+
+  // Apply locally first so the grid updates with zero latency.
+  // NOTE: the page's toggleHabitDay(e) is a DOM *event* handler (reads
+  // e.currentTarget.dataset and needs the matrix row), so it cannot be called
+  // programmatically. dcSetHabit mutates the model directly instead.
+  const day = dcDayOf(dcDateStr);
+  let applied = 0;
+  const failed = [];
+  changed.forEach(k => {
+    if (dcSetHabit(+k, day, dcDraft[k])) applied++;
+    else failed.push(+k);
+  });
+  try { if (typeof buildHabitMatrix === 'function') buildHabitMatrix(); } catch (e) {}
+
+  const allDone = items.length > 0 && items.every(it =>
+    (it.idx in dcDraft) ? dcDraft[it.idx] : it.done);
+
+  dcDraft = {};
+  dcRender();
+  try { hydrateRealStats(); } catch (e) {}
+
+  let queued = 0;
+  try { queued = await GridQueue.size(); } catch (e) {}
+
+  if (!changed.length) {
+    dcToast('Nothing to commit');
+  } else if (failed.length) {
+    // Never claim success for writes that did not land.
+    dcToast('Applied ' + applied + '/' + changed.length + ' — ' + failed.length + ' failed');
+    console.warn('[console] failed to apply metrics at index', failed);
+  } else {
+    dcToast('Committed ' + applied + ' change' + (applied > 1 ? 's' : '') +
+            (queued ? ' · ' + queued + ' queued offline' : ''));
+  }
+
+  if (allDone && applied && !failed.length) {
+    setTimeout(() => dcToast('DAY SEALED // SYSTEM NOMINAL'), 400);
+  }
+  if (!failed.length) setTimeout(dcClose, 900);
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const inp = document.getElementById('gkInput');
+  if (inp) inp.addEventListener('input', e => gkRender(e.target.value));
+  GridQueue.flush();
+});
+
 </script>
+<!-- ── P4: Command palette (⌘K) ─────────────────────────────── -->
+<div class="gk-overlay" id="gkOverlay" onclick="if(event.target===this)gkClose()">
+  <div class="gk-panel">
+    <input class="gk-input" id="gkInput" placeholder="Jump to a page, log a metric, start focus…" autocomplete="off" />
+    <div class="gk-list" id="gkList"></div>
+    <div class="gk-hint">
+      <span><span class="gk-kbd">↑↓</span> navigate</span>
+      <span><span class="gk-kbd">↵</span> run</span>
+      <span><span class="gk-kbd">esc</span> close</span>
+      <span style="margin-left:auto"><span class="gk-kbd">⌘K</span> anywhere</span>
+    </div>
+  </div>
+</div>
+
+<!-- ── P4: Daily Console ────────────────────────────────────── -->
+<div class="gk-overlay" id="dcOverlay" onclick="if(event.target===this)dcClose()">
+  <div class="gk-panel dc-panel">
+    <div class="dc-head">
+      <div class="dc-title">DAILY CONSOLE</div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <button class="dc-nav" onclick="dcShift(-1)">‹</button>
+        <span class="dc-date" id="dcDate">—</span>
+        <button class="dc-nav" onclick="dcShift(1)">›</button>
+      </div>
+    </div>
+    <div class="dc-body" id="dcBody"></div>
+    <div class="dc-foot">
+      <button class="dc-seal" id="dcSeal" onclick="dcCommit()">SEAL DAY</button>
+      <div class="dc-status" id="dcStatus"></div>
+    </div>
+  </div>
+</div>
+
+<button class="gk-fab" id="gkFab" onclick="dcOpen()" title="Daily Console">◉</button>
+
 </body>
 </html>
