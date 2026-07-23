@@ -29,7 +29,122 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Bebas+Neue&display=swap" rel="stylesheet" />
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<!-- ECharts — sole chart engine (ethos theme). Chart.js fully removed. -->
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+<script>
+/* ── ECHARTS "ETHOS" THEME ────────────────────────────────────────────────────
+   Single source of truth for chart styling. Every chart is created with
+   echarts.init(el, 'ethos') and inherits this — no per-chart colour code.
+   Hex values mirror the --sig-* / --carbon-* CSS custom properties; keep in sync.
+   Design language: matte carbon surfaces, one green hue for information,
+   minimal axes, no chartjunk, mono numerals.                                  */
+(function () {
+  if (typeof echarts === 'undefined') return;
+
+  var SIG_100 = '#172619', SIG_300 = '#3b6839', SIG_500 = '#76b372',
+      SIG_700 = '#94d68f', SIG_900 = '#a5f79e',
+      CARBON_2 = '#141414', CARBON_4 = '#262626',
+      TEXT     = '#f0f0f0',
+      TEXT_DIM = 'rgba(240,240,240,0.65)',
+      TEXT_MUT = 'rgba(240,240,240,0.38)',
+      GRID     = 'rgba(255,255,255,0.055)',
+      MONO     = "'Space Mono', monospace";
+
+  var axisCommon = {
+    axisLine:  { show: true, lineStyle: { color: CARBON_4 } },
+    axisTick:  { show: false },
+    axisLabel: { color: TEXT_MUT, fontFamily: MONO, fontSize: 10 },
+    splitLine: { show: true, lineStyle: { color: GRID, type: 'solid' } },
+    splitArea: { show: false }
+  };
+
+  echarts.registerTheme('ethos', {
+    // Sequential ramp — reads as one hue at increasing intensity.
+    color: [SIG_500, SIG_700, SIG_300, SIG_900, SIG_100],
+    backgroundColor: 'transparent',
+    textStyle: { fontFamily: MONO, color: TEXT_DIM },
+
+    title: {
+      textStyle: { color: TEXT, fontFamily: MONO, fontSize: 12, fontWeight: 700 },
+      subtextStyle: { color: TEXT_MUT, fontFamily: MONO, fontSize: 10 }
+    },
+
+    // Minimal axes — the data is the ink.
+    categoryAxis: axisCommon,
+    valueAxis:    axisCommon,
+    logAxis:      axisCommon,
+    timeAxis:     axisCommon,
+
+    grid: { left: 8, right: 12, top: 24, bottom: 8, containLabel: true },
+
+    line: {
+      smooth: true,
+      symbol: 'circle',
+      symbolSize: 0,              // clean line; points appear on hover
+      lineStyle: { width: 2 },
+      emphasis: { focus: 'series', lineStyle: { width: 2.5 } }
+    },
+    bar: {
+      // Rounded caps — the Bklit signature.
+      itemStyle: { borderRadius: [3, 3, 0, 0] },
+      barMaxWidth: 26
+    },
+    pie: {
+      itemStyle: { borderColor: CARBON_2, borderWidth: 2 },
+      label: { color: TEXT_DIM, fontFamily: MONO, fontSize: 10 },
+      labelLine: { lineStyle: { color: CARBON_4 } }
+    },
+    radar:   { symbolSize: 4, lineStyle: { width: 2 } },
+    // Heat-wall (365-day calendar) + sunburst — the two Chart.js couldn't do.
+    heatmap: { itemStyle: { borderColor: '#080808', borderWidth: 2, borderRadius: 2 } },
+    sunburst: {
+      itemStyle: { borderColor: CARBON_2, borderWidth: 2 },
+      label: { color: TEXT_DIM, fontFamily: MONO, fontSize: 9 }
+    },
+    calendar: {
+      itemStyle:   { color: 'transparent', borderColor: CARBON_4, borderWidth: 0.5 },
+      splitLine:   { show: false },
+      dayLabel:    { color: TEXT_MUT, fontFamily: MONO, fontSize: 9 },
+      monthLabel:  { color: TEXT_DIM, fontFamily: MONO, fontSize: 9 },
+      yearLabel:   { show: false }
+    },
+    visualMap: {
+      // Score 0 → dormant, 1.0+ → neon. Mirrors the metric-engine score bands.
+      inRange: { color: [SIG_100, SIG_300, SIG_500, SIG_700, SIG_900] },
+      textStyle: { color: TEXT_MUT, fontFamily: MONO, fontSize: 9 }
+    },
+
+    tooltip: {
+      backgroundColor: 'rgba(20,20,20,0.94)',
+      borderColor: CARBON_4,
+      borderWidth: 1,
+      padding: [8, 11],
+      textStyle: { color: TEXT, fontFamily: MONO, fontSize: 11 },
+      axisPointer: {
+        lineStyle:  { color: CARBON_4 },
+        crossStyle: { color: CARBON_4 },
+        shadowStyle:{ color: 'rgba(255,255,255,0.03)' }
+      }
+    },
+    legend: {
+      textStyle: { color: TEXT_MUT, fontFamily: MONO, fontSize: 10 },
+      icon: 'circle', itemWidth: 7, itemHeight: 7
+    }
+  });
+
+  /* Helper: init a themed, auto-resizing chart in one call.
+     Usage:  const c = ethosChart('momentumChart'); c.setOption({...});        */
+  window.ethosChart = function (elOrId) {
+    var el = typeof elOrId === 'string' ? document.getElementById(elOrId) : elOrId;
+    if (!el) return null;
+    var existing = echarts.getInstanceByDom(el);
+    if (existing) return existing;
+    var chart = echarts.init(el, 'ethos', { renderer: 'canvas' });
+    window.addEventListener('resize', function () { chart.resize(); });
+    return chart;
+  };
+})();
+</script>
 
 <style>
 /* ── RESET & BASE ─────────────────────────────────── */
@@ -44,6 +159,29 @@
   --green:       #76b372;
   --green-dim:   rgba(118,179,114,0.12);
   --green-glow:  rgba(118,179,114,0.25);
+
+  /* ── ETHOS SIGNAL SCALE ────────────────────────────
+     One hue, five intensities, derived from --green (#76b372).
+     Green encodes INFORMATION (completion score), never decoration.
+     Cell/series colour maps: score 0 → sig-100 … score 1.0+ → sig-900.
+     sig-900 is neon: streaks, live counters, milestones ONLY (max 2/viewport). */
+  --sig-100:     #172619;   /* dormant — empty cells, disabled     */
+  --sig-300:     #3b6839;   /* partial  — 25–75% completion        */
+  --sig-500:     #76b372;   /* complete — base ethos green         */
+  --sig-700:     #94d68f;   /* active   — hover / interactive      */
+  --sig-900:     #a5f79e;   /* neon     — streak fire, milestones  */
+  --sig-glow:    0 0 12px rgba(165,247,158,0.30), 0 0 32px rgba(165,247,158,0.10);
+
+  /* ── CARBON SURFACES ──────────────────────────────── */
+  --carbon-0:    #080808;   /* app void      (= --bg)   */
+  --carbon-1:    #0f0f0f;   /* base panel    (= --bg-2) */
+  --carbon-2:    #141414;   /* raised card   (= --bg-3) */
+  --carbon-3:    #1c1c1c;   /* hover / wells            */
+  --carbon-4:    #262626;   /* borders as fills         */
+
+  /* ── MOTION ───────────────────────────────────────── */
+  --ease-snap:   cubic-bezier(.2,.9,.3,1.2);   /* completions */
+  --ease-glide:  cubic-bezier(.3,0,.1,1);      /* layout      */
   --text:        #f0f0f0;
   --text-dim:    rgba(240,240,240,0.65);
   --text-muted:  rgba(240,240,240,0.38);
@@ -3554,6 +3692,258 @@ html, body {
 }
 #access-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
+/* ── P4: COMMAND PALETTE + DAILY CONSOLE ──────────────────────── */
+.gk-overlay {
+  position: fixed; inset: 0; z-index: 9000; display: none;
+  background: rgba(0,0,0,0.55); backdrop-filter: blur(3px);
+  align-items: flex-start; justify-content: center; padding-top: 12vh;
+}
+.gk-overlay.open { display: flex; }
+.gk-panel {
+  width: min(640px, 92vw);
+  background: rgba(20,20,20,0.86);
+  backdrop-filter: blur(20px) saturate(1.1);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-top-color: rgba(255,255,255,0.12);
+  border-radius: 12px; box-shadow: 0 24px 64px rgba(0,0,0,0.6);
+  overflow: hidden; animation: gkIn 140ms var(--ease-snap);
+}
+@keyframes gkIn { from { opacity:0; transform: translateY(-8px) scale(.98); } to { opacity:1; transform:none; } }
+.gk-input {
+  width: 100%; background: transparent; border: none; outline: none;
+  padding: 16px 18px; color: var(--text); font-family: var(--font);
+  font-size: 14px; letter-spacing: 0.5px;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+}
+.gk-input::placeholder { color: var(--text-muted); }
+.gk-list { max-height: 46vh; overflow-y: auto; }
+.gk-item {
+  display: flex; align-items: center; gap: 12px; padding: 10px 18px;
+  cursor: pointer; font-size: 12px; letter-spacing: 0.6px; color: var(--text-dim);
+  border-left: 2px solid transparent;
+}
+.gk-item:hover, .gk-item.sel {
+  background: rgba(118,179,114,0.08); color: var(--text);
+  border-left-color: var(--sig-500);
+}
+.gk-item-kind {
+  font-size: 9px; letter-spacing: 1.2px; color: var(--text-muted);
+  margin-left: auto; text-transform: uppercase;
+}
+.gk-empty { padding: 22px 18px; font-size: 11px; color: var(--text-muted); letter-spacing: 1px; }
+.gk-hint {
+  display: flex; gap: 14px; padding: 8px 18px; font-size: 9px;
+  letter-spacing: 1px; color: var(--text-muted);
+  border-top: 1px solid rgba(255,255,255,0.06); background: rgba(0,0,0,0.2);
+}
+.gk-kbd {
+  border: 1px solid rgba(255,255,255,0.14); border-radius: 3px;
+  padding: 0 4px; color: var(--text-dim);
+}
+
+/* Daily Console */
+.dc-panel { width: min(680px, 94vw); }
+.dc-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 18px; border-bottom: 1px solid rgba(255,255,255,0.07);
+}
+.dc-title { font-size: 12px; letter-spacing: 2px; color: var(--sig-500); }
+.dc-date { font-size: 11px; color: var(--text-muted); letter-spacing: 1px; }
+.dc-nav { background: none; border: 1px solid rgba(255,255,255,0.12); color: var(--text-dim);
+  border-radius: 4px; cursor: pointer; padding: 2px 8px; font-family: var(--font); font-size: 11px; }
+.dc-nav:hover { border-color: var(--sig-500); color: var(--sig-500); }
+.dc-body { max-height: 52vh; overflow-y: auto; padding: 6px 0; }
+.dc-row {
+  display: flex; align-items: center; gap: 12px; padding: 9px 18px;
+  font-size: 12px; letter-spacing: 0.5px;
+}
+.dc-row + .dc-row { border-top: 1px solid rgba(255,255,255,0.035); }
+.dc-name { flex: 1; color: var(--text-dim); }
+.dc-row.done .dc-name { color: var(--text); }
+.dc-check {
+  width: 20px; height: 20px; border-radius: 5px; cursor: pointer; flex-shrink: 0;
+  border: 1.5px solid rgba(255,255,255,0.18); background: transparent;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 120ms var(--ease-snap);
+}
+.dc-check:hover { border-color: var(--sig-700); }
+.dc-row.done .dc-check {
+  background: var(--sig-500); border-color: var(--sig-500);
+  box-shadow: var(--sig-glow);
+}
+.dc-check svg { opacity: 0; width: 12px; height: 12px; }
+.dc-row.done .dc-check svg { opacity: 1; }
+.dc-step { display: flex; align-items: center; gap: 8px; }
+.dc-step button {
+  width: 24px; height: 24px; border-radius: 4px; cursor: pointer;
+  background: var(--carbon-3); border: 1px solid rgba(255,255,255,0.1);
+  color: var(--text-dim); font-family: var(--font); line-height: 1;
+}
+.dc-step button:hover { border-color: var(--sig-500); color: var(--sig-500); }
+.dc-step-val { min-width: 76px; text-align: center; color: var(--text);
+  font-variant-numeric: tabular-nums; }
+.dc-scale { display: flex; gap: 5px; }
+.dc-scale span {
+  width: 22px; height: 22px; border-radius: 50%; cursor: pointer; font-size: 10px;
+  border: 1px solid rgba(255,255,255,0.14); display: flex; align-items: center;
+  justify-content: center; color: var(--text-muted);
+}
+.dc-scale span.on { background: var(--sig-500); border-color: var(--sig-500); color: #08110b; }
+.dc-auto { font-size: 9px; letter-spacing: 1px; color: var(--sig-500); }
+.dc-foot { padding: 12px 18px; border-top: 1px solid rgba(255,255,255,0.07); }
+.dc-seal {
+  width: 100%; padding: 11px; cursor: pointer; border-radius: 6px;
+  background: var(--sig-500); border: none; color: #08110b;
+  font-family: var(--font); font-size: 12px; letter-spacing: 2px; font-weight: 700;
+  transition: all 140ms var(--ease-snap);
+}
+.dc-seal:hover { background: var(--sig-700); }
+.dc-seal:disabled { opacity: .45; cursor: default; }
+.dc-seal.sealed { background: var(--sig-900); box-shadow: var(--sig-glow); }
+.dc-status { font-size: 9px; letter-spacing: 1px; color: var(--text-muted); margin-top: 8px; text-align: center; }
+.gk-fab {
+  position: fixed; right: 22px; bottom: 22px; z-index: 8000;
+  width: 46px; height: 46px; border-radius: 50%; cursor: pointer;
+  background: var(--sig-500); border: none; color: #08110b;
+  box-shadow: 0 6px 20px rgba(0,0,0,.45); font-size: 20px; line-height: 1;
+  display: flex; align-items: center; justify-content: center;
+}
+.gk-fab:hover { background: var(--sig-700); transform: translateY(-1px); }
+@media (max-width: 640px) { .gk-overlay { padding-top: 6vh; } .gk-fab { right: 14px; bottom: 14px; } }
+
+/* ── U2: THE CONSOLE (page-home) ──────────────────────────────── */
+.cn-wrap { padding: 26px 30px 40px; max-width: 1500px; margin: 0 auto; }
+.cn-hero { display:flex; align-items:flex-start; justify-content:space-between; gap:20px; margin-bottom:20px; }
+.cn-greet { font-family:'Bebas Neue',var(--font); font-size:38px; letter-spacing:2px; line-height:1; color:var(--text); }
+.cn-sub { font-size:10px; letter-spacing:2px; color:var(--text-muted); margin-top:6px; }
+.cn-streakchip {
+  display:flex; flex-direction:column; align-items:flex-end; gap:2px;
+  border:1px solid var(--carbon-4); border-radius:8px; padding:8px 14px; background:var(--carbon-1);
+}
+.cn-streak-label { font-size:8px; letter-spacing:2px; color:var(--text-muted); }
+.cn-streak-val { font-size:22px; font-variant-numeric:tabular-nums; color:var(--sig-900); line-height:1; }
+.cn-streakchip.hot { border-color:rgba(165,247,158,.35); box-shadow:var(--sig-glow); }
+
+.cn-grid { display:grid; grid-template-columns: 1.35fr 1fr; grid-template-rows:auto auto; gap:14px; }
+.cn-zone-a { display:flex; flex-direction:column; gap:14px; }
+.cn-zone-b { grid-row:1 / span 1; }
+.cn-zone-c { grid-column:1 / -1; display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:14px; }
+
+.cn-card { background:var(--carbon-1); border:1px solid var(--carbon-4); border-radius:10px; padding:16px 18px; }
+.cn-card-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
+.cn-card-title { font-size:10px; letter-spacing:2px; color:var(--sig-500); }
+.cn-card-meta { font-size:9px; letter-spacing:1.2px; color:var(--text-muted); }
+
+.cn-chips { display:flex; flex-wrap:wrap; gap:8px; }
+.cn-chip {
+  display:flex; align-items:center; gap:7px; cursor:pointer; user-select:none;
+  border:1px solid var(--carbon-4); border-radius:20px; padding:6px 13px;
+  font-size:11px; letter-spacing:.5px; color:var(--text-dim); background:var(--carbon-2);
+  transition:all 120ms var(--ease-snap);
+}
+.cn-chip:hover { border-color:var(--sig-700); color:var(--text); }
+.cn-chip.on { background:var(--sig-500); border-color:var(--sig-500); color:#08110b; }
+.cn-chip .cn-dot { width:7px; height:7px; border-radius:50%; background:var(--carbon-4); }
+.cn-chip.on .cn-dot { background:#08110b; }
+.cn-chip.pulse { animation:cnPulse 600ms var(--ease-snap); }
+@keyframes cnPulse { 0%{transform:scale(.92)} 55%{transform:scale(1.06)} 100%{transform:scale(1)} }
+.cn-empty { font-size:10px; letter-spacing:1px; color:var(--text-muted); }
+
+.cn-now-title { font-size:15px; color:var(--text); margin-bottom:12px; }
+.cn-cta {
+  width:100%; padding:10px; border-radius:6px; cursor:pointer; border:none;
+  background:var(--sig-500); color:#08110b; font-family:var(--font);
+  font-size:11px; letter-spacing:1.6px; font-weight:700;
+  transition:all 140ms var(--ease-snap);
+}
+.cn-cta:hover { background:var(--sig-700); }
+
+.cn-vital { background:var(--carbon-1); border:1px solid var(--carbon-4); border-radius:10px; padding:14px 16px; }
+.cn-vital-label { font-size:9px; letter-spacing:1.6px; color:var(--text-muted); margin-bottom:6px; }
+.cn-vital-val { font-size:24px; font-variant-numeric:tabular-nums; color:var(--text); line-height:1; }
+.cn-vital-sub { font-size:9px; letter-spacing:1px; color:var(--text-muted); margin-top:5px; }
+.cn-vital.risk .cn-vital-val { font-size:14px; color:var(--sig-700); }
+
+@media (max-width:1000px) {
+  .cn-grid { grid-template-columns:1fr; }
+  .cn-zone-b { grid-row:auto; }
+  .cn-wrap { padding:18px 16px 32px; }
+  .cn-greet { font-size:28px; }
+}
+
+/* ── P5: window tabs + nav utility group ──────────────────────── */
+.win-tabs { display:flex; gap:2px; margin-bottom:18px; border-bottom:1px solid var(--carbon-4); }
+.win-tab {
+  padding:9px 18px; cursor:pointer; font-size:10px; letter-spacing:2px;
+  color:var(--text-muted); border-bottom:2px solid transparent; transition:all .15s;
+}
+.win-tab:hover { color:var(--text-dim); }
+.win-tab.active { color:var(--sig-500); border-bottom-color:var(--sig-500); }
+.nav-divider { height:1px; background:var(--carbon-4); margin:10px 14px; }
+.nav-item.nav-util { opacity:.62; }
+.nav-item.nav-util:hover { opacity:1; }
+
+/* ══ P5 / V4: MOBILE ════════════════════════════════════════════
+   The phone is where gym sets and spend actually get logged in the
+   moment, so the app must be usable one-handed. Sidebar collapses to a
+   bottom dock; every fixed-width grid falls back to a single column. */
+@media (max-width: 820px) {
+  #app {
+    grid-template-columns: 1fr;
+    grid-template-rows: var(--topbar-h) 1fr auto;
+  }
+
+  /* Sidebar becomes a horizontally scrollable bottom dock */
+  #sidebar {
+    grid-row: 3; grid-column: 1;
+    flex-direction: row; align-items: center;
+    padding: 0; overflow-x: auto; overflow-y: hidden;
+    border-right: none; border-top: 1px solid var(--card-border);
+    -webkit-overflow-scrolling: touch; scrollbar-width: none;
+  }
+  #sidebar::-webkit-scrollbar { display: none; }
+  .sidebar-brand, .nav-divider { display: none; }
+  .nav-item {
+    flex-direction: column; gap: 4px; white-space: nowrap;
+    padding: 9px 15px; font-size: 9px; letter-spacing: .5px; border-left: none;
+    border-bottom: 2px solid transparent;
+  }
+  .nav-item.active { border-bottom-color: var(--sig-500); background: transparent; }
+  .nav-item svg { width: 18px; height: 18px; }
+  .nav-item.nav-util { opacity: 1; }
+
+  #main { grid-row: 2; grid-column: 1; }
+
+  /* Keep the FAB clear of the dock */
+  .gk-fab { bottom: 84px; right: 16px; }
+
+  /* Collapse every multi-column layout */
+  .cn-grid, .rw-mid-grid, .rw-bot-grid, .nl-main-grid, .hb-bottom-grid,
+  .fin-row-row2, .fin-row-row3, .gym-bottom-grid, .gym-log-grid, .rs-panels {
+    grid-template-columns: 1fr !important;
+    display: grid !important;
+  }
+  .hb-stat-row, .fin-stat-row, .nl-stat-row, .rw-stat-row, .rs-stats {
+    grid-template-columns: 1fr 1fr !important;
+  }
+  .cn-zone-c { grid-template-columns: 1fr 1fr; }
+
+  /* Wide tables scroll instead of breaking the page */
+  .hb-matrix-scroll, .arc-tt-scroll, .fin-tx-table, .rw-queue-table,
+  .fin-budget-table, .tbl-scroll { overflow-x: auto; display: block; max-width: 100%; }
+
+  .page-title { font-size: 26px !important; }
+  .win-tab { padding: 9px 12px; font-size: 9px; }
+  .cn-wrap { padding: 14px 12px 26px; }
+  #rw-status > div { grid-template-columns: 1fr !important; }
+}
+
+@media (max-width: 480px) {
+  .hb-stat-row, .fin-stat-row, .nl-stat-row, .rw-stat-row, .rs-stats,
+  .cn-zone-c { grid-template-columns: 1fr !important; }
+  .gk-panel, .dc-panel { width: 96vw; }
+}
+
 </style>
 </head>
 <body>
@@ -3588,9 +3978,8 @@ html, body {
       </div>
 
       <div class="status-bar">
-        <div class="status-item"><div class="status-dot"></div> NODE: 0X4F2_PRIMARY</div>
-        <div class="status-item">ENCRYPTION: AES_256</div>
-        <div class="status-item">LATENCY: 12MS</div>
+        <div class="status-item"><div class="status-dot"></div> SECURE SESSION</div>
+        <div class="status-item">DATA STORED PRIVATELY</div>
       </div>
     </div>
 
@@ -4008,15 +4397,16 @@ html, body {
       <svg viewBox="0 0 24 24"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>
       GYM
     </div>
-    <div class="nav-item" data-page="work" onclick="navigate('work')">
-      <svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
-      Work
-    </div>
+    <!-- Window: PROJECTS = Runway + Focus (execution). Weekly stays separate
+         because timetable is recurring time-blocking, not project execution. -->
     <div class="nav-item" data-page="runway" onclick="navigate('runway')">
       <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-      Runway
+      Work
     </div>
-    <div class="nav-item" data-page="resume" onclick="navigate('resume')">
+
+    <!-- Utility drawer — quarterly tools, off the daily path -->
+    <div class="nav-divider"></div>
+    <div class="nav-item nav-util" data-page="resume" onclick="navigate('resume')">
       <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
       Resume
     </div>
@@ -4027,131 +4417,58 @@ html, body {
 
     <!-- ── HOME ──────────────────────────────────────── -->
     <div class="page active" id="page-home">
-      <div class="hm-wrap">
+      <div class="cn-wrap">
 
         <!-- Hero -->
-        <div class="hm-hero">
+        <div class="cn-hero">
           <div>
-            <div class="hm-greet-label">ACTIVE USER SESSION</div>
-            <div class="hm-greet-name">COMMAND CENTER</div>
-            <div class="hm-greet-sub">THE GRID // SYSTEM OVERVIEW — ALL MODULES NOMINAL</div>
+            <div class="cn-greet" id="cnGreet">—</div>
+            <div class="cn-sub" id="cnSub">—</div>
           </div>
-          <div class="hm-clock">
-            <div class="hm-clock-time" id="hmClockTime">00:00:00</div>
-            <div class="hm-clock-date" id="hmClockDate">——</div>
+          <div class="cn-streakchip" id="cnStreakChip" title="Longest active streak">
+            <span class="cn-streak-label">STREAK</span>
+            <span class="cn-streak-val" id="cnStreakVal">—</span>
           </div>
         </div>
 
-        <!-- Module Status Grid 3+2+3 Format -->
-        <div class="hm-modules-323">
-          
-          <!-- Card 1: Calendar (Row 1, span 2) -->
-          <div class="hm-card-323 span-2" onclick="navigate('calendar')">
-            <div class="hm-c-top">
-              <div class="hm-c-name">CALENDAR HUB</div>
-              <div class="hm-c-dot" id="hm-cal-dot"></div>
+        <div class="cn-grid">
+          <!-- ZONE A -->
+          <div class="cn-zone-a">
+            <div class="cn-card">
+              <div class="cn-card-head">
+                <span class="cn-card-title">TODAY</span>
+                <span class="cn-card-meta" id="cnTodayMeta">—</span>
+              </div>
+              <div class="cn-chips" id="cnChips"></div>
             </div>
-            <div class="hm-c-val" id="hm-cal-val">—</div>
-            <div class="hm-c-details" id="hm-cal-details">
-              <!-- Dynamically hydrated -->
+
+            <!-- NOW card: next event + contextual action -->
+            <div class="cn-card cn-now">
+              <div class="cn-card-head">
+                <span class="cn-card-title">NOW</span>
+                <span class="cn-card-meta" id="cnNowMeta">—</span>
+              </div>
+              <div class="cn-now-title" id="cnNowTitle">—</div>
+              <button class="cn-cta" id="cnCta" onclick="cnRunCta()">OPEN DAILY CONSOLE</button>
             </div>
-            <div class="hm-c-footer" id="hm-cal-footer">ENTRIES_SYNCED</div>
           </div>
 
-          <!-- Card 2: Weekly Design (Row 1, span 2) -->
-          <div class="hm-card-323 span-2" onclick="navigate('weekly')">
-            <div class="hm-c-top">
-              <div class="hm-c-name">WEEKLY DESIGN</div>
-              <div class="hm-c-dot" id="hm-weekly-dot"></div>
+          <!-- ZONE B: heat-wall -->
+          <div class="cn-zone-b">
+            <div class="cn-card" style="height:100%">
+              <div class="cn-card-head">
+                <span class="cn-card-title">THE GRID</span>
+                <span class="cn-card-meta">365 DAYS</span>
+              </div>
+              <div id="cnHeatWall" style="width:100%;height:190px"></div>
             </div>
-            <div class="hm-c-val" id="hm-weekly-val">—</div>
-            <div class="hm-c-details" id="hm-weekly-details">
-              <!-- Dynamically hydrated -->
-            </div>
-            <div class="hm-c-footer" id="hm-weekly-footer">TASKS_NOMINAL</div>
           </div>
 
-          <!-- Card 3: Focus Tracker (Row 1, span 2) -->
-          <div class="hm-card-323 span-2" onclick="navigate('work')">
-            <div class="hm-c-top">
-              <div class="hm-c-name">FOCUS TRACKER</div>
-              <div class="hm-c-dot" id="hm-focus-dot"></div>
-            </div>
-            <div class="hm-c-val" id="hm-focus-val">—</div>
-            <div class="hm-c-details" id="hm-focus-details">
-              <!-- Dynamically hydrated -->
-            </div>
-            <div class="hm-c-footer" id="hm-focus-footer">TIMER_READY</div>
-          </div>
+          <!-- ZONE C: vitals -->
+          <div class="cn-zone-c" id="cnVitals"></div>
+        </div>
 
-          <!-- Card 4: Ledger Portfolio (Row 2, span 3) -->
-          <div class="hm-card-323 span-3" onclick="navigate('finances')">
-            <div class="hm-c-top">
-              <div class="hm-c-name">LEDGER PORTFOLIO</div>
-              <div class="hm-c-dot" id="hm-ledger-dot"></div>
-            </div>
-            <div class="hm-c-val" id="hm-ledger-val">—</div>
-            <div class="hm-c-details" id="hm-ledger-details">
-              <!-- Dynamically hydrated -->
-            </div>
-            <div class="hm-c-footer" id="hm-ledger-footer">FINANCIAL_SYS_ACTIVE</div>
-          </div>
-
-          <!-- Card 5: Gym Performance (Row 2, span 3) -->
-          <div class="hm-card-323 span-3" onclick="navigate('workout')">
-            <div class="hm-c-top">
-              <div class="hm-c-name">GYM PERFORMANCE</div>
-              <div class="hm-c-dot" id="hm-gym-dot"></div>
-            </div>
-            <div class="hm-c-val" id="hm-gym-val">—</div>
-            <div class="hm-c-details" id="hm-gym-details">
-              <!-- Dynamically hydrated -->
-            </div>
-            <div class="hm-c-footer" id="hm-gym-footer">ATHLETIC_PROFILE_OK</div>
-          </div>
-
-          <!-- Card 6: Habit Lab (Row 3, span 2) -->
-          <div class="hm-card-323 span-2" onclick="navigate('habits')">
-            <div class="hm-c-top">
-              <div class="hm-c-name">HABIT LAB</div>
-              <div class="hm-c-dot" id="hm-habit-dot"></div>
-            </div>
-            <div class="hm-c-val" id="hm-habit-val">—</div>
-            <div class="hm-c-details" id="hm-habit-details">
-              <!-- Dynamically hydrated -->
-            </div>
-            <div class="hm-c-footer" id="hm-habit-footer">BIO_MATRIX_SYNCED</div>
-          </div>
-
-          <!-- Card 7: Runway Projections (Row 3, span 2) -->
-          <div class="hm-card-323 span-2" onclick="navigate('runway')">
-            <div class="hm-c-top">
-              <div class="hm-c-name">RUNWAY PROJECTIONS</div>
-              <div class="hm-c-dot" id="hm-runway-dot"></div>
-            </div>
-            <div class="hm-c-val" id="hm-runway-val">—</div>
-            <div class="hm-c-details" id="hm-runway-details">
-              <!-- Dynamically hydrated -->
-            </div>
-            <div class="hm-c-footer" id="hm-runway-footer">TRAJECTORY_STABLE</div>
-          </div>
-
-          <!-- Card 8: Resume Synthesizer (Row 3, span 2) -->
-          <div class="hm-card-323 span-2" onclick="navigate('resume')">
-            <div class="hm-c-top">
-              <div class="hm-c-name">RESUME SYNTHESIZER</div>
-              <div class="hm-c-dot" id="hm-resume-dot"></div>
-            </div>
-            <div class="hm-c-val" id="hm-resume-val">—</div>
-            <div class="hm-c-details" id="hm-resume-details">
-              <!-- Dynamically hydrated -->
-            </div>
-            <div class="hm-c-footer" id="hm-resume-footer">REGISTRY_VERIFIED</div>
-          </div>
-
-        </div><!-- /hm-modules-323 -->
-
-      </div><!-- /hm-wrap -->
+      </div><!-- /cn-wrap -->
     </div><!-- /page-home -->
 
     <!-- ── CALENDAR ─────────────────────────────────── -->
@@ -4180,7 +4497,6 @@ html, body {
           </div>
         </div>
         <div style="display:flex;align-items:center;gap:12px">
-          <button class="arc-stitch-btn" onclick="hasUnsavedChanges=false;alert('Calendar stitched successfully!')">STITCH INTO THE GRID</button>
           <div class="nav-arrows">
             <div class="nav-arrow" onclick="changeMonth(-1)">
               <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
@@ -4232,7 +4548,6 @@ html, body {
             <div class="arc-badge">Weekly View</div>
             <div class="arc-badge green">CONNECTED</div>
           </div>
-          <button class="arc-stitch-btn" onclick="arcStitch()">STITCH INTO THE GRID</button>
         </div>
       </div>
 
@@ -4274,43 +4589,38 @@ html, body {
         <!-- Kanban columns -->
         <div class="arc-kanban" id="arcKanban"></div>
 
-        <!-- Stats bar -->
+        <!-- Stats bar — values hydrated by renderArcStats(); no placeholder numbers -->
         <div class="arc-stats-bar">
           <div class="arc-stat-item">
-            <div class="arc-stat-label">NEURAL_LOAD</div>
+            <div class="arc-stat-label">WEEK_LOAD</div>
             <div style="display:flex;align-items:baseline;gap:8px">
-              <div class="arc-stat-big">88%</div>
-              <div class="arc-stat-tag">SYNC</div>
+              <div class="arc-stat-big" id="arcStatLoad">—</div>
             </div>
-            <div class="rw-agg-bar" style="margin-top:6px;width:120px"><div class="rw-agg-fill" style="width:88%"></div></div>
+            <div class="rw-agg-bar" style="margin-top:6px;width:120px"><div class="rw-agg-fill" id="arcStatLoadBar" style="width:0%"></div></div>
           </div>
           <div class="arc-stat-divider"></div>
           <div class="arc-stat-item">
             <div class="arc-stat-label">COMPLETED_TASKS</div>
             <div style="display:flex;align-items:baseline;gap:8px">
-              <div class="arc-stat-big">24</div>
-              <div class="arc-stat-tag">/ 56 UNITS</div>
+              <div class="arc-stat-big" id="arcStatDone">—</div>
+              <div class="arc-stat-tag" id="arcStatDoneOf"></div>
             </div>
           </div>
           <div class="arc-stat-divider"></div>
           <div class="arc-stat-item">
             <div class="arc-stat-label">DEADLINES_TODAY</div>
             <div style="display:flex;align-items:baseline;gap:8px">
-              <div class="arc-stat-big" style="color:var(--pink)">03</div>
-              <div class="arc-stat-tag">CRITICAL</div>
+              <div class="arc-stat-big" id="arcStatDeadlines">—</div>
+              <div class="arc-stat-tag" id="arcStatDeadlinesTag"></div>
             </div>
           </div>
           <div class="arc-stat-divider"></div>
           <div class="arc-stat-item">
-            <div class="arc-stat-label">CALCULATED_FREE_TIME</div>
+            <div class="arc-stat-label">FREE_TIME</div>
             <div style="display:flex;align-items:baseline;gap:8px">
-              <div class="arc-stat-big">08.2H</div>
-              <div class="arc-stat-tag">WEEKLY_GAP</div>
+              <div class="arc-stat-big" id="arcStatFree">—</div>
+              <div class="arc-stat-tag" id="arcStatFreeTag"></div>
             </div>
-          </div>
-          <div style="display:flex;flex-direction:column;gap:8px;margin-left:auto">
-            <button class="fin-modify-btn" style="padding:8px 14px">STITCH_ALL_TO_CALENDAR</button>
-            <button class="fin-modify-btn" style="padding:8px 14px">EXPORT_SYSTEM_REPORT</button>
           </div>
         </div>
 
@@ -4325,7 +4635,6 @@ html, body {
       <div class="hb-titlebar">
         <div class="hb-page-title">HABIT TRACKER</div>
         <div style="display:flex;align-items:center;gap:12px">
-          <button class="arc-stitch-btn" onclick="hasUnsavedChanges=false;alert('Habits stitched successfully!')">STITCH INTO THE GRID</button>
           <div class="hb-search">
             <svg viewBox="0 0 24 24" width="13" height="13" stroke="currentColor" fill="none" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
             <input class="rw-search-input" placeholder="Search habits..." />
@@ -4337,29 +4646,25 @@ html, body {
       <div class="hb-stat-row">
         <div class="hb-stat-card">
           <div class="hb-stat-label">CURRENT_MONTH_%</div>
-          <div class="hb-stat-val">84.2<span class="hb-stat-unit">%</span></div>
-          <div class="hb-delta">+2.4% <span class="hb-delta-arrow">▲</span></div>
-          <div class="rw-agg-bar" style="margin-top:8px"><div class="rw-agg-fill" style="width:84.2%"></div></div>
+          <div class="hb-stat-val" id="hbStatMonth">—</div>
+          <div class="hb-delta" id="hbStatDelta"></div>
+          <div class="rw-agg-bar" style="margin-top:8px"><div class="rw-agg-fill" id="hbStatMonthBar" style="width:0%"></div></div>
         </div>
         <div class="hb-stat-card">
           <div class="hb-stat-label">CURRENT_STREAK</div>
-          <div class="hb-stat-val hb-streak">18_<span class="hb-stat-unit">DAYS</span>
-            <svg viewBox="0 0 24 24" width="22" height="22" stroke="var(--green)" fill="none" stroke-width="2.5" style="margin-left:6px;margin-bottom:2px"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-          </div>
-          <div class="hb-stat-sub">LOGIC: PERSISTENCE ACTIVE</div>
+          <div class="hb-stat-val hb-streak" id="hbStatStreak">—</div>
+          <div class="hb-stat-sub" id="hbStatStreakSub"></div>
         </div>
         <div class="hb-stat-card">
           <div class="hb-stat-label">TODAYS_NODES</div>
-          <div class="hb-stat-val">10/12 <span class="hb-stat-unit">NODES</span></div>
-          <div class="hb-stat-sub">SYSTEM_LOAD: OPTIMAL</div>
+          <div class="hb-stat-val" id="hbStatToday">—</div>
+          <div class="hb-stat-sub" id="hbStatTodaySub"></div>
         </div>
-        <div class="hb-stat-card hb-alert-card">
-          <div class="hb-stat-label">LOW_PERFORMANCE_NODES</div>
-          <div class="hb-stat-val red" style="display:flex;align-items:center;gap:10px">
-            01
-            <svg viewBox="0 0 24 24" width="22" height="22" stroke="var(--orange)" fill="none" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-          </div>
-          <div class="hb-stat-sub" style="color:var(--orange)">&lt; 50% COMPLETION</div>
+        <!-- At-risk node — fragility score (blueprint Visionary Vector), not a guilt alert -->
+        <div class="hb-stat-card">
+          <div class="hb-stat-label">AT_RISK_NODE</div>
+          <div class="hb-stat-val" id="hbStatRisk">—</div>
+          <div class="hb-stat-sub" id="hbStatRiskSub"></div>
         </div>
       </div>
 
@@ -4368,7 +4673,7 @@ html, body {
         <div class="hb-matrix-head">
           <div>
             <div class="hb-matrix-title">PERFORMANCE_MATRIX</div>
-            <div class="hb-matrix-period">PERIOD: OCTOBER_2023</div>
+            <div class="hb-matrix-period" id="hbMatrixPeriod">PERIOD: —</div>
           </div>
           <button class="hb-add-btn" onclick="openAddHabitModal()">ADD_NODE</button>
         </div>
@@ -4399,7 +4704,7 @@ html, body {
               <span class="hb-leg-dot" style="background:rgba(255,255,255,0.3)"></span><span>PROJECTED</span>
             </div>
           </div>
-          <canvas id="momentumChart" height="200"></canvas>
+          <div id="momentumChart" style="width:100%;height:200px"></div>
         </div>
 
         <!-- Right: insights + log -->
@@ -4427,7 +4732,6 @@ html, body {
             Personal Asset Management and Sector Budgets
           </div>
         </div>
-        <button class="arc-stitch-btn" onclick="hasUnsavedChanges=false;saveFinanceData();if(typeof gymShowToast==='function')gymShowToast('FINANCES STITCHED — Data saved successfully.','var(--green)');">STITCH INTO THE GRID</button>
       </div>
 
       <!-- 4 stat cards -->
@@ -4464,7 +4768,7 @@ html, body {
           </div>
           <div class="fin-donut-wrap">
             <div class="fin-donut-chart-area">
-              <canvas id="spendDonut" width="160" height="160"></canvas>
+              <div id="spendDonut" style="width:160px;height:160px"></div>
               <div class="fin-donut-center">
                 <div class="fin-donut-center-label">TOTAL EXP</div>
                 <div class="fin-donut-center-val" id="finDonutVal">—</div>
@@ -4616,7 +4920,6 @@ html, body {
           <div class="gym-tab" onclick="gymTab(this,'log')">OVERVIEW &amp; LOG</div>
         </div>
         <div class="gym-actions">
-          <button class="arc-stitch-btn" onclick="gymStitch()" style="padding: 7px 14px; font-size: 9px;">STITCH INTO THE GRID</button>
           <button class="gym-action-btn" onclick="openSplitModal()">
             <svg viewBox="0 0 24 24" width="11" height="11" stroke="currentColor" fill="none" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
             Edit Weekly Split
@@ -4757,7 +5060,7 @@ html, body {
             <div class="gym-tel-sub">Current Quarter (Q2 2026)</div>
           </div>
           <div style="position:relative; height: 160px; margin-top: 10px;">
-            <canvas id="gymMuscleQuarterlyChart"></canvas>
+            <div id="gymMuscleQuarterlyChart" style="width:100%;height:100%"></div>
           </div>
         </div>
         <div class="gym-reg-grid" id="gymRegGrid"></div>
@@ -4779,7 +5082,7 @@ html, body {
               <div class="gym-tel-sub">Estimated 1RM Progression — Weekly Average (All Logged Sessions)</div>
             </div>
             <div style="position:relative; height: 260px;">
-              <canvas id="gymStrengthChart"></canvas>
+              <div id="gymStrengthChart" style="width:100%;height:100%"></div>
             </div>
           </div>
           
@@ -4811,6 +5114,10 @@ html, body {
 
     <!-- ── WORK (NEURAL LOCK / STASIS) ──────────────── -->
     <div class="page" id="page-work">
+      <div class="win-tabs">
+        <div class="win-tab" onclick="navigate('runway')">WORK</div>
+        <div class="win-tab active" onclick="navigate('work')">FOCUS</div>
+      </div>
 
       <!-- Header -->
       <div class="page-header" style="margin-bottom: 20px;">
@@ -4821,7 +5128,6 @@ html, body {
             Deep Work Sessions and Cognitive Performance Tracking
           </div>
         </div>
-        <button class="arc-stitch-btn" onclick="hasUnsavedChanges=false;alert('Focus sessions stitched successfully!')">STITCH INTO THE GRID</button>
       </div>
 
       <!-- Hero -->
@@ -4837,23 +5143,23 @@ html, body {
       <div class="nl-stat-row">
         <div class="nl-stat-card">
           <div class="hb-stat-label">TOTAL LOGGED (TODAY)</div>
-          <div class="nl-stat-val" id="nlTotalLogged">04:42 <span class="nl-stat-unit">HRS</span></div>
-          <div class="nl-stat-sub"><svg viewBox="0 0 24 24" width="10" height="10" stroke="currentColor" fill="none" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> COMPLETED</div>
+          <div class="nl-stat-val" id="nlTotalLogged">—</div>
+          <div class="nl-stat-sub" id="nlTotalLoggedSub"></div>
         </div>
         <div class="nl-stat-card">
           <div class="hb-stat-label">SESSIONS (TODAY)</div>
-          <div class="nl-stat-val">06 <span class="nl-stat-unit">SESSIONS</span></div>
-          <div class="nl-stat-sub"><svg viewBox="0 0 24 24" width="10" height="10" stroke="currentColor" fill="none" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> ACTIVE PROTOCOL</div>
+          <div class="nl-stat-val" id="nlSessionsToday">—</div>
+          <div class="nl-stat-sub" id="nlSessionsTodaySub"></div>
         </div>
         <div class="nl-stat-card">
           <div class="hb-stat-label">MONTHLY AVG (DAILY)</div>
-          <div class="nl-stat-val">05:15 <span class="nl-stat-unit">HRS</span></div>
-          <div class="nl-stat-sub" style="color:var(--green)"><svg viewBox="0 0 24 24" width="10" height="10" stroke="currentColor" fill="none" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg> +12% VS LAST MONTH</div>
+          <div class="nl-stat-val" id="nlMonthlyAvg">—</div>
+          <div class="nl-stat-sub" id="nlMonthlyAvgSub"></div>
         </div>
         <div class="nl-stat-card">
-          <div class="hb-stat-label">ARCHITECT SYNC</div>
-          <div class="nl-stat-val">04 <span class="nl-stat-unit">TASKS</span></div>
-          <div class="nl-stat-sub"><svg viewBox="0 0 24 24" width="10" height="10" stroke="currentColor" fill="none" stroke-width="2"><polyline points="18 15 12 9 6 15"/></svg> MODULE INTEGRATED</div>
+          <div class="hb-stat-label">LINKED TASKS</div>
+          <div class="nl-stat-val" id="nlLinkedTasks">—</div>
+          <div class="nl-stat-sub" id="nlLinkedTasksSub"></div>
         </div>
       </div>
 
@@ -4866,20 +5172,14 @@ html, body {
           <!-- Cognitive flow chart -->
           <div class="nl-section">
             <div class="nl-section-head">
-              <div class="nl-section-title">COGNITIVE FLOW ANALYTICS</div>
+              <div class="nl-section-title">FOCUS HOURS</div>
               <div class="rw-toggle-group">
-                <div class="rw-toggle active" onclick="nlToggle(this)">REAL-TIME</div>
-                <div class="rw-toggle" onclick="nlToggle(this)">HISTORY</div>
+                <div class="rw-toggle active" onclick="nlToggle(this)">WEEK</div>
+                <div class="rw-toggle" onclick="nlToggle(this)">MONTH</div>
               </div>
             </div>
-            <div style="position:relative">
-              <canvas id="cogFlowChart" height="200"></canvas>
-              <div class="nl-chart-annotation">
-                <div class="nl-annotation-val">782 mflops</div>
-                <div class="nl-annotation-label">CURRENT LOG</div>
-                <div class="nl-annotation-sub">OPTIMAL FLOW</div>
-              </div>
-            </div>
+            <!-- ECharts renders into this div (ethos theme) -->
+            <div id="cogFlowChart" style="width:100%;height:200px"></div>
           </div>
 
           <!-- Timer -->
@@ -4942,6 +5242,10 @@ html, body {
 
     <!-- ── RUNWAY ─────────────────────────────────────── -->
     <div class="page" id="page-runway">
+      <div class="win-tabs">
+        <div class="win-tab active" onclick="navigate('runway')">WORK</div>
+        <div class="win-tab" onclick="navigate('work')">FOCUS</div>
+      </div>
 
       <!-- Header -->
       <div class="page-header" style="margin-bottom: 20px;">
@@ -4952,7 +5256,6 @@ html, body {
             Project Blueprints, Strategic Objectives and Growth Trajectory
           </div>
         </div>
-        <button class="arc-stitch-btn" onclick="hasUnsavedChanges=false;alert('Runway stitched successfully!')">STITCH INTO THE GRID</button>
       </div>
 
       <!-- Sub-nav tabs -->
@@ -4977,29 +5280,23 @@ html, body {
         <div class="rw-stat-row">
           <div class="rw-stat-card">
             <div class="rw-stat-label">OVERALL AGGREGATE</div>
-            <div class="rw-stat-val">76.4<span class="rw-stat-unit">%</span></div>
-            <div class="rw-agg-bar"><div class="rw-agg-fill" style="width:76.4%"></div></div>
+            <div class="rw-stat-val" id="rwStatAgg">—</div>
+            <div class="rw-agg-bar"><div class="rw-agg-fill" id="rwStatAggBar" style="width:0%"></div></div>
           </div>
           <div class="rw-stat-card">
             <div class="rw-stat-label">ACTIVE PROJECTS (14D)</div>
-            <div class="rw-stat-val">08</div>
-            <div class="rw-stat-sub">
-              <svg viewBox="0 0 24 24" width="10" height="10" stroke="var(--green)" fill="none" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-              ACTIVE HEARTBEAT DETECTED
-            </div>
+            <div class="rw-stat-val" id="rwStatActive">—</div>
+            <div class="rw-stat-sub" id="rwStatActiveSub"></div>
           </div>
           <div class="rw-stat-card">
             <div class="rw-stat-label">NEARLY COMPLETE</div>
-            <div class="rw-stat-val">03</div>
-            <div class="rw-stat-sub">THRESHOLD >= 80%</div>
+            <div class="rw-stat-val" id="rwStatNearly">—</div>
+            <div class="rw-stat-sub" id="rwStatNearlySub"></div>
           </div>
           <div class="rw-stat-card">
             <div class="rw-stat-label">URGENT DEADLINES</div>
-            <div class="rw-stat-val red">02</div>
-            <div class="rw-stat-sub red">
-              <svg viewBox="0 0 24 24" width="10" height="10" stroke="var(--pink)" fill="none" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-              CRITICAL PROXIMITY &lt; 30D
-            </div>
+            <div class="rw-stat-val" id="rwStatUrgent">—</div>
+            <div class="rw-stat-sub" id="rwStatUrgentSub"></div>
           </div>
         </div>
 
@@ -5020,46 +5317,11 @@ html, body {
             </div>
 
             <div class="rw-traj-body">
-              <!-- Donut -->
-              <div class="rw-donut-wrap">
-                <canvas id="rwDonut" width="260" height="260"></canvas>
-                <div class="rw-donut-center">
-                  <div class="rw-donut-label">AGGREGATE</div>
-                  <div class="rw-donut-val">92%</div>
-                </div>
-              </div>
+              <!-- Real sunburst (ECharts) — track → project, sized by count, shaded by progress -->
+              <div id="rwSunburst" style="width:280px;height:280px;flex-shrink:0"></div>
 
-              <!-- Category bars -->
-              <div class="rw-cat-bars">
-                <div class="rw-cat-item">
-                  <div class="rw-cat-row">
-                    <span class="rw-cat-name">ACADEMIC_TRACK</span>
-                    <span class="rw-cat-pf">0.04 P/F</span>
-                  </div>
-                  <div class="rw-cat-bar-bg"><div class="rw-cat-bar-fill" style="width:4%;background:var(--pink)"></div></div>
-                </div>
-                <div class="rw-cat-item">
-                  <div class="rw-cat-row">
-                    <span class="rw-cat-name">CAREER_SYNC</span>
-                    <span class="rw-cat-pf">0.76 P/F</span>
-                  </div>
-                  <div class="rw-cat-bar-bg"><div class="rw-cat-bar-fill" style="width:76%;background:var(--green)"></div></div>
-                </div>
-                <div class="rw-cat-item">
-                  <div class="rw-cat-row">
-                    <span class="rw-cat-name">PERSONAL_OPT</span>
-                    <span class="rw-cat-pf">0.68 P/F</span>
-                  </div>
-                  <div class="rw-cat-bar-bg"><div class="rw-cat-bar-fill" style="width:68%;background:var(--blue)"></div></div>
-                </div>
-                <div class="rw-cat-item">
-                  <div class="rw-cat-row">
-                    <span class="rw-cat-name">RESOURCE_LIMIT</span>
-                    <span class="rw-cat-pf">0.92 P/F</span>
-                  </div>
-                  <div class="rw-cat-bar-bg"><div class="rw-cat-bar-fill" style="width:92%;background:var(--orange)"></div></div>
-                </div>
-              </div>
+              <!-- Category bars — hydrated from real projects by renderRwCategories() -->
+              <div class="rw-cat-bars" id="rwCatBars"></div>
             </div>
           </div>
 
@@ -5285,7 +5547,6 @@ html, body {
             Academic Metrics, Professional Portfolio and Career Milestones
           </div>
         </div>
-        <button class="arc-stitch-btn" onclick="hasUnsavedChanges=false;alert('Profile stitched successfully!')">STITCH INTO THE GRID</button>
       </div>
 
       <!-- Subpages tabs -->
@@ -5304,29 +5565,27 @@ html, body {
 
           <!-- Stats -->
           <div class="rs-stats">
-            <div class="rs-stat-card">
+            <!-- CGPA is user-entered; the rest are real counts from the registry -->
+            <div class="rs-stat-card" onclick="rsEditCgpa()" style="cursor:pointer">
               <div class="rs-stat-label">CUMULATIVE CGPA</div>
-              <div class="rs-stat-val">9.1 <span class="rs-stat-denom">/ 10.0</span></div>
-              <div class="rs-stat-bar"><div class="rs-stat-bar-fill" style="width:91%"></div></div>
-              <div class="rs-stat-status">SYSTEM_STABLE</div>
+              <div class="rs-stat-val"><span id="rsStatCgpa">—</span> <span class="rs-stat-denom">/ 10.0</span></div>
+              <div class="rs-stat-bar"><div class="rs-stat-bar-fill" id="rsStatCgpaBar" style="width:0%"></div></div>
+              <div class="rs-stat-status" id="rsStatCgpaSub">TAP TO SET</div>
             </div>
             <div class="rs-stat-card">
-              <div class="rs-stat-label">COMPLETED PROJECTS</div>
-              <div class="rs-stat-val">4</div>
-              <div class="rs-stat-bar"><div class="rs-stat-bar-fill" style="width:40%"></div></div>
-              <div class="rs-stat-status">SYSTEM_STABLE</div>
+              <div class="rs-stat-label">PROJECTS</div>
+              <div class="rs-stat-val" id="rsStatProjects">—</div>
+              <div class="rs-stat-status" id="rsStatProjectsSub"></div>
             </div>
             <div class="rs-stat-card">
-              <div class="rs-stat-label">INTERNSHIPS NO.</div>
-              <div class="rs-stat-val">24</div>
-              <div class="rs-stat-bar"><div class="rs-stat-bar-fill" style="width:80%"></div></div>
-              <div class="rs-stat-status">REGISTRY_SYNC_COMPLETE</div>
+              <div class="rs-stat-label">INTERNSHIPS</div>
+              <div class="rs-stat-val" id="rsStatInternships">—</div>
+              <div class="rs-stat-status" id="rsStatInternshipsSub"></div>
             </div>
             <div class="rs-stat-card">
               <div class="rs-stat-label">RESEARCH PAPERS</div>
-              <div class="rs-stat-val">2</div>
-              <div class="rs-stat-bar"><div class="rs-stat-bar-fill" style="width:20%"></div></div>
-              <div class="rs-stat-status">PEER_REVIEW_PENDING</div>
+              <div class="rs-stat-val" id="rsStatResearch">—</div>
+              <div class="rs-stat-status" id="rsStatResearchSub"></div>
             </div>
           </div>
 
@@ -5385,10 +5644,10 @@ html, body {
             </button>
           </div>
 
-          <!-- Footer -->
+          <!-- Footer — real registry counts, no fake build hashes -->
           <div class="rs-footer-bar">
-            <span>VERSION: 4.2.1-STABLE</span>
-            <span id="rsShaTag">SHA256: 7e9a8f...b23c</span>
+            <span id="rsFooterCount">—</span>
+            <span id="rsFooterUpdated"></span>
           </div>
 
         </div><!-- /rs-wrap -->
@@ -6048,35 +6307,76 @@ function handleSPAGoogle() {
   window.location.href = GRID_API + '/api/auth/google';
 }
 
-function launchDemo() {
+async function launchDemo() {
+  const btn = document.querySelector('.btn-demo');
+  if (btn) { btn.disabled = true; btn.textContent = 'CREATING DEMO…'; }
+
+  // Preferred path: a real seeded sandbox ACCOUNT on the server. A sandbox is an
+  // ordinary authenticated account, so every feature runs the normal API path —
+  // no isDemo branching, and the data survives if the user later claims it.
+  try {
+    const r = await gridFetch('/api/auth/sandbox', { method: 'POST' });
+    if (r && r.user) {
+      sessionStorage.setItem('gridMode', 'user');       // it IS a real session
+      localStorage.setItem('gridActiveMode', 'user');
+      sessionStorage.setItem('gridUser', r.user.email);
+      sessionStorage.setItem('gridUserId', r.user.id);
+      sessionStorage.setItem('gridUserName', r.user.name || 'Demo User');
+      sessionStorage.setItem('gridIsSandbox', '1');
+      location.reload();
+      return;
+    }
+  } catch (e) {
+    // Endpoint not deployed yet (migration pending) or offline — fall through.
+    console.info('[demo] sandbox unavailable, using local demo:', e && e.message);
+  }
+
+  if (btn) { btn.disabled = false; btn.textContent = 'VIEW DEMO →'; }
+  launchLocalDemo();
+}
+
+/**
+ * LEGACY local demo. Kept only until the sandbox migration is applied in
+ * production; delete this together with the remaining isDemo branches.
+ */
+function launchLocalDemo() {
+  const DEMO_KEYS = [
+    'gymDBVersion', 'gymSplitData', 'gymExerciseRegistry', 'gymMuscleGroups', 'gymLogs',
+    'rwProjects', 'rsTabData', 'gridEntries', 'gridHabits', 'gridBudget', 'gridTxLog',
+    'gridFinTelemetry', 'gridFinRecurItems', 'gridFinDebtItems', 'gridQueueItems',
+    'gridRsStackData', 'gridFocusLogs', 'gridWorkProjectsList', 'gridKanbanTasks', 'gridSleepData'
+  ];
+
   const sessionUser = sessionStorage.getItem('gridUser') || localStorage.getItem('gridUser');
   if (sessionUser) {
-    const keysToBackup = [
-      'gymDBVersion', 'gymSplitData', 'gymExerciseRegistry', 'gymMuscleGroups', 'gymLogs',
-      'rwProjects', 'rsTabData', 'gridEntries', 'gridHabits', 'gridBudget', 'gridTxLog', 'gridFinTelemetry',
-      'gridFinRecurItems', 'gridFinDebtItems', 'gridQueueItems', 'gridRsStackData', 'gridFocusLogs', 'gridWorkProjectsList', 'gridKanbanTasks', 'gridSleepData'
-    ];
-    keysToBackup.forEach(k => {
+    DEMO_KEYS.forEach(k => {
       const val = localStorage.getItem(k);
-      if (val !== null) {
-        localStorage.setItem('userBackup_' + k, val);
-      }
+      if (val !== null) localStorage.setItem('userBackup_' + k, val);
     });
   }
 
   sessionStorage.setItem('gridMode', 'demo');
   localStorage.setItem('gridActiveMode', 'demo');
-  
-  // Wipe all user database parameters to let demo presets load correctly
-  const keysToWipe = [
-    'gymDBVersion', 'gymSplitData', 'gymExerciseRegistry', 'gymMuscleGroups', 'gymLogs',
-    'rwProjects', 'rsTabData', 'gridEntries', 'gridHabits', 'gridBudget', 'gridTxLog', 'gridFinTelemetry',
-    'gridFinRecurItems', 'gridFinDebtItems', 'gridQueueItems', 'gridRsStackData', 'gridFocusLogs', 'gridWorkProjectsList', 'gridKanbanTasks', 'gridSleepData'
-  ];
-  keysToWipe.forEach(k => localStorage.removeItem(k));
-  
+  DEMO_KEYS.forEach(k => localStorage.removeItem(k));
   location.reload();
 }
+
+/**
+ * Sandbox users get a prompt to keep their data instead of losing it at signup.
+ * Called by the signup form when the current session is a sandbox.
+ */
+async function claimSandbox(email, password, name) {
+  const r = await gridFetch('/api/auth/claim', {
+    method: 'POST',
+    body: JSON.stringify({ email, password, name }),
+  });
+  sessionStorage.removeItem('gridIsSandbox');
+  sessionStorage.setItem('gridUser', r.user.email);
+  sessionStorage.setItem('gridUserName', r.user.name || '');
+  return r;
+}
+
+function isSandboxSession() { return sessionStorage.getItem('gridIsSandbox') === '1'; }
 
 function setAuthLoading(form, on) {
   const isLogin = form === 'login';
@@ -6254,7 +6554,9 @@ function navigate(page) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.getElementById('page-' + page).classList.add('active');
-  const navItem = document.querySelector(`[data-page="${page}"]`);
+  // 'work' lives inside the Projects window, so light the Projects nav item.
+  const navKey  = (page === 'work') ? 'runway' : page;
+  const navItem = document.querySelector(`[data-page="${navKey}"]`);
   if (navItem) navItem.classList.add('active');
 
   // show/hide FAB — only on calendar
@@ -6262,6 +6564,7 @@ function navigate(page) {
   if (fab) fab.style.display = page === 'calendar' ? 'flex' : 'none';
 
   // page-specific init
+  if (page === 'home')     { try { renderConsole(); } catch (e) { console.warn('console render:', e); } }
   if (page === 'finances') initFinances();
   if (page === 'runway')   initRunway();
   if (page === 'habits')   initHabits();
@@ -7007,13 +7310,7 @@ function saveSplitModal() {
       finalDays.forEach((d, idx) => { gymDaySplits[idx] = d.title; });
 
       // Sync to API
-      const isDemo = sessionStorage.getItem('gridMode') === 'demo';
-      if (!isDemo) {
-        gridFetch('/api/gym/split', {
-          method: 'PUT',
-          body: JSON.stringify({ name: title, days: finalDays }),
-        }).catch(e => console.warn('Gym split API sync failed:', e));
-      }
+      gridSync('/api/gym/split', { name: title, days: finalDays }, 'PUT');
 
       initGymData();
       renderWeeklySplit();
@@ -7148,168 +7445,71 @@ function getWeeklyStrengthTrend() {
   return trendData;
 }
 
-let gymChartInst = null;
-let gymQuarterlyChartInst = null;
 
 function initGymQuarterlyChart(muscleName) {
-  const ctx = document.getElementById('gymMuscleQuarterlyChart');
-  if (!ctx) return;
-  if (gymQuarterlyChartInst) gymQuarterlyChartInst.destroy();
-  
-  let baseVal = 70;
-  if (muscleName === 'BACK') baseVal = 85;
-  else if (muscleName === 'LEGS') baseVal = 100;
-  else if (muscleName === 'SHOULDERS') baseVal = 55;
-  else if (muscleName === 'BICEPS' || muscleName === 'TRICEPS') baseVal = 40;
-  else if (muscleName === 'ABS' || muscleName === 'FOREARMS') baseVal = 30;
-  
-  const labels = ['Wk 01', 'Wk 02', 'Wk 03', 'Wk 04', 'Wk 05', 'Wk 06', 'Wk 07', 'Wk 08', 'Wk 09', 'Wk 10', 'Wk 11', 'Wk 12'];
-  const data = Array.from({length: 12}, (_, i) => {
-    return Math.round(baseVal * (1 + (i * 0.02) + (Math.sin(i) * 0.03)));
+  const titleEl = document.getElementById('gymMuscleChartTitle');
+  if (titleEl) titleEl.textContent = `${muscleName}: VOLUME PROGRESSION`;
+
+  const el = document.getElementById('gymMuscleQuarterlyChart');
+  if (!el || typeof echarts === 'undefined') return;
+  const chart = ethosChart(el);
+  if (!chart) return;
+
+  // Real logged sets for this muscle, bucketed per ISO week. No synthetic curve.
+  const logs = (typeof gymLogs !== 'undefined' && Array.isArray(gymLogs)) ? gymLogs : [];
+  const buckets = {};
+  logs.forEach(l => {
+    const muscles = (l.muscles || l.muscleGroups || []);
+    const match = Array.isArray(muscles)
+      ? muscles.some(m => String(m).toUpperCase() === String(muscleName).toUpperCase())
+      : String(muscles).toUpperCase().includes(String(muscleName).toUpperCase());
+    if (!match) return;
+    const d = new Date(l.date || l.loggedDate || Date.now());
+    const key = d.toISOString().slice(0, 10);
+    buckets[key] = (buckets[key] || 0) + (Number(l.sets) || Number(l.totalSets) || 1);
   });
-  
-  document.getElementById('gymMuscleChartTitle').textContent = `${muscleName}: QUARTERLY VOLUME PROGRESSION (12 WEEKS)`;
-  
-  gymQuarterlyChartInst = new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels,
-      datasets: [{
-        label: 'VOLUME INDEX (SETS * WT)',
-        data,
-        backgroundColor: 'rgba(118,179,114,0.65)',
-        borderColor: '#76b372',
-        borderWidth: 1,
-        borderRadius: 4
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          enabled: true,
-          bodyFont: { family: 'Space Mono' },
-          backgroundColor: '#1a1a1a',
-          borderColor: 'rgba(255,255,255,0.08)',
-          borderWidth: 1,
-        }
-      },
-      scales: {
-        x: {
-          grid: { color: 'rgba(255,255,255,0.04)' },
-          ticks: { color: 'rgba(232,232,232,0.3)', font: { family: 'Space Mono', size: 8 } }
-        },
-        y: {
-          grid: { color: 'rgba(255,255,255,0.04)' },
-          ticks: { color: 'rgba(232,232,232,0.3)', font: { family: 'Space Mono', size: 8 } }
-        }
-      }
-    }
+
+  const keys = Object.keys(buckets).sort();
+  if (!keys.length) {
+    chart.clear();
+    chart.setOption({ title: { text: 'NO ' + muscleName + ' SESSIONS LOGGED', subtext: 'Commit a session log to build this trend', left: 'center', top: 'center', textStyle: { fontSize: 11 }, subtextStyle: { fontSize: 9 } } });
+    return;
+  }
+
+  chart.setOption({
+    tooltip: { trigger: 'axis', valueFormatter: v => v + ' sets' },
+    xAxis: { type: 'category', data: keys.map(k => k.slice(5)) },
+    yAxis: { type: 'value', name: 'SETS', nameTextStyle: { fontSize: 9 } },
+    series: [{ type: 'bar', data: keys.map(k => buckets[k]) }]
   });
 }
 
 function initGymChart() {
-  const ctx = document.getElementById('gymStrengthChart');
-  if (!ctx) return;
-  if (gymChartInst) gymChartInst.destroy();
+  const el = document.getElementById('gymStrengthChart');
+  if (!el || typeof echarts === 'undefined') return;
+  const chart = ethosChart(el);
+  if (!chart) return;
 
   const trend = getWeeklyStrengthTrend();
-
-  let labels, data, isEmpty;
-
-  if (trend.length === 0) {
-    // No logs yet — show empty state placeholder
-    isEmpty = true;
-    labels = ['NO DATA'];
-    data   = [null];
-  } else {
-    isEmpty = false;
-    labels = trend.map(w => w.weekLabel);
-    data   = trend.map(w => w.averageStrength);
+  if (!trend.length) {
+    chart.clear();
+    chart.setOption({ title: { text: 'NO SESSIONS LOGGED', subtext: 'Commit a session log to build the 1RM trend', left: 'center', top: 'center', textStyle: { fontSize: 11 }, subtextStyle: { fontSize: 9 } } });
+    return;
   }
 
-  const minVal = data.filter(v => v !== null).length > 0
-    ? Math.max(0, Math.min(...data.filter(v => v !== null)) - 10)
-    : 0;
+  const data = trend.map(w => w.averageStrength);
+  const min = Math.max(0, Math.min.apply(null, data) - 10);
 
-  gymChartInst = new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels,
-      datasets: [{
-        label: 'AVG 1RM (KG)',
-        data,
-        borderColor: '#76b372',
-        backgroundColor: 'rgba(118,179,114,0.07)',
-        borderWidth: 1.5,
-        pointRadius: trend.length > 20 ? 2 : 4,
-        pointHoverRadius: 6,
-        pointBackgroundColor: '#76b372',
-        pointBorderColor: '#76b372',
-        fill: true,
-        tension: 0.25,
-        spanGaps: false,
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          enabled: !isEmpty,
-          callbacks: {
-            title: items => `Week of ${items[0].label}`,
-            label: item => ` Avg 1RM: ${item.raw} kg`
-          },
-          bodyFont: { family: 'Space Mono', size: 11 },
-          titleFont: { family: 'Space Mono', size: 10 },
-          backgroundColor: '#1a1a1a',
-          borderColor: 'rgba(118,179,114,0.25)',
-          borderWidth: 1,
-          padding: 10,
-        }
-      },
-      scales: {
-        x: {
-          grid: { color: 'rgba(255,255,255,0.04)' },
-          ticks: {
-            color: 'rgba(232,232,232,0.3)',
-            font: { family: 'Space Mono', size: 8 },
-            maxRotation: 45,
-            autoSkip: true,
-            maxTicksLimit: 16
-          }
-        },
-        y: {
-          grid: { color: 'rgba(255,255,255,0.04)' },
-          ticks: {
-            color: 'rgba(232,232,232,0.3)',
-            font: { family: 'Space Mono', size: 9 },
-            callback: v => v + ' kg'
-          },
-          suggestedMin: minVal
-        }
-      }
-    }
+  chart.setOption({
+    tooltip: { trigger: 'axis', valueFormatter: v => v + ' kg' },
+    xAxis: { type: 'category', data: trend.map(w => w.weekLabel) },
+    yAxis: { type: 'value', min, name: 'KG', nameTextStyle: { fontSize: 9 } },
+    series: [{
+      type: 'line', data,
+      areaStyle: { color: new echarts.graphic.LinearGradient(0,0,0,1,[
+        { offset:0, color:'rgba(118,179,114,0.28)' }, { offset:1, color:'rgba(118,179,114,0.02)' }]) }
+    }]
   });
-
-  // Show "no data" overlay if empty
-  const wrap = ctx.parentElement;
-  const existing = wrap.querySelector('.gym-chart-empty');
-  if (isEmpty) {
-    if (!existing) {
-      const msg = document.createElement('div');
-      msg.className = 'gym-chart-empty';
-      msg.style.cssText = 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:10px;letter-spacing:1.5px;color:var(--text-muted);pointer-events:none;';
-      msg.textContent = 'NO SESSIONS LOGGED YET — COMMIT A WORKOUT TO BEGIN TRACKING';
-      wrap.appendChild(msg);
-    }
-  } else {
-    if (existing) existing.remove();
-  }
 }
 
 function renderOverviewLog() {
@@ -7513,19 +7713,13 @@ function commitWorkoutLog() {
     document.querySelectorAll('.logger-reps-input').forEach(i => i.value = '');
 
     // Persist to API
-    const isDemo = sessionStorage.getItem('gridMode') === 'demo';
-    if (!isDemo) {
-      gridFetch('/api/gym/logs', {
-        method: 'POST',
-        body: JSON.stringify({
-          workoutDate: sessionLog.date,
-          dayIndex:    sessionLog.dayIndex,
-          exercises:   sessionLog.exercises,
-          notes:       sessionLog.notes || '',
-          durationMin: sessionLog.durationMin || null,
-        }),
-      }).catch(e => console.warn('Gym log API save failed:', e));
-    }
+    gridSync('/api/gym/logs', {
+      workoutDate: sessionLog.date,
+      dayIndex:    sessionLog.dayIndex,
+      exercises:   sessionLog.exercises,
+      notes:       sessionLog.notes || '',
+      durationMin: sessionLog.durationMin || null,
+    });
   }
 }
 
@@ -7775,7 +7969,6 @@ function saveExerciseModal() {
 // ═══════════════════════════════════════════════════
 // WORK / NEURAL LOCK
 // ═══════════════════════════════════════════════════
-let cogFlowChartInst = null;
 let nlRunning = false;
 let nlTotalSecs = 25 * 60; // 25 min countdown
 let nlIntervalId = null;
@@ -7923,43 +8116,47 @@ function initWork() {
 }
 
 function initCogFlowChart() {
-  const ctx = document.getElementById('cogFlowChart');
-  if (!ctx) return;
-  if (cogFlowChartInst) cogFlowChartInst.destroy();
+  const el = document.getElementById('cogFlowChart');
+  if (!el || typeof echarts === 'undefined') return;
+  const chart = ethosChart(el);
+  if (!chart) return;
 
-  // Generate spiky focus data across 24h
-  const labels = ['00:00','04:00','08:00','12:00','16:00','20:00','23:59'];
-  const data = [12, 8, 45, 380, 782, 210, 95];
+  // Real data only. focusLogs entries carry duration inside `meta`
+  // (e.g. "Efficiency: 92% | Duration: 45m"), so parse it out.
+  const sessions = (typeof focusLogs !== 'undefined' && Array.isArray(focusLogs))
+    ? focusLogs.filter(l => !l.isErr)
+    : [];
 
-  cogFlowChartInst = new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels,
-      datasets: [{
-        label: 'COGNITIVE FLOW',
-        data,
-        borderColor: '#76b372',
-        backgroundColor: 'rgba(118,179,114,0.08)',
-        borderWidth: 1.5,
-        pointRadius: 0,
-        fill: true,
-        tension: 0.1,
-      }]
-    },
-    options: {
-      responsive: true,
-      animation: { duration: 800 },
-      plugins: { legend: { display: false }, tooltip: { enabled: true,
-        bodyFont: { family: 'Space Mono' },
-        backgroundColor: '#1a1a1a',
-        borderColor: 'rgba(255,255,255,0.08)',
-        borderWidth: 1,
-      }},
-      scales: {
-        x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: 'rgba(232,232,232,0.3)', font: { family: 'Space Mono', size: 10 } } },
-        y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: 'rgba(232,232,232,0.3)', font: { family: 'Space Mono', size: 10 } }, min: 0 },
+  const parsed = sessions.map(l => {
+    const m = /Duration:\s*(\d+)\s*m/i.exec(l.meta || '');
+    return { name: l.name || l.id, time: l.time || '', mins: m ? parseInt(m[1], 10) : 0 };
+  }).filter(x => x.mins > 0);
+
+  if (!parsed.length) {
+    chart.clear();
+    chart.setOption({
+      title: {
+        text: 'NO SESSIONS LOGGED',
+        subtext: 'Run the timer, then STOP & LOG to populate',
+        left: 'center', top: 'center'
       }
-    }
+    });
+    return;
+  }
+
+  parsed.reverse(); // oldest → newest, left to right
+
+  chart.setOption({
+    tooltip: {
+      trigger: 'axis',
+      formatter: pts => {
+        const p = pts[0];
+        return `${parsed[p.dataIndex].name}<br/>${p.value} min @ ${parsed[p.dataIndex].time}`;
+      }
+    },
+    xAxis: { type: 'category', data: parsed.map(p => p.time) },
+    yAxis: { type: 'value', name: 'MIN', nameTextStyle: { fontSize: 9 } },
+    series: [{ type: 'bar', data: parsed.map(p => p.mins) }]
   });
 }
 
@@ -8053,11 +8250,11 @@ function nlToggle(el) {
 // Timetable data: [day 0-6][hour 0-23] = label or ''
 const ttData = [
   // MON
-  { 2:'SLEEP',6:'MAINT',8:'NEURAL_LOAD',10:'ALGOS_LAB',12:'BREAK',14:'RESEARCH' },
+  { 2:'SLEEP',6:'MAINT',8:'DEEP_WORK',10:'ALGOS_LAB',12:'BREAK',14:'RESEARCH' },
   // TUE
   { 2:'SLEEP',6:'MAINT',8:'IDLE',10:'PHYSICS_SIM',12:'BREAK',14:'SYNC' },
   // WED
-  { 2:'SLEEP',6:'MAINT',8:'NEURAL_LOAD',10:'ALGOS_LAB',12:'BREAK',14:'RESEARCH' },
+  { 2:'SLEEP',6:'MAINT',8:'DEEP_WORK',10:'ALGOS_LAB',12:'BREAK',14:'RESEARCH' },
   // THU
   { 2:'SLEEP',6:'MAINT',8:'DEEP_CODE',10:'OS_STRUCT',12:'BREAK',14:'RESEARCH' },
   // FRI
@@ -8432,6 +8629,14 @@ function saveHabits() {
 }
 
 async function initHabits() {
+  // Update the period label to current month
+  const periodEl = document.getElementById('hbMatrixPeriod');
+  if (periodEl) {
+    const now = new Date();
+    const monthName = now.toLocaleString('en-US', { month: 'long' }).toUpperCase();
+    periodEl.textContent = `PERIOD: ${monthName}_${now.getFullYear()}`;
+  }
+
   const isDemo = sessionStorage.getItem('gridMode') === 'demo';
 
   if (isDemo) {
@@ -8601,79 +8806,50 @@ function toggleHabitDay(e) {
   saveHabits(); // localStorage cache
 
   // Persist to API
-  if (!isDemo && h.id) {
-    gridFetch(`/api/habits/${h.id}/log`, {
-      method: 'POST',
-      body: JSON.stringify({ date: _habitDateStr(d), completed: completing }),
-    }).catch(err => console.warn('Habit log sync failed:', err));
+  if (h.id) {
+    gridSync(`/api/habits/${h.id}/log`, { date: _habitDateStr(d), completed: completing });
   }
 }
 
 function initMomentumChart() {
-  const ctx = document.getElementById('momentumChart');
-  if (!ctx) return;
-  if (momentumChartInst) momentumChartInst.destroy();
+  const el = document.getElementById('momentumChart');
+  if (!el || typeof echarts === 'undefined') return;
+  const chart = ethosChart(el);
+  if (!chart) return;
 
-  const labels = ['01_OCT','08_OCT','15_OCT','22_OCT','31_OCT'];
-  const current   = [58, 52, 67, 74, 84];
-  const projected = [58, 62, 70, 79, 92];
+  // Real consistency: % of habits completed, bucketed by week of this month.
+  const hs = (typeof habits !== 'undefined' && Array.isArray(habits)) ? habits : [];
+  if (!hs.length) {
+    chart.clear();
+    chart.setOption({ title: { text: 'NO HABITS YET', subtext: 'Add a node to track momentum', left: 'center', top: 'center' } });
+    return;
+  }
 
-  momentumChartInst = new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels,
-      datasets: [
-        {
-          label: 'CURRENT',
-          data: current,
-          borderColor: '#76b372',
-          backgroundColor: 'rgba(118,179,114,0.12)',
-          borderWidth: 2,
-          pointRadius: 4,
-          pointBackgroundColor: '#76b372',
-          pointBorderColor: '#080808',
-          pointBorderWidth: 2,
-          fill: true,
-          tension: 0.35,
-        },
-        {
-          label: 'PROJECTED',
-          data: projected,
-          borderColor: 'rgba(255,255,255,0.25)',
-          backgroundColor: 'transparent',
-          borderWidth: 1.5,
-          borderDash: [5, 4],
-          pointRadius: 3,
-          pointBackgroundColor: 'rgba(255,255,255,0.3)',
-          fill: false,
-          tension: 0.35,
-        },
-      ]
-    },
-    options: {
-      responsive: true,
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          bodyFont: { family: 'Space Mono' },
-          backgroundColor: '#1a1a1a',
-          borderColor: 'rgba(255,255,255,0.08)',
-          borderWidth: 1,
-          callbacks: { label: ctx => ` ${ctx.parsed.y}%` }
-        },
-      },
-      scales: {
-        x: {
-          grid: { color: 'rgba(255,255,255,0.04)' },
-          ticks: { color: 'rgba(232,232,232,0.35)', font: { family: 'Space Mono', size: 10 }, letterSpacing: '1px' },
-        },
-        y: {
-          grid: { color: 'rgba(255,255,255,0.04)' },
-          ticks: { color: 'rgba(232,232,232,0.35)', font: { family: 'Space Mono', size: 10 }, callback: v => v + '%' },
-          min: 40, max: 100,
-        }
-      },
-    }
+  const today = new Date();
+  const dim = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+  const weeks = [], vals = [];
+  for (let w = 0; w < Math.ceil(dim / 7); w++) {
+    const from = w * 7 + 1, to = Math.min(dim, from + 6);
+    if (from > today.getDate()) break;
+    const cap = Math.min(to, today.getDate());
+    let hit = 0, poss = 0;
+    hs.forEach(h => {
+      const set = new Set(h.checked || []);
+      for (let d = from; d <= cap; d++) { poss++; if (set.has(d)) hit++; }
+    });
+    weeks.push('W' + (w + 1));
+    vals.push(poss ? Math.round((hit / poss) * 100) : 0);
+  }
+
+  chart.setOption({
+    tooltip: { trigger: 'axis', valueFormatter: v => v + '%' },
+    xAxis: { type: 'category', data: weeks },
+    yAxis: { type: 'value', max: 100, name: '%', nameTextStyle: { fontSize: 9 } },
+    series: [{
+      type: 'line', data: vals,
+      areaStyle: { color: new echarts.graphic.LinearGradient(0,0,0,1,[
+        { offset:0, color:'rgba(118,179,114,0.28)' }, { offset:1, color:'rgba(118,179,114,0.02)' }]) }
+    }]
   });
 }
 
@@ -8722,7 +8898,6 @@ function closeHabitModal() {
 // ═══════════════════════════════════════════════════
 // RUNWAY
 // ═══════════════════════════════════════════════════
-let rwDonutChart = null;
 
 // Feed is generated dynamically from user actions
 const feedItems = [];
@@ -8763,16 +8938,7 @@ async function initRunway() {
     } catch(e) { console.warn('Projects API load failed:', e); }
   }
   
-  const canvas = document.getElementById('rwDonut');
-  if (canvas) {
-    canvas.style.cursor = 'pointer';
-    canvas.onclick = () => {
-      const statusTab = document.querySelector('.rw-tab[onclick*="status"]');
-      if (statusTab) {
-        rwTab(statusTab, 'status');
-      }
-    };
-  }
+  // Sunburst drill-down is wired inside initRwDonut() via chart.on('click')
 }
 
 function renderFeed() {
@@ -8942,68 +9108,72 @@ function openAddQueueTaskModal() {
 }
 
 function initRwDonut() {
-  const ctx = document.getElementById('rwDonut');
-  if (!ctx) return;
-  if (rwDonutChart) { rwDonutChart.destroy(); }
-  
-  // Custom multi-tiered nested Category inside Category sunburst chart via Chart.js
-  rwDonutChart = new Chart(ctx, {
-    type: 'doughnut',
-    data: {
-      labels: [
-        'Academic Track', 'Career Sync', 'Personal Optimization', 'Resource Limits',
-        'Aeon Engine', 'Distributed Logs', 'Cyber Dynamics', 'Resume Prep',
-        'Hypertrophy', 'Habits Lab', 'Budget Ledgers', 'Stasis Consensus'
-      ],
-      datasets: [
-        // Dataset 0: Outer ring (Sub-categories / Specific projects)
-        {
-          data: [15, 10, 12, 13, 10, 15, 12, 13],
-          backgroundColor: [
-            'rgba(255, 77, 143, 0.7)', 'rgba(255, 77, 143, 0.4)', // Academic Pink
-            'rgba(118, 179, 114, 0.7)', 'rgba(118, 179, 114, 0.4)', // Career Green
-            'rgba(59, 130, 246, 0.7)', 'rgba(59, 130, 246, 0.4)', // Personal Blue
-            'rgba(249, 115, 22, 0.7)', 'rgba(249, 115, 22, 0.4)'  // Resources Orange
-          ],
-          borderWidth: 1,
-          borderColor: 'var(--bg-2)',
-          cutout: '62%',
-          weight: 1
-        },
-        // Dataset 1: Inner ring (Level 1 Categories)
-        {
-          data: [25, 25, 25, 25],
-          backgroundColor: [
-            '#ff4d8f', // Academic Track
-            '#76b372', // Career Sync
-            '#3b82f6', // Personal Optimization
-            '#f97316'  // Resource Limits
-          ],
-          borderWidth: 1,
-          borderColor: 'var(--bg-2)',
-          cutout: '45%',
-          weight: 0.7
-        }
-      ]
+  const el = document.getElementById('rwSunburst');
+  if (!el || typeof echarts === 'undefined') return;
+  const chart = ethosChart(el);
+  if (!chart) return;
+
+  // Real sunburst: track (inner ring) → project (outer ring).
+  // Leaf value = 1 per project so arc width reflects portfolio composition;
+  // leaf colour opacity encodes that project's progress.
+  const TRACKS = ['ACADEMIC_TRACK', 'CAREER_SYNC', 'PERSONAL_OPT', 'RESOURCE_LIMIT'];
+  const SIG = ['#3b6839', '#76b372', '#94d68f', '#a5f79e'];
+
+  const data = TRACKS.map((track, i) => {
+    const inTrack = (rwProjects || []).filter(p => p.cat === track);
+    if (!inTrack.length) return null;
+    return {
+      name: track.replace(/_/g, ' '),
+      itemStyle: { color: SIG[i] },
+      children: inTrack.map(p => ({
+        name: p.name,
+        value: 1,
+        // progress → opacity within the track's hue
+        itemStyle: { color: SIG[i], opacity: 0.35 + 0.65 * (Math.max(0, Math.min(100, p.progress || 0)) / 100) }
+      }))
+    };
+  }).filter(Boolean);
+
+  if (!data.length) {
+    chart.clear();
+    chart.setOption({
+      title: {
+        text: 'NO PROJECTS YET',
+        subtext: 'Deploy a project node to populate the map',
+        left: 'center', top: 'center'
+      }
+    });
+    return;
+  }
+
+  chart.setOption({
+    tooltip: {
+      formatter: p => {
+        const pct = p.treePathInfo && p.treePathInfo.length > 2
+          ? (rwProjects.find(x => x.name === p.name) || {}).progress
+          : null;
+        return pct != null ? `${p.name}<br/>${pct}% complete` : p.name;
+      }
     },
-    options: {
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          enabled: true,
-          bodyFont: { family: 'Space Mono' },
-          backgroundColor: '#1a1a1a',
-          borderColor: 'rgba(255,255,255,0.08)',
-          borderWidth: 1,
-          callbacks: {
-            label: function(context) {
-              return ' ' + context.label;
-            }
-          }
-        }
-      },
-      animation: { animateRotate: true, duration: 900 }
-    }
+    series: [{
+      type: 'sunburst',
+      data,
+      radius: ['18%', '92%'],
+      sort: null,
+      emphasis: { focus: 'ancestor' },
+      levels: [
+        {},
+        { r0: '18%', r: '52%', label: { rotate: 'tangential', fontSize: 9 } },
+        { r0: '52%', r: '92%', label: { position: 'outside', fontSize: 8, silent: false } }
+      ]
+    }]
+  });
+
+  // Clicking a project drills into the status board
+  chart.off('click');
+  chart.on('click', () => {
+    const statusTab = document.querySelector('.rw-tab[onclick*="status"]');
+    if (statusTab) statusTab.click();
   });
 }
 
@@ -9066,11 +9236,9 @@ async function commitRwProject() {
   if (idVal !== '') {
     const idx = parseInt(idVal);
     rwProjects[idx] = { ...rwProjects[idx], name, cat, progress, deadline, priority, status };
-    if (!isDemo && rwProjects[idx]._id) {
-      gridFetch(`/api/projects/${rwProjects[idx]._id}`, {
-        method: 'PUT',
-        body: JSON.stringify({ title: name, description: cat, progress, deadline, priority, status }),
-      }).catch(e => console.warn('Project update failed:', e));
+    if (rwProjects[idx]._id) {
+      gridSync(`/api/projects/${rwProjects[idx]._id}`,
+        { title: name, description: cat, progress, deadline, priority, status }, 'PUT');
     }
   } else {
     const newProj = { id: 'PROJ_' + String(Math.floor(Math.random()*900)+100), name, cat, progress, deadline, priority, status };
@@ -9264,7 +9432,6 @@ function logWorkEngine() {
 // ═══════════════════════════════════════════════════
 // FINANCES
 // ═══════════════════════════════════════════════════
-let spendDonutChart = null;
 
 let budgetData = JSON.parse(localStorage.getItem('gridBudget') || JSON.stringify([
   { sector: 'ACADEMIC',  planned: 2000, actual: 1200 },
@@ -9446,18 +9613,28 @@ function openAddRecurringModal() {
   });
 }
 
-function addRecurring() {
+async function addRecurring() {
   const name = document.getElementById('recName').value.trim();
   const amt  = document.getElementById('recAmount').value;
   const cat  = document.getElementById('recCat').value;
   const day  = parseInt(document.getElementById('recDay').value) || 1;
   if (!name || !amt) return;
-  finRecurItems.push({ name: name.toUpperCase(), amount: `₹${parseFloat(amt).toLocaleString()}`, cat, day });
+  const amtNum = parseFloat(amt);
+  finRecurItems.push({ name: name.toUpperCase(), amount: `₹${amtNum.toLocaleString()}`, cat, day });
   saveFinRecurItems();
   renderRecurringList();
   document.getElementById('recName').value = '';
   document.getElementById('recAmount').value = '';
   document.getElementById('recDay').value = '';
+  // Persist to API as a recurring transaction
+  gridSync('/api/finance/transactions', {
+    amount: amtNum,
+    description: name.toUpperCase(),
+    date: new Date().toISOString().split('T')[0],
+    type: 'expense',
+    recurring: true,
+    recurringFreq: 'monthly',
+  });
 }
 
 function renderDebtList() {
@@ -9616,32 +9793,18 @@ function renderTxLog() {
 const donutColors = ['#9b59b6', '#ff4d8f', '#3b82f6', '#76b372', '#f97316', '#a855f7', '#ec4899', '#3f51b5', '#00bcd4', '#4caf50', '#ffeb3b', '#ff9800'];
 
 function initDonutChart() {
-  const ctx = document.getElementById('spendDonut');
-  if (!ctx) return;
-  if (spendDonutChart) { spendDonutChart.destroy(); }
-
-  // 1. Calculate actual spending and update elements
+  const el = document.getElementById('spendDonut');
   const totalActual = budgetData.reduce((sum, item) => sum + item.actual, 0);
-  
-  // Center label inside doughnut
-  const centerValEl = document.getElementById('finDonutVal');
-  if (centerValEl) {
-    centerValEl.textContent = getCurrencySymbol() + totalActual.toLocaleString('en-IN', { maximumFractionDigits: 0 });
-  }
 
-  // Telemetry Stat Card "ACTUAL SPENT"
+  const centerValEl = document.getElementById('finDonutVal');
+  if (centerValEl) centerValEl.textContent = getCurrencySymbol() + totalActual.toLocaleString('en-IN', { maximumFractionDigits: 0 });
+
   const spentStatEl = document.getElementById('fStatSpent');
   if (spentStatEl) {
-    spentStatEl.textContent = '₹' + totalActual.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    spentStatEl.textContent = '\u20B9' + totalActual.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     saveFinTelemetry();
   }
 
-  // 2. Prepare dynamic dataset
-  const labels = budgetData.map(b => b.sector);
-  const data = budgetData.map(b => b.actual);
-  const backgroundColors = budgetData.map((_, idx) => donutColors[idx % donutColors.length]);
-
-  // 3. Render the dynamic Legend
   const legendContainer = document.querySelector('.fin-legend');
   if (legendContainer) {
     legendContainer.innerHTML = budgetData.map((b, idx) => {
@@ -9650,69 +9813,26 @@ function initDonutChart() {
     }).join('');
   }
 
-  // 4. Initialize Chart.js doughnut
-  spendDonutChart = new Chart(ctx, {
-    type: 'doughnut',
-    data: {
-      labels: labels.length ? labels : ['NO DATA'],
-      datasets: [{
-        data: data.length ? data : [0],
-        backgroundColor: backgroundColors.length ? backgroundColors : ['#4b5563'],
-        borderWidth: 0,
-        hoverOffset: 6,
-      }]
-    },
-    options: {
-      cutout: '72%',
-      plugins: { legend: { display: false }, tooltip: {
-        callbacks: {
-          label: ctx => ` ₹${ctx.parsed.toLocaleString()}`
-        },
-        bodyFont: { family: 'Space Mono' },
-        backgroundColor: '#1a1a1a',
-        borderColor: 'rgba(255,255,255,0.08)',
-        borderWidth: 1,
-      }},
-      animation: { animateRotate: true, duration: 700 },
-    }
-  });
-}
+  if (!el || typeof echarts === 'undefined') return;
+  const chart = ethosChart(el);
+  if (!chart) return;
 
-async function commitTransaction() {
-  const label  = document.getElementById('txLabel').value.trim();
-  const amount = parseFloat(document.getElementById('txAmount').value);
-  const sector = document.getElementById('txSector').value;
-  const isDemo = sessionStorage.getItem('gridMode') === 'demo';
-  if (!label || isNaN(amount) || amount === 0) return;
+  const rows = budgetData.filter(b => b.actual > 0)
+    .map((b, idx) => ({ name: b.sector, value: b.actual,
+                        itemStyle: { color: donutColors[idx % donutColors.length] } }));
 
-  const now  = new Date();
-  const ts   = `${String(now.getDate()).padStart(2,'0')}.${String(now.getMonth()+1).padStart(2,'0')}.${String(now.getFullYear()).slice(2)} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
-  const hash = '0x' + Math.random().toString(16).slice(2,8) + '...' + Math.random().toString(16).slice(2,5);
-  const dateISO = now.toISOString().split('T')[0];
-
-  const entry = { ts, entity: label.toUpperCase(), sector, val: -Math.abs(amount), hash };
-  txLog.unshift(entry);
-
-  const budgetSector = budgetData.find(b => b.sector === sector);
-  if (budgetSector) budgetSector.actual += Math.abs(amount);
-
-  saveFinanceData();
-  renderTxLog();
-  renderBudgetTable();
-  initDonutChart();
-  document.getElementById('txLabel').value  = '';
-  document.getElementById('txAmount').value = '';
-
-  if (!isDemo) {
-    try {
-      const created = await gridFetch('/api/finance/transactions', {
-        method: 'POST',
-        body: JSON.stringify({ amount: Math.abs(amount), description: label, date: dateISO, type: 'expense' }),
-      });
-      entry.id = created.id;
-      localStorage.setItem('gridTxLog', JSON.stringify(txLog));
-    } catch(e) { console.warn('Transaction API save failed:', e); }
+  if (!rows.length) {
+    chart.clear();
+    chart.setOption({ title: { text: 'NO SPEND', subtext: 'Commit a transaction', left: 'center', top: 'center', textStyle: { fontSize: 11 }, subtextStyle: { fontSize: 9 } } });
+    return;
   }
+
+  chart.setOption({
+    tooltip: { trigger: 'item', valueFormatter: v => getCurrencySymbol() + Number(v).toLocaleString('en-IN') },
+    series: [{ type: 'pie', radius: ['62%', '92%'], data: rows,
+               label: { show: false }, labelLine: { show: false },
+               emphasis: { scaleSize: 6 } }]
+  });
 }
 
 function exportCSV() {
@@ -9773,17 +9893,30 @@ function openBudgetModal() {
   document.getElementById('runwaySectorModal').classList.add('open');
 }
 
-function saveBudgetModal() {
+async function saveBudgetModal() {
   const name = document.getElementById('rsecName').value.trim().toUpperCase();
   const planned = parseFloat(document.getElementById('rsecPlanned').value) || 0;
   const actual = parseFloat(document.getElementById('rsecActual').value) || 0;
   if (!name) return;
-  budgetData.push({ sector: name, planned: planned, actual: actual });
+  const entry = { sector: name, planned, actual };
+  budgetData.push(entry);
   saveFinanceData();
   populateTxSectorDropdown();
   renderBudgetTable();
   initDonutChart();
   closeBudgetModal();
+  // Persist to API
+  const isDemo = sessionStorage.getItem('gridMode') === 'demo';
+  if (!isDemo) {
+    try {
+      const created = await gridFetch('/api/finance/categories', {
+        method: 'POST',
+        body: JSON.stringify({ name, type: 'expense', budgetAmount: planned }),
+      });
+      if (created?.id) entry.id = created.id;
+      saveFinanceData();
+    } catch(e) { console.warn('Budget category API save failed:', e); }
+  }
 }
 
 function closeBudgetModal() {
@@ -9865,11 +9998,7 @@ async function initResume() {
 }
 
 function _syncResumeToAPI() {
-  if (sessionStorage.getItem('gridMode') === 'demo') return;
-  gridFetch('/api/resume', {
-    method: 'PUT',
-    body: JSON.stringify({ sections: rsTabData }),
-  }).catch(e => console.warn('Resume API sync failed:', e));
+  gridSync('/api/resume', { sections: rsTabData }, 'PUT');
 }
 
 function renderRsStack() {
@@ -9986,11 +10115,10 @@ function rsCompile() {
   const btn = document.querySelector('.rs-compile-btn');
   if (!btn) return;
   const orig = btn.innerHTML;
-  btn.innerHTML = `<svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:var(--green);fill:none;stroke-width:2.5"><polyline points="20 6 9 17 4 12"/></svg> COMPILATION COMPLETE — SHA256 SEALED`;
+  btn.innerHTML = `<svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:var(--green);fill:none;stroke-width:2.5"><polyline points="20 6 9 17 4 12"/></svg> COMPILATION COMPLETE`;
   btn.style.borderColor = 'var(--green)';
-  const sha = Math.random().toString(16).slice(2,10) + '...' + Math.random().toString(16).slice(2,6);
-  const tag = document.getElementById('rsShaTag');
-  if (tag) tag.textContent = `SHA256: ${sha}`;
+  const tag = document.getElementById('rsFooterUpdated');
+  if (tag) tag.textContent = 'LAST COMPILED: ' + new Date().toLocaleString();
   setTimeout(() => { btn.innerHTML = orig; }, 3000);
 }
 
@@ -11116,22 +11244,16 @@ function saveProfileDetails() {
   localStorage.setItem('gridUserProfile', JSON.stringify(pd));
 
   // Sync to API
-  const isDemo = sessionStorage.getItem('gridMode') === 'demo';
-  if (!isDemo) {
-    gridFetch('/api/profile', {
-      method: 'PUT',
-      body: JSON.stringify({
-        name:       pd.name,
-        dob:        pd.dob,
-        gender:     pd.gender,
-        city:       pd.city,
-        occupation: pd.occupation,
-        heightCm:   pd.height ? parseFloat(pd.height) : null,
-        weightKg:   pd.weight ? parseFloat(pd.weight) : null,
-        bio:        pd.bio,
-      }),
-    }).catch(e => console.warn('Profile API save failed:', e));
-  }
+  gridSync('/api/profile', {
+    name:       pd.name,
+    dob:        pd.dob,
+    gender:     pd.gender,
+    city:       pd.city,
+    occupation: pd.occupation,
+    heightCm:   pd.height ? parseFloat(pd.height) : null,
+    weightKg:   pd.weight ? parseFloat(pd.weight) : null,
+    bio:        pd.bio,
+  }, 'PUT');
 
   // Refresh hero name + avatar if name changed
   if (pd.name) {
@@ -11186,6 +11308,883 @@ document.addEventListener('keydown', e => {
 
 // Run the Single Page Application mount sequence
 checkSPAAuth();
+
+
+/* ── REAL-DATA HYDRATION ──────────────────────────────────────────────────────
+   P1 truth pass: every stat below is computed from actual stored data.
+   Where data genuinely does not exist yet, we render an explicit empty state
+   rather than a placeholder number. No tile ever shows an invented value.     */
+
+function _hyd(id, value, emptyText) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  // '' is an intentional clear (sub-labels), not missing data.
+  if (value === '') { el.textContent = ''; el.style.opacity = ''; return; }
+  const isEmpty = value === null || value === undefined ||
+                  (typeof value === 'number' && !isFinite(value));
+  el.textContent = isEmpty ? (emptyText !== undefined ? emptyText : '—') : value;
+  el.style.opacity = isEmpty ? '0.4' : '';
+}
+function _hydBar(id, pct) {
+  const el = document.getElementById(id);
+  if (el) el.style.width = Math.max(0, Math.min(100, pct || 0)) + '%';
+}
+
+// ── WEEKLY ──
+function renderArcStats() {
+  const cols = (typeof kanbanTasks !== 'undefined' && Array.isArray(kanbanTasks)) ? kanbanTasks : [];
+  const all  = cols.flat();
+  const done = all.filter(t => t && (t.done || t.completed)).length;
+
+  if (!all.length) {
+    _hyd('arcStatLoad', null, 'NO TASKS');
+    _hyd('arcStatDone', null, '—');
+    _hyd('arcStatDoneOf', '');
+    _hydBar('arcStatLoadBar', 0);
+  } else {
+    const pct = Math.round((done / all.length) * 100);
+    _hyd('arcStatLoad', pct + '%');
+    _hydBar('arcStatLoadBar', pct);
+    _hyd('arcStatDone', String(done).padStart(2, '0'));
+    _hyd('arcStatDoneOf', '/ ' + all.length + ' TASKS');
+  }
+
+  const today = new Date().toISOString().split('T')[0];
+  const due = all.filter(t => t && t.deadline === today).length;
+  _hyd('arcStatDeadlines', all.length ? String(due).padStart(2, '0') : null, '—');
+  _hyd('arcStatDeadlinesTag', due ? 'DUE TODAY' : '');
+
+  // Free time needs the timetable to be populated; stay honest until it is.
+  const filled = document.querySelectorAll('#arcTTBody .arc-tt-cell.filled').length;
+  if (filled) {
+    const free = Math.max(0, (7 * 16) - filled);
+    _hyd('arcStatFree', free + 'H');
+    _hyd('arcStatFreeTag', 'UNBLOCKED');
+  } else {
+    _hyd('arcStatFree', null, 'NO TIMETABLE');
+    _hyd('arcStatFreeTag', '');
+  }
+}
+
+// ── HABITS (incl. fragility score — blueprint Visionary Vector) ──
+function renderHbStats() {
+  const hs = (typeof habits !== 'undefined' && Array.isArray(habits)) ? habits : [];
+  if (!hs.length) {
+    ['hbStatMonth','hbStatStreak','hbStatToday','hbStatRisk'].forEach(id => _hyd(id, null, 'NO HABITS'));
+    ['hbStatDelta','hbStatStreakSub','hbStatTodaySub','hbStatRiskSub'].forEach(id => _hyd(id, ''));
+    _hydBar('hbStatMonthBar', 0);
+    return;
+  }
+
+  const avg = Math.round(hs.reduce((s, h) => s + (h.pct || 0), 0) / hs.length);
+  _hyd('hbStatMonth', avg + '%');
+  _hydBar('hbStatMonthBar', avg);
+  _hyd('hbStatDelta', '');
+
+  const dom = new Date().getDate();
+  const doneToday = hs.filter(h => (h.checked || []).includes(dom)).length;
+  _hyd('hbStatToday', doneToday + '/' + hs.length);
+  _hyd('hbStatTodaySub', doneToday === hs.length ? 'ALL NODES CLEAR' : '');
+
+  // Longest current streak across habits, counting back from today.
+  let best = 0, bestName = '';
+  hs.forEach(h => {
+    const set = new Set(h.checked || []);
+    let run = 0;
+    for (let d = dom; d >= 1; d--) { if (set.has(d)) run++; else break; }
+    if (run > best) { best = run; bestName = h.name; }
+  });
+  _hyd('hbStatStreak', best ? best + ' DAYS' : null, 'NO STREAK');
+  _hyd('hbStatStreakSub', best ? bestName : '');
+
+  // fragility = (1 − completion) × streakAtStake × daysSinceLastLog
+  let risk = null, riskScore = -1;
+  hs.forEach(h => {
+    const set = new Set(h.checked || []);
+    let since = 0;
+    for (let d = dom; d >= 1; d--) { if (set.has(d)) break; since++; }
+    let run = 0;
+    for (let d = dom - since; d >= 1; d--) { if (set.has(d)) run++; else break; }
+    const score = (1 - (h.pct || 0) / 100) * (run + 1) * (since + 1);
+    if (score > riskScore) { riskScore = score; risk = { name: h.name, since, run }; }
+  });
+  if (risk && riskScore > 0) {
+    _hyd('hbStatRisk', risk.name);
+    _hyd('hbStatRiskSub', risk.since === 0 ? 'HOLDING' : 'MISSED ' + risk.since + 'D — ' + risk.run + 'D AT STAKE');
+  } else {
+    _hyd('hbStatRisk', null, 'ALL STABLE');
+    _hyd('hbStatRiskSub', '');
+  }
+}
+
+// ── FOCUS ──
+function renderNlStats() {
+  const logs = (typeof focusLogs !== 'undefined' && Array.isArray(focusLogs)) ? focusLogs : [];
+  const real = logs.filter(l => !l.isErr);
+  const mins = real.reduce((s, l) => {
+    const m = /Duration:\s*(\d+)\s*m/i.exec(l.meta || '');
+    return s + (m ? parseInt(m[1], 10) : 0);
+  }, 0);
+
+  if (!real.length) {
+    ['nlTotalLogged','nlSessionsToday','nlMonthlyAvg','nlLinkedTasks'].forEach(id => _hyd(id, null, 'NO DATA'));
+    ['nlTotalLoggedSub','nlSessionsTodaySub','nlMonthlyAvgSub','nlLinkedTasksSub'].forEach(id => _hyd(id, ''));
+    return;
+  }
+  _hyd('nlTotalLogged', Math.floor(mins / 60) + ':' + String(mins % 60).padStart(2, '0') + ' HRS');
+  _hyd('nlTotalLoggedSub', 'ACROSS ' + real.length + ' SESSIONS');
+  _hyd('nlSessionsToday', String(real.length).padStart(2, '0'));
+  _hyd('nlSessionsTodaySub', '');
+  _hyd('nlMonthlyAvg', Math.round(mins / real.length) + ' MIN');
+  _hyd('nlMonthlyAvgSub', 'AVG / SESSION');
+
+  const projs = (typeof rwProjects !== 'undefined' && Array.isArray(rwProjects)) ? rwProjects : [];
+  const active = projs.filter(p => p.status === 'running').length;
+  _hyd('nlLinkedTasks', String(active).padStart(2, '0'));
+  _hyd('nlLinkedTasksSub', 'RUNNING PROJECTS');
+}
+
+// ── RUNWAY ──
+function renderRwStats() {
+  const ps = (typeof rwProjects !== 'undefined' && Array.isArray(rwProjects)) ? rwProjects : [];
+  if (!ps.length) {
+    ['rwStatAgg','rwStatActive','rwStatNearly','rwStatUrgent'].forEach(id => _hyd(id, null, 'NONE'));
+    ['rwStatActiveSub','rwStatNearlySub','rwStatUrgentSub'].forEach(id => _hyd(id, ''));
+    _hydBar('rwStatAggBar', 0);
+    renderRwCategories();
+    return;
+  }
+  const agg = Math.round(ps.reduce((s, p) => s + (p.progress || 0), 0) / ps.length);
+  _hyd('rwStatAgg', agg + '%');
+  _hydBar('rwStatAggBar', agg);
+
+  const active = ps.filter(p => p.status === 'running').length;
+  _hyd('rwStatActive', String(active).padStart(2, '0'));
+  _hyd('rwStatActiveSub', active ? 'IN FLIGHT' : '');
+
+  const nearly = ps.filter(p => (p.progress || 0) >= 80 && p.status !== 'completed').length;
+  _hyd('rwStatNearly', String(nearly).padStart(2, '0'));
+  _hyd('rwStatNearlySub', 'THRESHOLD ≥ 80%');
+
+  const soon = new Date(); soon.setDate(soon.getDate() + 30);
+  const urgent = ps.filter(p => p.deadline && new Date(p.deadline) <= soon && p.status !== 'completed').length;
+  _hyd('rwStatUrgent', String(urgent).padStart(2, '0'));
+  _hyd('rwStatUrgentSub', urgent ? 'WITHIN 30 DAYS' : '');
+  renderRwCategories();
+}
+
+function renderRwCategories() {
+  const wrap = document.getElementById('rwCatBars');
+  if (!wrap) return;
+  const ps = (typeof rwProjects !== 'undefined' && Array.isArray(rwProjects)) ? rwProjects : [];
+  const TRACKS = ['ACADEMIC_TRACK', 'CAREER_SYNC', 'PERSONAL_OPT', 'RESOURCE_LIMIT'];
+  const rows = TRACKS.map(t => {
+    const inT = ps.filter(p => p.cat === t);
+    if (!inT.length) return '';
+    const pct = Math.round(inT.reduce((s, p) => s + (p.progress || 0), 0) / inT.length);
+    return `<div class="rw-cat-item">
+        <div class="rw-cat-row">
+          <span class="rw-cat-name">${t}</span>
+          <span class="rw-cat-pf">${pct}% · ${inT.length}</span>
+        </div>
+        <div class="rw-cat-bar-bg"><div class="rw-cat-bar-fill" style="width:${pct}%;background:var(--sig-500)"></div></div>
+      </div>`;
+  }).join('');
+  wrap.innerHTML = rows || '<div style="font-size:10px;color:var(--text-muted);letter-spacing:1px">NO PROJECTS YET</div>';
+}
+
+// ── RESUME ──
+function renderRsStats() {
+  const d = (typeof rsTabData !== 'undefined' && rsTabData) ? rsTabData : {};
+  const n = k => Array.isArray(d[k]) ? d[k].length : 0;
+  _hyd('rsStatProjects', n('projects') || null, '0');
+  _hyd('rsStatProjectsSub', n('projects') ? 'REGISTERED' : 'NONE YET');
+  _hyd('rsStatInternships', n('internships') || null, '0');
+  _hyd('rsStatInternshipsSub', n('internships') ? 'REGISTERED' : 'NONE YET');
+  _hyd('rsStatResearch', n('research') || null, '0');
+  _hyd('rsStatResearchSub', n('research') ? 'REGISTERED' : 'NONE YET');
+
+  const cgpa = localStorage.getItem('gridCgpa');
+  _hyd('rsStatCgpa', cgpa || null, '—');
+  _hydBar('rsStatCgpaBar', cgpa ? (parseFloat(cgpa) / 10) * 100 : 0);
+  _hyd('rsStatCgpaSub', cgpa ? 'SELF-REPORTED' : 'TAP TO SET');
+
+  const total = ['projects','internships','positions','courses','research','achievements']
+    .reduce((s, k) => s + n(k), 0);
+  _hyd('rsFooterCount', total + ' REGISTRY NODES');
+}
+
+function rsEditCgpa() {
+  const cur = localStorage.getItem('gridCgpa') || '';
+  const val = prompt('Enter your CGPA (out of 10):', cur);
+  if (val === null) return;
+  const num = parseFloat(val);
+  if (isNaN(num) || num < 0 || num > 10) { alert('Enter a number between 0 and 10.'); return; }
+  localStorage.setItem('gridCgpa', num.toFixed(2));
+  renderRsStats();
+}
+
+// Master hydrate — safe to call repeatedly.
+function hydrateRealStats() {
+  try { renderArcStats(); } catch (e) { console.warn('arc stats:', e); }
+  try { renderHbStats(); }  catch (e) { console.warn('hb stats:', e); }
+  try { renderNlStats(); }  catch (e) { console.warn('nl stats:', e); }
+  try { renderRwStats(); }  catch (e) { console.warn('rw stats:', e); }
+  try { renderRsStats(); }  catch (e) { console.warn('rs stats:', e); }
+}
+
+document.addEventListener('DOMContentLoaded', () => setTimeout(hydrateRealStats, 60));
+
+
+
+/* ══ P4: OFFLINE QUEUE ════════════════════════════════════════════════════════
+   Failed writes persist to IndexedDB and replay on reconnect. Server upserts are
+   idempotent (unique defId+loggedDate), so replay is safe. This is what makes
+   deleting the localStorage fork viable later.                                */
+const GridQueue = (() => {
+  const DB = 'gridQueue', STORE = 'ops';
+  let dbp = null;
+
+  function open() {
+    if (dbp) return dbp;
+    dbp = new Promise((res, rej) => {
+      const r = indexedDB.open(DB, 1);
+      r.onupgradeneeded = () => {
+        if (!r.result.objectStoreNames.contains(STORE))
+          r.result.createObjectStore(STORE, { keyPath: 'seq', autoIncrement: true });
+      };
+      r.onsuccess = () => res(r.result);
+      r.onerror  = () => rej(r.error);
+    });
+    return dbp;
+  }
+
+  function tx(mode, fn) {
+    return open().then(db => new Promise((res, rej) => {
+      const t = db.transaction(STORE, mode);
+      const rq = fn(t.objectStore(STORE));
+      t.oncomplete = () => res(rq && 'result' in rq ? rq.result : undefined);
+      t.onerror    = () => rej(t.error);
+    }));
+  }
+
+  const add    = op  => tx('readwrite', st => st.add({ ...op, at: Date.now() }));
+  const all    = ()  => tx('readonly',  st => st.getAll());
+  const remove = seq => tx('readwrite', st => st.delete(seq));
+
+  async function size() { try { return (await all() || []).length; } catch (e) { return 0; } }
+
+  async function flush() {
+    let ops;
+    try { ops = await all(); } catch (e) { return 0; }
+    if (!ops || !ops.length) return 0;
+    ops.sort((a, b) => a.seq - b.seq);            // preserve write order
+    let done = 0;
+    for (const op of ops) {
+      try {
+        await gridFetch(op.path, { method: op.method, body: JSON.stringify(op.body) });
+        await remove(op.seq);
+        done++;
+      } catch (e) {
+        if (e && e.status >= 400 && e.status < 500) { await remove(op.seq); } // poison op → drop
+        else break;                                                          // still offline → stop
+      }
+    }
+    if (done) console.info('[queue] replayed ' + done + ' op(s)');
+    return done;
+  }
+
+  return { add, flush, size };
+})();
+
+/** gridFetch + durable retry. Use for writes that must not be lost. */
+async function gridWrite(path, body, method = 'POST') {
+  try {
+    return await gridFetch(path, { method, body: JSON.stringify(body) });
+  } catch (e) {
+    if (!e || !e.status || e.status >= 500) {
+      await GridQueue.add({ path, method, body });
+      return { queued: true };
+    }
+    throw e;
+  }
+}
+window.addEventListener('online', () => GridQueue.flush());
+
+/* ══ UNIFIED WRITE PATH ══════════════════════════════════════════════════════
+   Single place that knows about demo mode. Every persistent write should go
+   through this instead of hand-rolling `if (!isDemo) gridFetch(...)`, which
+   both duplicated the check ~21 times AND silently dropped writes whenever the
+   network was down. gridSync is a no-op in demo and offline-durable when authed.
+
+   NOTE: demo mode still reads/writes localStorage. Fully deleting the fork needs
+   a server-seeded sandbox account (no such endpoint exists yet), so the mode
+   check lives here — in ONE place — rather than scattered through the file.   */
+const GridMode = {
+  isDemo() { return sessionStorage.getItem('gridMode') === 'demo'; },
+  isAuthed() { return !this.isDemo(); },
+};
+
+function gridSync(path, body, method = 'POST') {
+  if (GridMode.isDemo()) return Promise.resolve(null);
+  return gridWrite(path, body, method)
+    .catch(e => { console.warn('[sync] ' + method + ' ' + path + ' failed:', e); return null; });
+}
+
+
+/* ══ P4: COMMAND PALETTE (⌘K) ═══════════════════════════════════════════════ */
+let gkItems = [], gkSel = 0;
+
+function gkBuild() {
+  const pages = [
+    ['home','Home / Console'], ['calendar','Calendar'], ['weekly','Weekly'],
+    ['habits','Habits'], ['finances','Finances'], ['workout','Gym'],
+    ['work','Focus'], ['runway','Runway'], ['resume','Resume'],
+  ];
+  const items = pages.map(pair => ({
+    kind: 'page', label: 'Go to ' + pair[1], run: () => navigate(pair[0]),
+  }));
+
+  items.push({ kind: 'action', label: 'Open Daily Console', run: () => dcOpen() });
+  items.push({ kind: 'action', label: 'Start focus timer', run: () => {
+    navigate('work');
+    const b = document.getElementById('nlInitBtn'); if (b) b.click();
+  }});
+
+  // Log any habit straight from the palette — zero navigation.
+  const hs = (typeof habits !== 'undefined' && Array.isArray(habits)) ? habits : [];
+  hs.forEach((h, i) => {
+    items.push({
+      kind: 'log', label: 'Log: ' + h.name,
+      run: () => {
+        try { toggleHabitDay(i, new Date().getDate()); } catch (e) {}
+        try { hydrateRealStats(); } catch (e) {}
+        dcToast('Logged ' + h.name);
+      },
+    });
+  });
+  return items;
+}
+
+function gkRender(filter) {
+  const q = (filter || '').toLowerCase().trim();
+  const list = document.getElementById('gkList');
+  if (!list) return;
+  const shown = gkItems.filter(it => !q || it.label.toLowerCase().includes(q));
+  gkSel = 0;
+  list.innerHTML = shown.length
+    ? shown.map((it, i) =>
+        '<div class="gk-item' + (i === 0 ? ' sel' : '') + '" data-i="' + i + '">' +
+        '<span>' + it.label + '</span><span class="gk-item-kind">' + it.kind + '</span></div>').join('')
+    : '<div class="gk-empty">No matches</div>';
+  list._shown = shown;
+  Array.prototype.forEach.call(list.querySelectorAll('.gk-item'), el => {
+    el.onclick = () => gkRun(shown[+el.dataset.i]);
+  });
+}
+
+function gkRun(item) { if (!item) return; gkClose(); setTimeout(() => item.run(), 60); }
+
+function gkOpen() {
+  gkItems = gkBuild();
+  const ov = document.getElementById('gkOverlay');
+  if (!ov) return;
+  ov.classList.add('open');
+  const inp = document.getElementById('gkInput');
+  if (inp) { inp.value = ''; setTimeout(() => inp.focus(), 30); }
+  gkRender('');
+}
+function gkClose() {
+  const ov = document.getElementById('gkOverlay');
+  if (ov) ov.classList.remove('open');
+}
+
+function gkMove(d) {
+  const list = document.getElementById('gkList');
+  if (!list) return;
+  const els = Array.prototype.slice.call(list.querySelectorAll('.gk-item'));
+  if (!els.length) return;
+  if (els[gkSel]) els[gkSel].classList.remove('sel');
+  gkSel = (gkSel + d + els.length) % els.length;
+  els[gkSel].classList.add('sel');
+  els[gkSel].scrollIntoView({ block: 'nearest' });
+}
+
+document.addEventListener('keydown', e => {
+  const gkEl = document.getElementById('gkOverlay');
+  const dcEl = document.getElementById('dcOverlay');
+  const openPalette = gkEl && gkEl.classList.contains('open');
+  const openConsole = dcEl && dcEl.classList.contains('open');
+
+  if ((e.metaKey || e.ctrlKey) && String(e.key).toLowerCase() === 'k') {
+    e.preventDefault(); openPalette ? gkClose() : gkOpen(); return;
+  }
+  if (e.key === 'Escape') { if (openPalette) gkClose(); if (openConsole) dcClose(); return; }
+  if (!openPalette) return;
+
+  if (e.key === 'ArrowDown')      { e.preventDefault(); gkMove(1); }
+  else if (e.key === 'ArrowUp')   { e.preventDefault(); gkMove(-1); }
+  else if (e.key === 'Enter')     {
+    e.preventDefault();
+    const list = document.getElementById('gkList');
+    gkRun((list && list._shown || [])[gkSel]);
+  }
+});
+
+/* ══ P4: DAILY CONSOLE ══════════════════════════════════════════════════════ */
+let dcDateStr = null, dcDraft = {};
+
+function dcToday() {
+  const d = new Date();
+  return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+}
+function dcDayOf(str) { return new Date(str + 'T00:00:00').getDate(); }
+
+function dcToast(msg) {
+  const el = document.getElementById('dcStatus');
+  if (!el) return;
+  el.textContent = msg;
+  clearTimeout(dcToast._t);
+  dcToast._t = setTimeout(() => { if (el.textContent === msg) el.textContent = ''; }, 2600);
+}
+
+function dcOpen(date) {
+  dcDateStr = date || dcToday();
+  dcDraft = {};
+  const ov = document.getElementById('dcOverlay');
+  if (ov) ov.classList.add('open');
+  dcRender();
+}
+function dcClose() {
+  const ov = document.getElementById('dcOverlay');
+  if (ov) ov.classList.remove('open');
+}
+
+function dcShift(delta) {
+  const d = new Date(dcDateStr + 'T00:00:00');
+  d.setDate(d.getDate() + delta);
+  const next = new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+  if (next > dcToday()) return;                 // never log the future
+  dcDateStr = next; dcDraft = {}; dcRender();
+}
+
+/** Items come from local habits today; the metrics API takes over post-migration. */
+function dcItems() {
+  const hs = (typeof habits !== 'undefined' && Array.isArray(habits)) ? habits : [];
+  const day = dcDayOf(dcDateStr);
+  return hs.map((h, i) => ({
+    idx: i, name: h.name,
+    done: (h.checked || []).indexOf(day) !== -1,
+  }));
+}
+
+function dcRender() {
+  const body = document.getElementById('dcBody');
+  const dEl  = document.getElementById('dcDate');
+  const seal = document.getElementById('dcSeal');
+  if (!body || !dEl || !seal) return;
+
+  const items = dcItems();
+  dEl.textContent = dcDateStr === dcToday()
+    ? 'TODAY · ' + dcDateStr
+    : new Date(dcDateStr + 'T00:00:00')
+        .toLocaleDateString(undefined, { weekday: 'short', day: '2-digit', month: 'short' })
+        .toUpperCase();
+
+  if (!items.length) {
+    body.innerHTML = '<div class="gk-empty">No metrics yet — add one on the Habits page, ' +
+                     'then log your whole day from here in seconds.</div>';
+    seal.disabled = true;
+    seal.textContent = 'SEAL DAY';
+    seal.classList.remove('sealed');
+    return;
+  }
+  seal.disabled = false;
+
+  body.innerHTML = items.map(it => {
+    const on = (it.idx in dcDraft) ? dcDraft[it.idx] : it.done;
+    return '<div class="dc-row' + (on ? ' done' : '') + '" data-idx="' + it.idx + '">' +
+      '<button class="dc-check" onclick="dcToggle(' + it.idx + ')" aria-label="toggle ' + it.name + '">' +
+      '<svg viewBox="0 0 24 24" stroke="#08110b" fill="none" stroke-width="3.5">' +
+      '<polyline points="20 6 9 17 4 12"/></svg></button>' +
+      '<span class="dc-name">' + it.name + '</span></div>';
+  }).join('');
+
+  const done = items.filter(it => (it.idx in dcDraft) ? dcDraft[it.idx] : it.done).length;
+  seal.textContent = done === items.length ? 'SEAL DAY ▰▰▰▰▰' : 'SEAL DAY · ' + done + '/' + items.length;
+  seal.classList.toggle('sealed', done === items.length);
+}
+
+function dcToggle(idx) {
+  const cur = dcItems().find(i => i.idx === idx);
+  if (!cur) return;
+  const now = (idx in dcDraft) ? dcDraft[idx] : cur.done;
+  dcDraft[idx] = !now;                          // optimistic — UI responds instantly
+  dcRender();
+}
+
+/**
+ * Set a habit's state for a given day. Mutates the model directly, keeps pct in
+ * sync, persists locally, and syncs to the API through the offline queue.
+ * Returns true if the model now reflects the requested state.
+ */
+function dcSetHabit(idx, day, on) {
+  const h = (typeof habits !== 'undefined' && habits) ? habits[idx] : null;
+  if (!h) return false;
+
+  const at = h.checked.indexOf(day);
+  if (on && at === -1)       h.checked.push(day);
+  else if (!on && at !== -1) h.checked.splice(at, 1);
+
+  const dim = (typeof DAYS_IN_MONTH === 'number' && DAYS_IN_MONTH) ? DAYS_IN_MONTH : 30;
+  h.pct = Math.round((h.checked.length / dim) * 100);
+
+  try { if (typeof saveHabits === 'function') saveHabits(); } catch (e) {}
+
+  const isDemo = sessionStorage.getItem('gridMode') === 'demo';
+  if (!isDemo && h.id) {
+    // Durable: enqueued and replayed if the network is down.
+    gridWrite('/api/habits/' + h.id + '/log', { date: dcDateStr, completed: !!on })
+      .catch(e => console.warn('habit sync failed', e));
+  }
+  return h.checked.indexOf(day) !== -1 === !!on;
+}
+
+async function dcCommit() {
+  const items = dcItems();
+  const changed = Object.keys(dcDraft).filter(k => {
+    const it = items.find(i => i.idx === +k);
+    return it && dcDraft[k] !== it.done;
+  });
+
+  // Apply locally first so the grid updates with zero latency.
+  // NOTE: the page's toggleHabitDay(e) is a DOM *event* handler (reads
+  // e.currentTarget.dataset and needs the matrix row), so it cannot be called
+  // programmatically. dcSetHabit mutates the model directly instead.
+  const day = dcDayOf(dcDateStr);
+  let applied = 0;
+  const failed = [];
+  changed.forEach(k => {
+    if (dcSetHabit(+k, day, dcDraft[k])) applied++;
+    else failed.push(+k);
+  });
+  try { if (typeof buildHabitMatrix === 'function') buildHabitMatrix(); } catch (e) {}
+
+  const allDone = items.length > 0 && items.every(it =>
+    (it.idx in dcDraft) ? dcDraft[it.idx] : it.done);
+
+  dcDraft = {};
+  dcRender();
+  try { hydrateRealStats(); } catch (e) {}
+
+  let queued = 0;
+  try { queued = await GridQueue.size(); } catch (e) {}
+
+  if (!changed.length) {
+    dcToast('Nothing to commit');
+  } else if (failed.length) {
+    // Never claim success for writes that did not land.
+    dcToast('Applied ' + applied + '/' + changed.length + ' — ' + failed.length + ' failed');
+    console.warn('[console] failed to apply metrics at index', failed);
+  } else {
+    dcToast('Committed ' + applied + ' change' + (applied > 1 ? 's' : '') +
+            (queued ? ' · ' + queued + ' queued offline' : ''));
+  }
+
+  if (allDone && applied && !failed.length) {
+    setTimeout(() => dcToast('DAY SEALED // SYSTEM NOMINAL'), 400);
+  }
+  if (!failed.length) setTimeout(dcClose, 900);
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const inp = document.getElementById('gkInput');
+  if (inp) inp.addEventListener('input', e => gkRender(e.target.value));
+  GridQueue.flush();
+});
+
+
+
+/* ══ U2: THE CONSOLE (page-home) ════════════════════════════════════════════
+   Replaces the 8-tile nav menu. Home is now the logging surface, not a
+   launcher: one-tap chips, a contextual NOW action, the 365-day heat-wall,
+   and real vitals. Everything reads from live data or renders an empty state. */
+
+function cnToday() {
+  const d = new Date();
+  return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+}
+
+function cnRenderHero() {
+  const g = document.getElementById('cnGreet');
+  const sub = document.getElementById('cnSub');
+  if (!g || !sub) return;
+
+  const name = sessionStorage.getItem('gridUserName') ||
+               sessionStorage.getItem('gridUser') || '';
+  const h = new Date().getHours();
+  const part = h < 5 ? 'UP LATE' : h < 12 ? 'GOOD MORNING' : h < 18 ? 'GOOD AFTERNOON' : 'GOOD EVENING';
+  g.textContent = name ? part + ', ' + String(name).split('@')[0].toUpperCase() : part;
+  sub.textContent = new Date().toLocaleDateString(undefined,
+    { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' }).toUpperCase();
+
+  // Longest active streak across habits.
+  const hs = (typeof habits !== 'undefined' && Array.isArray(habits)) ? habits : [];
+  const dom = new Date().getDate();
+  let best = 0;
+  hs.forEach(x => {
+    const set = new Set(x.checked || []);
+    let run = 0;
+    for (let d = dom; d >= 1; d--) { if (set.has(d)) run++; else break; }
+    if (run > best) best = run;
+  });
+  const chip = document.getElementById('cnStreakChip');
+  const val  = document.getElementById('cnStreakVal');
+  if (val) val.textContent = best ? best : '—';
+  if (chip) chip.classList.toggle('hot', best >= 7);
+}
+
+function cnRenderChips() {
+  const wrap = document.getElementById('cnChips');
+  const meta = document.getElementById('cnTodayMeta');
+  if (!wrap) return;
+
+  const hs = (typeof habits !== 'undefined' && Array.isArray(habits)) ? habits : [];
+  if (!hs.length) {
+    wrap.innerHTML = '<div class="cn-empty">No metrics yet — add one on the Habits page.</div>';
+    if (meta) meta.textContent = '';
+    return;
+  }
+
+  const day = new Date().getDate();
+  wrap.innerHTML = hs.map((h, i) => {
+    const on = (h.checked || []).indexOf(day) !== -1;
+    return '<div class="cn-chip' + (on ? ' on' : '') + '" data-i="' + i + '" onclick="cnTapChip(' + i + ')">' +
+           '<span class="cn-dot"></span>' + h.name + '</div>';
+  }).join('');
+
+  const done = hs.filter(h => (h.checked || []).indexOf(day) !== -1).length;
+  if (meta) meta.textContent = done + '/' + hs.length + ' LOGGED';
+}
+
+/** One-tap logging straight from home — the whole point of the Console. */
+function cnTapChip(i) {
+  const day = new Date().getDate();
+  const hs = (typeof habits !== 'undefined' && Array.isArray(habits)) ? habits : [];
+  const h = hs[i];
+  if (!h) return;
+  const on = (h.checked || []).indexOf(day) === -1;   // desired next state
+
+  if (typeof dcSetHabit === 'function') dcSetHabit(i, day, on);
+
+  cnRenderChips();
+  cnRenderHero();
+  cnRenderVitals();
+  cnRenderHeatWall();
+  try { if (typeof buildHabitMatrix === 'function') buildHabitMatrix(); } catch (e) {}
+  try { hydrateRealStats(); } catch (e) {}
+
+  const el = document.querySelector('.cn-chip[data-i="' + i + '"]');
+  if (el && on) { el.classList.add('pulse'); setTimeout(() => el.classList.remove('pulse'), 620); }
+}
+
+/** NOW card: next upcoming calendar event drives a contextual action. */
+let cnCtaMode = 'console';
+function cnRenderNow() {
+  const title = document.getElementById('cnNowTitle');
+  const meta  = document.getElementById('cnNowMeta');
+  const cta   = document.getElementById('cnCta');
+  if (!title || !cta) return;
+
+  let next = null;
+  try {
+    const evs = (typeof calendarEntries !== 'undefined' && Array.isArray(calendarEntries))
+      ? calendarEntries
+      : (typeof gridEntries !== 'undefined' && Array.isArray(gridEntries) ? gridEntries : []);
+    const now = Date.now();
+    next = evs
+      .map(e => ({ e, t: new Date(e.start || e.date || e.startTime || 0).getTime() }))
+      .filter(x => isFinite(x.t) && x.t > now)
+      .sort((a, b) => a.t - b.t)[0];
+  } catch (e) {}
+
+  if (next && next.e) {
+    const label = next.e.title || next.e.name || 'Scheduled block';
+    title.textContent = label;
+    if (meta) meta.textContent = new Date(next.t)
+      .toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+    const l = label.toLowerCase();
+    if (/gym|workout|lift|train/.test(l))      { cnCtaMode = 'gym';   cta.textContent = '▶ OPEN SESSION'; }
+    else if (/study|focus|read|work|class/.test(l)) { cnCtaMode = 'focus'; cta.textContent = '▶ START FOCUS'; }
+    else                                        { cnCtaMode = 'console'; cta.textContent = 'OPEN DAILY CONSOLE'; }
+  } else {
+    title.textContent = 'Nothing scheduled next';
+    if (meta) meta.textContent = '';
+    cnCtaMode = 'console';
+    cta.textContent = 'OPEN DAILY CONSOLE';
+  }
+}
+
+function cnRunCta() {
+  if (cnCtaMode === 'focus') {
+    navigate('work');
+    const b = document.getElementById('nlInitBtn'); if (b) b.click();
+  } else if (cnCtaMode === 'gym') {
+    navigate('workout');
+  } else if (typeof dcOpen === 'function') {
+    dcOpen();
+  }
+}
+
+/** Vitals — real numbers only; each tile degrades to an explicit empty state. */
+function cnRenderVitals() {
+  const wrap = document.getElementById('cnVitals');
+  if (!wrap) return;
+
+  const tiles = [];
+  const hs = (typeof habits !== 'undefined' && Array.isArray(habits)) ? habits : [];
+  const day = new Date().getDate();
+
+  const done = hs.filter(h => (h.checked || []).indexOf(day) !== -1).length;
+  tiles.push({ label: 'TODAY', val: hs.length ? done + '/' + hs.length : '—',
+               sub: hs.length ? (done === hs.length ? 'ALL CLEAR' : 'IN PROGRESS') : 'NO METRICS' });
+
+  // Focus minutes logged today
+  let mins = 0, sessions = 0;
+  try {
+    (focusLogs || []).filter(l => !l.isErr).forEach(l => {
+      const m = /Duration:\s*(\d+)\s*m/i.exec(l.meta || '');
+      if (m) { mins += parseInt(m[1], 10); sessions++; }
+    });
+  } catch (e) {}
+  tiles.push({ label: 'FOCUS', val: sessions ? (Math.floor(mins / 60) + 'h' + String(mins % 60).padStart(2, '0')) : '—',
+               sub: sessions ? sessions + ' SESSIONS' : 'NO SESSIONS' });
+
+  // Active projects
+  let active = null;
+  try { active = (rwProjects || []).filter(p => p.status === 'running').length; } catch (e) {}
+  tiles.push({ label: 'PROJECTS', val: active == null ? '—' : String(active).padStart(2, '0'),
+               sub: active ? 'RUNNING' : 'NONE RUNNING' });
+
+  // At-risk node (fragility) — the behaviour-changing tile
+  let risk = null, riskScore = -1;
+  hs.forEach(h => {
+    const set = new Set(h.checked || []);
+    let since = 0;
+    for (let d = day; d >= 1; d--) { if (set.has(d)) break; since++; }
+    let run = 0;
+    for (let d = day - since; d >= 1; d--) { if (set.has(d)) run++; else break; }
+    const sc = (1 - (h.pct || 0) / 100) * (run + 1) * (since + 1);
+    if (sc > riskScore) { riskScore = sc; risk = { name: h.name, since, run }; }
+  });
+  tiles.push({
+    label: 'AT RISK', risk: true,
+    val: risk ? risk.name : '—',
+    sub: risk ? (risk.since === 0 ? 'HOLDING' : 'MISSED ' + risk.since + 'D') : 'NO METRICS',
+  });
+
+  wrap.innerHTML = tiles.map(t =>
+    '<div class="cn-vital' + (t.risk ? ' risk' : '') + '">' +
+    '<div class="cn-vital-label">' + t.label + '</div>' +
+    '<div class="cn-vital-val">' + t.val + '</div>' +
+    '<div class="cn-vital-sub">' + t.sub + '</div></div>').join('');
+}
+
+/** 365-day heat-wall — ECharts calendar heatmap (the reason we picked ECharts). */
+function cnRenderHeatWall() {
+  const el = document.getElementById('cnHeatWall');
+  if (!el || typeof echarts === 'undefined') return;
+  const chart = ethosChart(el);
+  if (!chart) return;
+
+  const hs = (typeof habits !== 'undefined' && Array.isArray(habits)) ? habits : [];
+  if (!hs.length) {
+    chart.clear();
+    chart.setOption({ title: { text: 'NO DATA YET', subtext: 'Log a metric to start the wall',
+      left: 'center', top: 'center', textStyle: { fontSize: 11 }, subtextStyle: { fontSize: 9 } } });
+    return;
+  }
+
+  // Composite completion per day of the current month (all we track locally today).
+  const now = new Date();
+  const y = now.getFullYear(), m = now.getMonth();
+  const dim = new Date(y, m + 1, 0).getDate();
+  const data = [];
+  for (let d = 1; d <= dim; d++) {
+    const hit = hs.filter(h => (h.checked || []).indexOf(d) !== -1).length;
+    const date = y + '-' + String(m + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0');
+    data.push([date, +(hit / hs.length).toFixed(3)]);
+  }
+
+  chart.setOption({
+    tooltip: { formatter: p => p.value[0] + ' · ' + Math.round(p.value[1] * 100) + '%' },
+    visualMap: { min: 0, max: 1, show: false, calculable: false,
+                 inRange: { color: ['#172619', '#3b6839', '#76b372', '#94d68f', '#a5f79e'] } },
+    calendar: {
+      range: [y + '-' + String(m + 1).padStart(2, '0')],
+      cellSize: ['auto', 16], left: 34, right: 8, top: 28, bottom: 4,
+      itemStyle: { color: 'transparent', borderColor: '#262626', borderWidth: 0.5 },
+      splitLine: { show: false }, yearLabel: { show: false },
+    },
+    series: [{ type: 'heatmap', coordinateSystem: 'calendar', data }],
+  });
+}
+
+function renderConsole() {
+  try { cnRenderHero(); }     catch (e) { console.warn('cn hero:', e); }
+  try { cnRenderChips(); }    catch (e) { console.warn('cn chips:', e); }
+  try { cnRenderNow(); }      catch (e) { console.warn('cn now:', e); }
+  try { cnRenderVitals(); }   catch (e) { console.warn('cn vitals:', e); }
+  try { cnRenderHeatWall(); } catch (e) { console.warn('cn heat:', e); }
+
+  // The heat-wall is sized from its container, which has no width until the
+  // page is actually visible — resize on the next frame so it fills correctly.
+  requestAnimationFrame(() => {
+    const el = document.getElementById('cnHeatWall');
+    if (el && typeof echarts !== 'undefined') {
+      const inst = echarts.getInstanceByDom(el);
+      if (inst) inst.resize();
+    }
+  });
+}
+
+document.addEventListener('DOMContentLoaded', () => setTimeout(renderConsole, 120));
+
 </script>
+<!-- ── P4: Command palette (⌘K) ─────────────────────────────── -->
+<div class="gk-overlay" id="gkOverlay" onclick="if(event.target===this)gkClose()">
+  <div class="gk-panel">
+    <input class="gk-input" id="gkInput" placeholder="Jump to a page, log a metric, start focus…" autocomplete="off" />
+    <div class="gk-list" id="gkList"></div>
+    <div class="gk-hint">
+      <span><span class="gk-kbd">↑↓</span> navigate</span>
+      <span><span class="gk-kbd">↵</span> run</span>
+      <span><span class="gk-kbd">esc</span> close</span>
+      <span style="margin-left:auto"><span class="gk-kbd">⌘K</span> anywhere</span>
+    </div>
+  </div>
+</div>
+
+<!-- ── P4: Daily Console ────────────────────────────────────── -->
+<div class="gk-overlay" id="dcOverlay" onclick="if(event.target===this)dcClose()">
+  <div class="gk-panel dc-panel">
+    <div class="dc-head">
+      <div class="dc-title">DAILY CONSOLE</div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <button class="dc-nav" onclick="dcShift(-1)">‹</button>
+        <span class="dc-date" id="dcDate">—</span>
+        <button class="dc-nav" onclick="dcShift(1)">›</button>
+      </div>
+    </div>
+    <div class="dc-body" id="dcBody"></div>
+    <div class="dc-foot">
+      <button class="dc-seal" id="dcSeal" onclick="dcCommit()">SEAL DAY</button>
+      <div class="dc-status" id="dcStatus"></div>
+    </div>
+  </div>
+</div>
+
+<button class="gk-fab" id="gkFab" onclick="dcOpen()" title="Daily Console">◉</button>
+
 </body>
 </html>

@@ -1,0 +1,1743 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GRID//CARBON — Master Product Blueprint</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; width: 100%; }
+body { font-family: 'SF Mono', 'JetBrains Mono', 'Fira Code', monospace; background: #0A0C0B; color: #E8ECEA; font-size: 12px; display: flex; flex-direction: column; }
+.wrap { background: #0A0C0B; background-image: repeating-linear-gradient(45deg, rgba(255,255,255,0.012) 0px, rgba(255,255,255,0.012) 1px, transparent 1px, transparent 3px); flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+/* HEADER */
+.hdr { background: linear-gradient(135deg, #101312 0%, #131A16 100%); border-bottom: 1px solid #262C29; padding: 14px 20px; display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.hdr-left h1 { font-size: 16px; font-weight: 700; color: #39FF8E; letter-spacing: 3px; text-shadow: 0 0 12px rgba(57,255,142,.25); }
+.hdr-left p { font-size: 9px; color: #5C6963; letter-spacing: 2px; text-transform: uppercase; margin-top: 3px; }
+.hdr-right { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+.stat-chip { font-size: 9px; padding: 3px 10px; border-radius: 4px; letter-spacing: 1px; text-transform: uppercase; }
+.chip-green { background: #10B98122; color: #10B981; border: 1px solid #10B98133; }
+.chip-neon { background: #39FF8E18; color: #39FF8E; border: 1px solid #39FF8E33; }
+.chip-red { background: #EF535022; color: #EF5350; border: 1px solid #EF535033; }
+.chip-amber { background: #E8B44A22; color: #E8B44A; border: 1px solid #E8B44A33; }
+
+/* TABS */
+.tabs { display: flex; background: #070908; border-bottom: 1px solid #262C29; overflow-x: auto; scrollbar-width: none; }
+.tabs::-webkit-scrollbar { display: none; }
+.tab { padding: 10px 16px; font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; color: #3C4641; cursor: pointer; border-bottom: 2px solid transparent; white-space: nowrap; flex-shrink: 0; transition: all 0.2s; }
+.tab:hover { color: #9BA8A2; }
+.tab.active { color: #39FF8E; border-bottom-color: #39FF8E; }
+
+/* PANELS */
+.content { padding: 16px; overflow-y: auto; flex: 1; }
+.panel { display: none; }
+.panel.active { display: block; }
+.slabel { font-size: 8px; letter-spacing: 3px; text-transform: uppercase; color: #10B981; margin: 0 0 10px; padding-bottom: 5px; border-bottom: 1px solid #262C29; }
+.slabel.mt { margin-top: 18px; }
+
+/* HERO */
+.hero { background: #101312; border: 1px solid #262C29; border-radius: 10px; padding: 16px; margin-bottom: 14px; }
+.hero h2 { font-size: 13px; color: #E8ECEA; margin-bottom: 8px; }
+.hero p { font-size: 10px; color: #9BA8A2; line-height: 1.8; }
+.hero p b { color: #39FF8E; }
+
+/* ARCH FLOW */
+.arch-wrap { background: #101312; border: 1px solid #262C29; border-radius: 9px; padding: 14px; margin-bottom: 14px; }
+.arch-row { display: flex; align-items: center; gap: 6px; justify-content: center; flex-wrap: wrap; }
+.arch-link { display: flex; align-items: center; justify-content: center; gap: 120px; padding: 4px 0; }
+.arch-vline { width: 2px; height: 18px; background: #262C29; }
+.arch-vline.green { background: #10B98155; }
+.arch-box { background: #161A18; border: 1px solid #262C29; border-radius: 7px; padding: 8px 12px; text-align: center; min-width: 104px; }
+.arch-box .ab-icon { font-size: 15px; margin-bottom: 4px; }
+.arch-box .ab-name { font-size: 9px; font-weight: 700; color: #E8ECEA; letter-spacing: 1px; }
+.arch-box .ab-sub { font-size: 8px; color: #5C6963; margin-top: 2px; }
+.arch-box.hl { border-color: #10B98166; background: #11201A; }
+.arch-box.neon { border-color: #39FF8E55; background: #0E1F15; box-shadow: 0 0 14px rgba(57,255,142,.08); }
+.arch-box.dim { opacity: .55; }
+.arch-arrow { color: #3C4641; font-size: 15px; padding: 0 3px; flex-shrink: 0; }
+.arch-arrow.g { color: #10B98188; }
+
+/* WOW GRID */
+.wow-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 8px; margin-top: 4px; }
+.wow-card { background: #101312; border: 1px solid #262C29; border-radius: 7px; padding: 10px 12px; }
+.wow-card-title { font-size: 10px; font-weight: 700; color: #39FF8E; margin-bottom: 4px; }
+.wow-card-desc { font-size: 9px; color: #9BA8A2; line-height: 1.6; }
+
+/* COLLAPSIBLE CARDS */
+.card-list { display: flex; flex-direction: column; gap: 8px; }
+.card { background: #101312; border: 1px solid #262C29; border-radius: 8px; cursor: pointer; transition: all 0.15s; overflow: hidden; }
+.card:hover { border-color: #10B98155; }
+.card.open { border-color: #10B981; }
+.card.open.del-card { border-color: #EF5350; }
+.card.open.up-card { border-color: #E8B44A; }
+.card-hdr { padding: 12px 14px; display: flex; align-items: center; gap: 11px; }
+.card-num { font-size: 19px; font-weight: 700; color: #2A352F; min-width: 30px; line-height: 1; }
+.card.open .card-num { color: #39FF8E; }
+.card.open.del-card .card-num { color: #EF5350; }
+.card.open.up-card .card-num { color: #E8B44A; }
+.card-info { flex: 1; min-width: 0; }
+.card-name { font-size: 11px; font-weight: 700; color: #E8ECEA; margin-bottom: 2px; }
+.card-tag { font-size: 9px; color: #5C6963; }
+.card-badges { display: flex; gap: 5px; flex-shrink: 0; flex-wrap: wrap; justify-content: flex-end; }
+.b { font-size: 8px; padding: 2px 7px; border-radius: 3px; letter-spacing: .5px; white-space: nowrap; }
+.b-keep { background: #10B98122; color: #10B981; border: 1px solid #10B98133; }
+.b-new { background: #39FF8E18; color: #39FF8E; border: 1px solid #39FF8E33; }
+.b-up { background: #E8B44A22; color: #E8B44A; border: 1px solid #E8B44A33; }
+.b-del { background: #EF535022; color: #EF5350; border: 1px solid #EF535033; }
+.b-hot { background: #EF535022; color: #EF5350; border: 1px solid #EF535033; }
+.b-dim { background: #161A18; color: #5C6963; border: 1px solid #262C29; }
+.card-body { display: none; padding: 0 14px 14px; cursor: default; }
+.card.open .card-body { display: block; }
+.card-body p { font-size: 10px; color: #9BA8A2; line-height: 1.8; margin-bottom: 8px; }
+.card-body p b { color: #E8ECEA; }
+.card-body code { color: #00E676; background: #161A18; border: 1px solid #262C29; border-radius: 3px; padding: 1px 5px; font-size: 9px; }
+
+/* TWO-COL SECTIONS INSIDE CARDS */
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+@media (max-width: 700px) { .grid2 { grid-template-columns: 1fr; } }
+.sec { background: #0A0C0B; border: 1px solid #262C29; border-radius: 7px; padding: 10px 12px; }
+.sec-title { font-size: 8px; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 8px; }
+.t-now { color: #9BA8A2; }
+.t-how { color: #10B981; }
+.t-pain { color: #EF5350; }
+.t-fix { color: #39FF8E; }
+.t-crud { color: #E8B44A; }
+.li { font-size: 10px; color: #9BA8A2; margin-bottom: 5px; display: flex; gap: 6px; line-height: 1.55; }
+.li::before { flex-shrink: 0; }
+.li.now::before { content: '▣'; color: #5C6963; }
+.li.how::before { content: '◈'; color: #10B981; }
+.li.pain::before { content: '✕'; color: #EF5350; }
+.li.fix::before { content: '◉'; color: #39FF8E; }
+.li.crud::before { content: '⬡'; color: #E8B44A; }
+.li b { color: #E8ECEA; }
+.li code { color: #00E676; background: #161A18; border: 1px solid #262C29; border-radius: 3px; padding: 0 4px; font-size: 9px; }
+
+/* VERDICT / MILESTONE STRIPS */
+.verdict { margin-top: 10px; background: #0E1F15; border: 1px solid #39FF8E33; border-radius: 7px; padding: 9px 12px; }
+.verdict-label { font-size: 8px; letter-spacing: 2px; color: #39FF8E; text-transform: uppercase; margin-bottom: 4px; }
+.verdict-text { font-size: 10px; color: #9BA8A2; line-height: 1.6; }
+.verdict.warn { background: #1A1408; border-color: #E8B44A33; }
+.verdict.warn .verdict-label { color: #E8B44A; }
+.verdict.kill { background: #1A0E0E; border-color: #EF535033; }
+.verdict.kill .verdict-label { color: #EF5350; }
+
+/* TABLES */
+.tbl { width: 100%; border-collapse: collapse; margin: 8px 0 12px; background: #101312; border: 1px solid #262C29; border-radius: 7px; overflow: hidden; }
+.tbl th { font-size: 8px; letter-spacing: 1.5px; text-transform: uppercase; color: #10B981; text-align: left; padding: 8px 11px; background: #161A18; border-bottom: 1px solid #262C29; }
+.tbl td { font-size: 10px; color: #9BA8A2; padding: 8px 11px; border-bottom: 1px solid #161A18; vertical-align: top; line-height: 1.5; }
+.tbl tr:last-child td { border-bottom: none; }
+.tbl td b { color: #E8ECEA; }
+.tbl td code { color: #00E676; background: #161A18; border: 1px solid #262C29; border-radius: 3px; padding: 0 4px; font-size: 9px; }
+.tbl-scroll { overflow-x: auto; }
+.sw { display: inline-block; width: 11px; height: 11px; border-radius: 3px; margin-right: 7px; vertical-align: -1px; border: 1px solid rgba(255,255,255,.12); }
+
+/* ASCII */
+pre.ascii { background: #070908; border: 1px solid #262C29; border-radius: 8px; padding: 14px 16px; overflow-x: auto; font-size: 10.5px; line-height: 1.55; color: #5C6963; margin: 10px 0 14px; }
+pre.ascii .w { color: #E8ECEA; }
+pre.ascii .g { color: #10B981; }
+pre.ascii .n { color: #39FF8E; }
+pre.ascii .a { color: #E8B44A; }
+
+/* CHIP ROWS */
+.lib-row { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 10px; }
+.lib { font-size: 9px; background: #161A18; border: 1px solid #262C29; border-radius: 3px; padding: 2px 7px; color: #5C6963; }
+.lib.key { border-color: #10B98155; color: #00E676; }
+
+/* INTRO STRIPS PER TAB */
+.intro { background: #101312; border: 1px solid #10B98133; border-radius: 9px; padding: 13px 14px; margin-bottom: 14px; }
+.intro h3 { font-size: 12px; color: #10B981; margin-bottom: 5px; }
+.intro p { font-size: 10px; color: #9BA8A2; line-height: 1.8; }
+.intro.red { border-color: #EF535033; } .intro.red h3 { color: #EF5350; }
+.intro.amber { border-color: #E8B44A33; } .intro.amber h3 { color: #E8B44A; }
+.intro.neon { border-color: #39FF8E33; } .intro.neon h3 { color: #39FF8E; }
+
+::-webkit-scrollbar { width: 3px; height: 3px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #262C29; border-radius: 2px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- HEADER -->
+  <div class="hdr">
+    <div class="hdr-left">
+      <h1>GRID//CARBON — MASTER PRODUCT BLUEPRINT</h1>
+      <p>Personal OS for students &amp; adults · existing audit · add / update / delete deltas · build-ready schema</p>
+    </div>
+    <div class="hdr-right">
+      <div class="stat-chip chip-green">6 Existing Modules Audited</div>
+      <div class="stat-chip chip-neon">6 New Systems</div>
+      <div class="stat-chip chip-amber">5 Major Upgrades</div>
+      <div class="stat-chip chip-red">7 Cuts</div>
+    </div>
+  </div>
+
+  <!-- TABS -->
+  <div class="tabs">
+    <div class="tab active" onclick="sw('vision')">⬡ Vision</div>
+    <div class="tab" onclick="sw('existing')">▣ Existing System</div>
+    <div class="tab" onclick="sw('audit')">▤ Page Audit</div>
+    <div class="tab" onclick="sw('add')">◉ Add</div>
+    <div class="tab" onclick="sw('update')">◈ Update</div>
+    <div class="tab" onclick="sw('delete')">✕ Delete</div>
+    <div class="tab" onclick="sw('systems')">⬡ Systems &amp; Data</div>
+    <div class="tab" onclick="sw('ux')">◐ UX Optimizations</div>
+    <div class="tab" onclick="sw('integrations')">⇄ Integrations</div>
+    <div class="tab" onclick="sw('build')">◉ Build Order</div>
+  </div>
+
+  <!-- ════════════════════════ VISION ════════════════════════ -->
+  <div class="content panel active" id="panel-vision">
+    <div class="slabel">// What GRID v2.0 looks and feels like at the end of this upgrade</div>
+
+    <div class="hero">
+      <h2>The pitch in one sentence:</h2>
+      <p>GRID becomes a <b>carbon-green personal operating system</b> where your entire day — habits, deep work, gym, sleep, money — is logged in <b>under 60 seconds</b> from one console, where half the data <b>logs itself</b> (focus sessions, gym, recurring bills), where streaks are <b>anti-fragile</b> instead of punishing, and where every completed day rewards you with a neon ignition sweep across a 365-day heat-wall.</p>
+    </div>
+
+    <div class="slabel">// Target architecture — how everything connects after the upgrade</div>
+    <div class="arch-wrap">
+      <div class="arch-row">
+        <div class="arch-box"><div class="ab-icon">⌘</div><div class="ab-name">DAILY CONSOLE</div><div class="ab-sub">60s batch logging</div></div>
+        <div class="arch-arrow">→</div>
+        <div class="arch-box neon"><div class="ab-icon">▦</div><div class="ab-name">METRIC ENGINE</div><div class="ab-sub">5 typed metrics</div></div>
+        <div class="arch-arrow">→</div>
+        <div class="arch-box"><div class="ab-icon">▮</div><div class="ab-name">HEAT-WALL</div><div class="ab-sub">365-day grid</div></div>
+      </div>
+      <div class="arch-link"><div class="arch-vline green"></div><div class="arch-vline green"></div></div>
+      <div class="arch-row">
+        <div class="arch-box hl"><div class="ab-icon">◎</div><div class="ab-name">FOCUS ENGINE</div><div class="ab-sub">auto-logs deep work</div></div>
+        <div class="arch-arrow g">↔</div>
+        <div class="arch-box neon"><div class="ab-icon">⚡</div><div class="ab-name">EXPRESS API</div><div class="ab-sub">batched commits</div></div>
+        <div class="arch-arrow g">↔</div>
+        <div class="arch-box hl"><div class="ab-icon">⬡</div><div class="ab-name">BODY SYSTEMS</div><div class="ab-sub">gym · sleep · fuel</div></div>
+      </div>
+      <div class="arch-link"><div class="arch-vline"></div><div class="arch-vline"></div></div>
+      <div class="arch-row">
+        <div class="arch-box"><div class="ab-icon">💾</div><div class="ab-name">POSTGRES</div><div class="ab-sub">versioned defs + logs</div></div>
+        <div class="arch-arrow">↔</div>
+        <div class="arch-box hl"><div class="ab-icon">∑</div><div class="ab-name">DAY AGGREGATES</div><div class="ab-sub">cached scores/streaks</div></div>
+        <div class="arch-arrow">↔</div>
+        <div class="arch-box"><div class="ab-icon">⇆</div><div class="ab-name">OFFLINE QUEUE</div><div class="ab-sub">IndexedDB replay</div></div>
+      </div>
+    </div>
+
+    <div class="slabel">// The 6 things that make this genuinely different</div>
+    <div class="wow-grid">
+      <div class="wow-card">
+        <div class="wow-card-title">⌘ The 60-Second Day</div>
+        <div class="wow-card-desc">One glass overlay batches the entire day: pre-checked auto-resolved items, one-tap binaries, steppers, scales. One SEAL DAY commit. No per-page navigation, ever.</div>
+      </div>
+      <div class="wow-card">
+        <div class="wow-card-title">▦ Data That Logs Itself</div>
+        <div class="wow-card-desc">DERIVED metrics complete with zero input — "Trained" from GymLog, "Deep work 90m" from Focus sessions, "Rent paid" from the recurring engine. Half the console is pre-filled before you open it.</div>
+      </div>
+      <div class="wow-card">
+        <div class="wow-card-title">◎ Focus Engine</div>
+        <div class="wow-card-desc">A full-bleed deep-work view with contexts (courses/projects), 50/10 blocks, distraction capture inbox, and auto-completion of study metrics. Students never "log studying" again.</div>
+      </div>
+      <div class="wow-card">
+        <div class="wow-card-title">▮ Anti-Fragile Streaks</div>
+        <div class="wow-card-desc">Partial credit counts (score ≥ 0.5). Rest days never break chains. Every 7 perfect days banks a Repair Token that patches a miss — rendered as a hollow ring, visibly repaired, never faked.</div>
+      </div>
+      <div class="wow-card">
+        <div class="wow-card-title">✨ Ignition UX</div>
+        <div class="wow-card-desc">A 600ms completion sequence — scale snap, emerald wipe, ring pulse, streak digit roll — and a scarce neon column sweep reserved for 100% days. Addictive, never clownish.</div>
+      </div>
+      <div class="wow-card">
+        <div class="wow-card-title">⬢ One Truth Source</div>
+        <div class="wow-card-desc">The demo/localStorage fork dies. One API client + offline queue. Versioned metric definitions mean you can edit any target without corrupting a single day of history.</div>
+      </div>
+    </div>
+
+    <div class="slabel mt">// Design DNA — the Carbon-Green rules everything obeys</div>
+    <div class="wow-grid">
+      <div class="wow-card">
+        <div class="wow-card-title">Matte Carbon Surfaces</div>
+        <div class="wow-card-desc">5-step gray scale #0A0C0B → #262C29, never pure black. Carbon-fiber weave texture on hero panels only. Glass reserved for overlays — glass-on-glass is how premium dies.</div>
+      </div>
+      <div class="wow-card">
+        <div class="wow-card-title">Green Is Information</div>
+        <div class="wow-card-desc">One hue, five intensities (#1A3326 → #39FF8E). Cell color = completion score. Neon #39FF8E on max 2 elements per viewport: streak fire and live counters only.</div>
+      </div>
+      <div class="wow-card">
+        <div class="wow-card-title">Mono Numerals</div>
+        <div class="wow-card-desc">Every number in JetBrains Mono with tabular-nums, right-aligned. Inter for interface, Space Grotesk for display. Uppercase mono labels with .08em tracking — already the brand, kept.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════ EXISTING ════════════════════════ -->
+  <div class="content panel" id="panel-existing">
+    <div class="intro">
+      <h3>Audit of the live codebase — what exists right now</h3>
+      <p>Grounded in the deployed app: a ~11,200-line single-file SPA (<b>index.html</b>, Vercel) + Express/Prisma/Postgres backend (<b>grid-backend</b>, Railway) + a parallel localStorage demo mode. Click each module for how it works, where it hurts, and its verdict.</p>
+    </div>
+
+    <div class="slabel">// Module-by-module audit — click to expand</div>
+    <div class="card-list">
+
+      <div class="card" onclick="tg(this)">
+        <div class="card-hdr">
+          <div class="card-num">01</div>
+          <div class="card-info">
+            <div class="card-name">Habits — The Core Grid</div>
+            <div class="card-tag">page-habits · Habit + HabitLog models · binary checkmarks · client-side streaks</div>
+          </div>
+          <div class="card-badges"><span class="b b-up">UPGRADE → METRIC ENGINE</span></div>
+        </div>
+        <div class="card-body" onclick="event.stopPropagation()">
+          <div class="grid2">
+            <div class="sec">
+              <div class="sec-title t-now">▣ What exists</div>
+              <div class="li now"><code>Habit</code> model: name, icon, color, frequency (daily/weekly/custom), <code>targetDays</code> JSON, sortOrder, archived flag</div>
+              <div class="li now"><code>HabitLog</code>: <code>completed: Boolean</code> with unique <code>(habitId, loggedDate)</code> — tap toggles existence</div>
+              <div class="li now">Streak stat (<code>hb-streak</code>) computed client-side by walking date strings backward from today</div>
+              <div class="li now">Migrated to backend API (commit <code>cf15569</code>+) but demo mode still writes <code>gridHabits</code> to localStorage</div>
+            </div>
+            <div class="sec">
+              <div class="sec-title t-pain">✕ Where it hurts</div>
+              <div class="li pain"><b>Binary-only.</b> "Studied" gives identical credit for 10 min or 4 hrs — the grid lies about intensity</div>
+              <div class="li pain"><b>Streak fragility.</b> One missed day zeroes the chain — the #1 documented cause of tracker abandonment</div>
+              <div class="li pain"><b>O(days × habits) recompute</b> on every render; no cached aggregates</div>
+              <div class="li pain">No backfill ergonomics — editing yesterday means hunting calendar cells</div>
+            </div>
+          </div>
+          <div class="verdict warn">
+            <div class="verdict-label">✦ Verdict</div>
+            <div class="verdict-text">Keep the grid identity and unique-per-day constraint — both are correct. Replace the boolean primitive with the typed Metric Engine (see ADD-01) via a lossless migration: <code>Habit → MetricDef(BINARY)</code>, <code>HabitLog → MetricLog(value:1, score:1)</code>.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" onclick="tg(this)">
+        <div class="card-hdr">
+          <div class="card-num">02</div>
+          <div class="card-info">
+            <div class="card-name">Gym — Workout Module</div>
+            <div class="card-tag">page-workout · GymSplit + GymLog · session logger · 4-log diary · recalibration countdown</div>
+          </div>
+          <div class="card-badges"><span class="b b-keep">KEEP — STRONGEST MODULE</span><span class="b b-up">MERGE INTO BODY//SYSTEMS</span></div>
+        </div>
+        <div class="card-body" onclick="event.stopPropagation()">
+          <div class="grid2">
+            <div class="sec">
+              <div class="sec-title t-now">▣ What exists</div>
+              <div class="li now"><code>GymSplit</code> (split definitions) + <code>GymLog</code> (sessions) with dynamic telemetry</div>
+              <div class="li now">Session logger with clean register modal; presets removed; live recalibration countdown</div>
+              <div class="li now">Exercise registry + muscle groups in localStorage (<code>gymExerciseRegistry</code>, <code>gymMuscleGroups</code>) — not yet in Postgres</div>
+            </div>
+            <div class="sec">
+              <div class="sec-title t-pain">✕ Where it hurts</div>
+              <div class="li pain">Lives on its own island — training has zero effect on the main grid or streaks</div>
+              <div class="li pain">No recovery context: sleep and fuel are invisible, so the module can't tell you whether to push or deload</div>
+              <div class="li pain">Registry/muscle data split between localStorage and API (sync drift)</div>
+            </div>
+          </div>
+          <div class="verdict">
+            <div class="verdict-label">✦ Verdict</div>
+            <div class="verdict-text">Best-built module in the app — keep its logger intact. Surround it inside BODY//SYSTEMS (ADD-04): a DERIVED "Trained" metric flows into the grid automatically, and sleep/fuel inputs give it a Readiness score. Move exercise registry into Postgres.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" onclick="tg(this)">
+        <div class="card-hdr">
+          <div class="card-num">03</div>
+          <div class="card-info">
+            <div class="card-name">Finance — Budget &amp; Transactions</div>
+            <div class="card-tag">page-finances · BudgetCategory + Transaction · manual entry · recurring items in localStorage</div>
+          </div>
+          <div class="card-badges"><span class="b b-up">SIMPLIFY HARD</span></div>
+        </div>
+        <div class="card-body" onclick="event.stopPropagation()">
+          <div class="grid2">
+            <div class="sec">
+              <div class="sec-title t-now">▣ What exists</div>
+              <div class="li now"><code>BudgetCategory</code> + <code>Transaction</code> models; budget vs. actual view; currency fixes landed in commit <code>0084fdb</code></div>
+              <div class="li now">Recurring items already prototyped client-side as <code>gridFinRecurItems</code> + <code>gridFinTelemetry</code> in localStorage</div>
+              <div class="li now">Transaction log (<code>gridTxLog</code>) duplicated between demo and API modes</div>
+            </div>
+            <div class="sec">
+              <div class="sec-title t-pain">✕ Where it hurts</div>
+              <div class="li pain"><b>Per-transaction manual entry is the default</b> — the #1 documented finance-tracker killer; nobody logs every coffee for more than 3 weeks</div>
+              <div class="li pain">No single answer to the only daily question that matters: <b>"can I afford this today?"</b></div>
+              <div class="li pain">Recurring engine exists but isn't promoted — fixed costs still need attention</div>
+            </div>
+          </div>
+          <div class="verdict warn">
+            <div class="verdict-label">✦ Verdict</div>
+            <div class="verdict-text">Invert the model (UPDATE-04): recurring engine auto-posts fixed costs server-side; user logs only <b>variable</b> spend via a 2-tap sheet in the Daily Console. The module's entire daily surface becomes one mono number: <b>SAFE-TO-SPEND / DAY</b>.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" onclick="tg(this)">
+        <div class="card-hdr">
+          <div class="card-num">04</div>
+          <div class="card-info">
+            <div class="card-name">Calendar + Weekly — Time Layer</div>
+            <div class="card-tag">page-calendar · page-weekly · arc timetable · CalendarEvent model</div>
+          </div>
+          <div class="card-badges"><span class="b b-keep">KEEP</span><span class="b b-up">FEED THE NOW CARD</span></div>
+        </div>
+        <div class="card-body" onclick="event.stopPropagation()">
+          <div class="grid2">
+            <div class="sec">
+              <div class="sec-title t-now">▣ What exists</div>
+              <div class="li now"><code>CalendarEvent</code> model with month view (<code>page-calendar</code>) and weekly view with arc timetable (<code>arcTimetable</code>)</div>
+              <div class="li now">Events are placed but passive — pure display layer</div>
+            </div>
+            <div class="sec">
+              <div class="sec-title t-pain">✕ Where it hurts</div>
+              <div class="li pain">Calendar never talks to tracking: a scheduled "Study 6pm" block and the study habit are strangers</div>
+              <div class="li pain">Two separate views (month + weekly) for one concept — navigation tax</div>
+            </div>
+          </div>
+          <div class="verdict">
+            <div class="verdict-label">✦ Verdict</div>
+            <div class="verdict-text">Keep both views. New role: the next upcoming event powers the Console's <b>NOW CARD</b> with a contextual CTA — a study block shows <code>▶ START FOCUS</code>, a gym block shows <code>▶ OPEN SESSION</code>. The calendar stops being a poster and becomes a launcher.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" onclick="tg(this)">
+        <div class="card-hdr">
+          <div class="card-num">05</div>
+          <div class="card-info">
+            <div class="card-name">Work + Runway — Projects &amp; Kanban</div>
+            <div class="card-tag">page-work · page-runway · Project model · kanban persistence fixed in 0084fdb</div>
+          </div>
+          <div class="card-badges"><span class="b b-keep">KEEP</span><span class="b b-up">BECOMES FOCUS CONTEXTS</span></div>
+        </div>
+        <div class="card-body" onclick="event.stopPropagation()">
+          <div class="grid2">
+            <div class="sec">
+              <div class="sec-title t-now">▣ What exists</div>
+              <div class="li now"><code>Project</code> model backing both kanban board (<code>page-work</code>) and runway overview (<code>rw-overview</code>)</div>
+              <div class="li now">Kanban persistence recently stabilized; demo data in <code>rwProjects</code></div>
+            </div>
+            <div class="sec">
+              <div class="sec-title t-pain">✕ Where it hurts</div>
+              <div class="li pain">Projects hold tasks but no <b>time</b> — you can't see hours invested per project</div>
+              <div class="li pain">Two pages for one entity (board + runway) splits attention</div>
+            </div>
+          </div>
+          <div class="verdict">
+            <div class="verdict-label">✦ Verdict</div>
+            <div class="verdict-text">Keep as-is structurally. Promote <code>Project</code> rows to <b>Focus Contexts</b> — every FocusSession tags one, so the runway view gains a real "hours invested" lane per project for free.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" onclick="tg(this)">
+        <div class="card-hdr">
+          <div class="card-num">06</div>
+          <div class="card-info">
+            <div class="card-name">Resume Builder</div>
+            <div class="card-tag">page-resume · ResumeData model · PDF preview sheet · rs-overview tabs</div>
+          </div>
+          <div class="card-badges"><span class="b b-del">DEMOTE TO UTILITY DRAWER</span></div>
+        </div>
+        <div class="card-body" onclick="event.stopPropagation()">
+          <div class="grid2">
+            <div class="sec">
+              <div class="sec-title t-now">▣ What exists</div>
+              <div class="li now"><code>ResumeData</code> model + tabbed editor (<code>rsTabData</code>) + live PDF preview (<code>rsPdfPreviewSheet</code>)</div>
+              <div class="li now">PDF generation fixed in commit <code>653eb97</code> — it works</div>
+            </div>
+            <div class="sec">
+              <div class="sec-title t-pain">✕ Where it hurts</div>
+              <div class="li pain"><b>Wrong cadence.</b> A quarterly tool occupying a permanent slot in a daily loop — pure nav clutter</div>
+            </div>
+          </div>
+          <div class="verdict kill">
+            <div class="verdict-label">✦ Verdict</div>
+            <div class="verdict-text">Don't delete the feature — it's good and finished. Demote it out of the primary dock into a utility drawer (DELETE-06) and hand its dock slot to the Focus Engine, which earns daily use.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" onclick="tg(this)">
+        <div class="card-hdr">
+          <div class="card-num">07</div>
+          <div class="card-info">
+            <div class="card-name">Auth + Demo Mode — The Storage Fork</div>
+            <div class="card-tag">tabLogin/tabSignup · sessionStorage gridUser · localStorage wipe-on-switch · 14+ demo keys</div>
+          </div>
+          <div class="card-badges"><span class="b b-hot">TOP BUG FACTORY</span><span class="b b-del">UNIFY</span></div>
+        </div>
+        <div class="card-body" onclick="event.stopPropagation()">
+          <div class="grid2">
+            <div class="sec">
+              <div class="sec-title t-now">▣ What exists</div>
+              <div class="li now">Mode resolution chain: <code>sessionStorage → URL ?mode → localStorage gridActiveMode</code></div>
+              <div class="li now">Demo entry wipes 14+ keys (<code>gymLogs</code>, <code>gridEntries</code>, <code>gridBudget</code>, <code>rwProjects</code>…)</div>
+              <div class="li now">Every feature is effectively written twice: an API path and a localStorage path</div>
+            </div>
+            <div class="sec">
+              <div class="sec-title t-pain">✕ Where it hurts</div>
+              <div class="li pain">Two truth sources — the last 5 commits are all persistence/sync firefighting</div>
+              <div class="li pain">Demo users lose everything on signup; no upgrade path for their data</div>
+              <div class="li pain">Every new feature pays a 2× implementation tax forever</div>
+            </div>
+          </div>
+          <div class="verdict kill">
+            <div class="verdict-label">✦ Verdict</div>
+            <div class="verdict-text">Kill the fork (DELETE-04). One API client everywhere + IndexedDB offline queue. "Demo" becomes a seeded sandbox account created server-side in one call — same code path, zero dual writes, demo data survives signup via account claim.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="slabel mt">// Friction audit — the 6 measured costs of the current design</div>
+    <div class="tbl-scroll"><table class="tbl">
+      <tr><th>#</th><th>Friction</th><th>Mechanism</th><th>Cost</th><th>Fixed by</th></tr>
+      <tr><td><b>F1</b></td><td><b>Per-module logging</b></td><td>Full daily update = 5+ page navigations</td><td>~4–6 min/day</td><td>ADD-02 Daily Console</td></tr>
+      <tr><td><b>F2</b></td><td><b>Binary-only habits</b></td><td>No intensity signal; grid misrepresents effort</td><td>Data quality</td><td>ADD-01 Metric Engine</td></tr>
+      <tr><td><b>F3</b></td><td><b>Streak fragility</b></td><td>One miss zeroes the chain</td><td>Retention</td><td>ADD-05 Streak 2.0</td></tr>
+      <tr><td><b>F4</b></td><td><b>No backfill ergonomics</b></td><td>Editing yesterday = calendar cell hunting</td><td>Logging fatigue</td><td>ADD-02 (date-scoped console)</td></tr>
+      <tr><td><b>F5</b></td><td><b>Demo/auth fork</b></td><td>Two storage engines, wipe-on-switch</td><td>Engineering drag</td><td>DELETE-04 unification</td></tr>
+      <tr><td><b>F6</b></td><td><b>Recompute-everything streaks</b></td><td>O(days × habits) per render</td><td>Perf ceiling</td><td>ADD-06 DayAggregate cache</td></tr>
+    </table></div>
+  </div>
+
+  <!-- ════════════════════════ ADD ════════════════════════ -->
+  <div class="content panel" id="panel-audit">
+    <div class="intro red">
+      <h3>▤ Per-page component audit — every part of every page</h3>
+      <p>Walked all 9 pages of <code>index.html</code> (lines 4029–5560). The dominant problem across the app: <strong>most displayed numbers are hardcoded fakes</strong>, wrapped in a cyberpunk-jargon layer that hides it. Each card below is <span style="color:#39FF8E">◉ ADD</span> / <span style="color:#E8B44A">◈ FIX</span> / <span style="color:#EF5350">✕ KILL</span> per component. Click to expand.</p>
+    </div>
+
+    <div class="verdict warn">
+      <div class="verdict-label">// Cross-cutting — applies to ALL pages</div>
+      <div class="verdict-text"><strong>✕ KILL the fake-telemetry layer:</strong> every static number that looks live but never changes — <code>88% NEURAL_LOAD</code>, <code>782 mflops</code>, <code>RECOVERY SCORE</code>, <code>92% AGGREGATE</code>, <code>SHA256: 7e9a8f…</code>, <code>REAL-TIME BIOMETRICS SYNCING…</code>. It manufactures false trust. Rule: a number renders only if it's computed from real data, else it doesn't render. &nbsp;<strong>✕ KILL jargon noise</strong> that adds no meaning (<code>NEURAL_LOCK</code>, <code>BIO-MATRIX</code>, <code>HASH_VERIF</code>, <code>/ROOT/TASKS/WEEKLY_VIEW.LOG</code>, <code>HYPERTROPHY 2.0</code>). Keep the mono-label brand voice; drop the sci-fi cosplay. &nbsp;<strong>◈ FIX palette:</strong> collapse purple/pink/blue/orange/teal multi-accent → carbon + single green (see UPDATE-U1).</div>
+    </div>
+
+    <div class="card-list">
+
+      <div class="card del-card" onclick="tg(this)">
+        <div class="card-hdr">
+          <div class="card-num">P1</div>
+          <div class="card-info">
+            <div class="card-name">page-home — "Command Center"</div>
+            <div class="card-tag">hero + clock · 3+2+3 grid of 8 module status cards (dot/val/details/footer)</div>
+          </div>
+          <div class="card-badges"><span class="b b-up">REBUILD → THE CONSOLE</span></div>
+        </div>
+        <div class="card-body" onclick="event.stopPropagation()">
+          <div class="grid2">
+            <div class="sec">
+              <div class="sec-title t-pain">✕ Kill</div>
+              <div class="li pain">Fake footers on every card — <code>ATHLETIC_PROFILE_OK</code>, <code>BIO_MATRIX_SYNCED</code>, <code>TRAJECTORY_STABLE</code>, <code>ALL MODULES NOMINAL</code>. Pure noise.</div>
+              <div class="li pain">Home as an 8-tile <b>nav menu</b> — it's a launcher, not a dashboard. You navigate away to do anything.</div>
+              <div class="li pain">Greet block <code>COMMAND CENTER / ACTIVE USER SESSION</code> — impersonal, no real name/date.</div>
+            </div>
+            <div class="sec">
+              <div class="sec-title t-fix">◉ Fix / Add</div>
+              <div class="li fix">Rebuild as <b>The Console</b> (UPDATE-U2): Today Strip + 365-day heat-wall + Vitals + NOW card. Home becomes the 60-second logging surface, not a menu.</div>
+              <div class="li fix">Greet → real user name + live date; each surviving KPI computed from <code>DayAggregate</code>, dots = real module status.</div>
+              <div class="li fix">Add the <code>⌘K</code> Daily Console trigger here (ADD-A2).</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card up-card" onclick="tg(this)">
+        <div class="card-hdr">
+          <div class="card-num">P2</div>
+          <div class="card-info">
+            <div class="card-name">page-calendar</div>
+            <div class="card-tag">entry bar · month grid · prev/next arrows</div>
+          </div>
+          <div class="card-badges"><span class="b b-keep">KEEP</span><span class="b b-up">MAKE IT A LAUNCHER</span></div>
+        </div>
+        <div class="card-body" onclick="event.stopPropagation()">
+          <div class="grid2">
+            <div class="sec">
+              <div class="sec-title t-pain">✕ Kill / ◈ Fix</div>
+              <div class="li pain">Month grid is passive display — events sit there, do nothing.</div>
+              <div class="li fix">No "today" marker / agenda view — hard to see what's next.</div>
+            </div>
+            <div class="sec">
+              <div class="sec-title t-fix">◉ Add</div>
+              <div class="li fix">Next event powers the Console <b>NOW card</b> with a context CTA (study → <code>▶ START FOCUS</code>, gym → <code>▶ OPEN SESSION</code>).</div>
+              <div class="li fix">Click a day → opens Daily Console scoped to that date (backfill path, kills friction F4).</div>
+              <div class="li fix">Add week/agenda toggle + today marker.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card del-card" onclick="tg(this)">
+        <div class="card-hdr">
+          <div class="card-num">P3</div>
+          <div class="card-info">
+            <div class="card-name">page-weekly — "Weekly Design / Architect"</div>
+            <div class="card-tag">timetable table · tasks kanban · 4-stat bar</div>
+          </div>
+          <div class="card-badges"><span class="b b-up">MERGE INTO CALENDAR</span></div>
+        </div>
+        <div class="card-body" onclick="event.stopPropagation()">
+          <div class="grid2">
+            <div class="sec">
+              <div class="sec-title t-pain">✕ Kill</div>
+              <div class="li pain">Entire stats bar is <b>hardcoded</b>: <code>88% NEURAL_LOAD</code>, <code>24/56</code>, <code>03 CRITICAL</code>, <code>08.2H WEEKLY_GAP</code>.</div>
+              <div class="li pain">Dead buttons: <code>EXPORT_SYSTEM_REPORT</code>, <code>STITCH_ALL_TO_CALENDAR</code>.</div>
+              <div class="li pain"><code>/ROOT/TASKS/WEEKLY_VIEW.LOG</code> flavor line.</div>
+            </div>
+            <div class="sec">
+              <div class="sec-title t-fix">◈ Fix / ◉ Add</div>
+              <div class="li fix">Two time views (weekly + calendar) for one concept = nav tax. <b>Merge</b> the timetable into the calendar as a week mode.</div>
+              <div class="li fix">Timetable blocks become <b>Focus contexts</b>; free-time is really computed and drives NOW suggestions.</div>
+              <div class="li fix">Tasks kanban overlaps runway's kanban — consolidate to one task engine (see P8).</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card up-card" onclick="tg(this)">
+        <div class="card-hdr">
+          <div class="card-num">P4</div>
+          <div class="card-info">
+            <div class="card-name">page-habits — the real grid</div>
+            <div class="card-tag">search · 4 stat cards · performance matrix · momentum chart · best/avg/worst</div>
+          </div>
+          <div class="card-badges"><span class="b b-keep">KEEP MATRIX</span><span class="b b-up">METRIC ENGINE</span></div>
+        </div>
+        <div class="card-body" onclick="event.stopPropagation()">
+          <div class="grid2">
+            <div class="sec">
+              <div class="sec-title t-pain">✕ Kill</div>
+              <div class="li pain">Stat cards hardcoded: <code>84.2%</code>, <code>18_DAYS</code>, <code>10/12</code>, <code>01</code>. None computed.</div>
+              <div class="li pain">Momentum chart <code>PROJECTED</code> series is invented.</div>
+              <div class="li pain"><code>LOW_PERFORMANCE_NODES</code> alert card — theater guilt.</div>
+            </div>
+            <div class="sec">
+              <div class="sec-title t-fix">◈ Fix / ◉ Add</div>
+              <div class="li fix"><b>Keep the matrix</b> — it's the core grid, and it's good. Wire stats to server aggregates.</div>
+              <div class="li fix">Binary → typed metrics (ADD-A1): QUANTITY/DURATION/SCALE/DERIVED cells.</div>
+              <div class="li fix">Real Streak 2.0 + repair-token hollow rings (ADD-A5); add the 365-day heat-wall here.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card del-card" onclick="tg(this)">
+        <div class="card-hdr">
+          <div class="card-num">P5</div>
+          <div class="card-info">
+            <div class="card-name">page-finances — "The Ledger"</div>
+            <div class="card-tag">4 stats · donut · recurring list · entry terminal · debt matrix · budget table · add-recurring form · tx ledger</div>
+          </div>
+          <div class="card-badges"><span class="b b-del">DE-DUPLICATE</span><span class="b b-up">SAFE-TO-SPEND</span></div>
+        </div>
+        <div class="card-body" onclick="event.stopPropagation()">
+          <div class="grid2">
+            <div class="sec">
+              <div class="sec-title t-pain">✕ Kill</div>
+              <div class="li pain"><b>Duplicate recurring UI</b>: an inline "Monthly Recurring" card (row 2) AND a full "Add Recurring Commitment" form (row 3). Two ways to do one thing.</div>
+              <div class="li pain"><code>HASH_VERIF</code> column in the tx table — fake verification theater.</div>
+              <div class="li pain">Donut legend categories hardcoded (ACADEMIC/HOUSING/DATA/HARDWARE/OTHER).</div>
+            </div>
+            <div class="sec">
+              <div class="sec-title t-fix">◈ Fix / ◉ Add</div>
+              <div class="li fix">Invert to <b>safe-to-spend/day</b> (UPDATE-U4): recurring auto-posts; user logs only variable spend (2-tap).</div>
+              <div class="li fix">Collapse the two recurring UIs into one; drop per-tx manual entry as the default.</div>
+              <div class="li fix">DERIVED "under budget" metric feeds the grid — finance joins streaks with zero extra logging.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card up-card" onclick="tg(this)">
+        <div class="card-hdr">
+          <div class="card-num">P6</div>
+          <div class="card-info">
+            <div class="card-name">page-workout — Gym (3 tabs)</div>
+            <div class="card-tag">split: 7-day grid + telemetry + log diary · muscle growth grid · registry drilldown · overview &amp; log</div>
+          </div>
+          <div class="card-badges"><span class="b b-keep">KEEP LOGGER</span><span class="b b-up">→ BODY//SYSTEMS</span></div>
+        </div>
+        <div class="card-body" onclick="event.stopPropagation()">
+          <div class="grid2">
+            <div class="sec">
+              <div class="sec-title t-pain">✕ Kill</div>
+              <div class="li pain">Fake <code>RECOVERY SCORE</code> + telemetry deltas; <code>REAL-TIME BIOMETRICS SYNCING…</code> banner.</div>
+              <div class="li pain">Dead buttons: <code>W42-LOG</code>, <code>FILTER: STRENGTH</code>, <code>RE-CALIBRATE</code>, <code>EXPORT DATA</code>.</div>
+              <div class="li pain">Quarterly progression chart on invented data; <code>HYPERTROPHY 2.0</code> label.</div>
+            </div>
+            <div class="sec">
+              <div class="sec-title t-fix">◈ Fix / ◉ Add</div>
+              <div class="li fix"><b>Keep the session logger</b> (strongest module). Make recal timer + volume real.</div>
+              <div class="li fix">Wrap in <b>BODY//SYSTEMS</b> (ADD-A4): add Recovery (sleep) + Fuel (water/protein steppers) + a real Readiness score as panel border.</div>
+              <div class="li fix">DERIVED "Trained" metric flows to the grid automatically.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card up-card" onclick="tg(this)">
+        <div class="card-hdr">
+          <div class="card-num">P7</div>
+          <div class="card-info">
+            <div class="card-name">page-work — "Focus Hub / Neural Lock"</div>
+            <div class="card-tag">4 stats · cognitive-flow chart · timer · focus logs · session management</div>
+          </div>
+          <div class="card-badges"><span class="b b-up">→ FOCUS//ENGINE</span></div>
+        </div>
+        <div class="card-body" onclick="event.stopPropagation()">
+          <div class="grid2">
+            <div class="sec">
+              <div class="sec-title t-pain">✕ Kill</div>
+              <div class="li pain">Stats hardcoded: <code>04:42</code>, <code>06 SESSIONS</code>, <code>05:15</code>, <code>+12%</code>.</div>
+              <div class="li pain"><code>782 mflops</code> + "COGNITIVE FLOW ANALYTICS" — pure sci-fi theater, measures nothing.</div>
+              <div class="li pain"><code>CORRECT SESSION</code> button (no clear function); <code>NEURAL LOCK SEQUENCE</code> naming.</div>
+            </div>
+            <div class="sec">
+              <div class="sec-title t-fix">◉ Add</div>
+              <div class="li fix">This is the seed of <b>FOCUS//ENGINE</b> (ADD-A3): keep the timer, make it write real <code>FocusSession</code> rows.</div>
+              <div class="li fix">Add Contexts (from Project rows), distraction-capture inbox, full-bleed dim mode, auto-complete of DURATION metrics.</div>
+              <div class="li fix">Real stats from focus sessions; replace the mflops chart with a context-hours bar.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card del-card" onclick="tg(this)">
+        <div class="card-hdr">
+          <div class="card-num">P8</div>
+          <div class="card-info">
+            <div class="card-name">page-runway — "The Runway" (3 tabs)</div>
+            <div class="card-tag">overview: 4 stats + sunburst + category bars + feed + work engine + queue · work: CRUD + registry · status: 4-col kanban</div>
+          </div>
+          <div class="card-badges"><span class="b b-keep">KEEP CRUD</span><span class="b b-del">MERGE w/ WORK+WEEKLY</span></div>
+        </div>
+        <div class="card-body" onclick="event.stopPropagation()">
+          <div class="grid2">
+            <div class="sec">
+              <div class="sec-title t-pain">✕ Kill</div>
+              <div class="li pain">Overview stats hardcoded: <code>76.4%</code>, <code>08</code>, <code>03</code>, <code>02</code>; sunburst <code>92%</code>; category P/F bars all fake.</div>
+              <div class="li pain">Work-engine project <code>&lt;select&gt;</code> hardcoded options (<code>SYNCHRONIZE_DB_CLUSTER_09</code>…) instead of real projects.</div>
+              <div class="li pain">Initiative feed = decorative "LIVE_FEED".</div>
+            </div>
+            <div class="sec">
+              <div class="sec-title t-fix">◈ Fix / ◉ Add</div>
+              <div class="li fix"><b>Keep</b> the Work CRUD form + Status kanban — real <code>Project</code> data.</div>
+              <div class="li fix">Overlaps page-work (focus) AND page-weekly (tasks). <b>Consolidate</b> the three into one Projects+Focus+Tasks spine.</div>
+              <div class="li fix">Projects → Focus contexts → free "hours invested" lane from <code>FocusSession</code>.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card del-card" onclick="tg(this)">
+        <div class="card-hdr">
+          <div class="card-num">P9</div>
+          <div class="card-info">
+            <div class="card-name">page-resume — "The Profile" (3 tabs)</div>
+            <div class="card-tag">overview: 4 stats + skill node + tech stack + 6 category tabs + PDF compiler · profile editor CRUD · PDF generator</div>
+          </div>
+          <div class="card-badges"><span class="b b-del">DEMOTE TO DRAWER</span></div>
+        </div>
+        <div class="card-body" onclick="event.stopPropagation()">
+          <div class="grid2">
+            <div class="sec">
+              <div class="sec-title t-pain">✕ Kill</div>
+              <div class="li pain"><code>INTERNSHIPS NO. 24</code> — mislabeled/nonsense stat; CGPA <code>9.1</code>, projects/research counts hardcoded.</div>
+              <div class="li pain">Fake footer <code>VERSION 4.2.1-STABLE · SHA256: 7e9a8f…b23c</code>; <code>PEER_REVIEW_PENDING</code> status.</div>
+              <div class="li pain">Compiler flavor text ("Engineering_Registry schema… all nodes verified").</div>
+            </div>
+            <div class="sec">
+              <div class="sec-title t-fix">◈ Fix / ◉ Add</div>
+              <div class="li fix"><b>Keep</b> the profile editor + PDF generator — they work and are genuinely useful.</div>
+              <div class="li fix"><b>Demote</b> out of the daily dock into a utility drawer (DELETE-D6) — it's a quarterly tool. Reclaim the slot for Focus.</div>
+              <div class="li fix">Real stat tiles from actual registry counts, or remove the tiles.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="verdict" style="margin-top:18px">
+      <div class="verdict-label">✦ The through-line</div>
+      <div class="verdict-text">Every page has the same disease: <b>a real, well-built shell wrapped around fake numbers and dead buttons.</b> The fix is never "redesign the layout" — the layouts are strong. It's (1) delete the theater, (2) wire the survivors to the Metric Engine + DayAggregate, (3) collapse the three project/task/focus pages into one spine, (4) demote resume. Do that and the app stops lying, which is the prerequisite for the dopamine layer in BUILD Phase 5.</div>
+    </div>
+  </div>
+
+  <div class="content panel" id="panel-add">
+    <div class="intro neon">
+      <h3>◉ New systems — six additions, each killing a measured friction</h3>
+      <p>Nothing generic. Every addition below exists to delete a friction from the EXISTING tab, comes with full CRUD semantics, and is buildable against the Prisma schema in SYSTEMS &amp; DATA.</p>
+    </div>
+
+    <div class="card-list">
+
+      <div class="card" onclick="tg(this)">
+        <div class="card-hdr">
+          <div class="card-num">A1</div>
+          <div class="card-info">
+            <div class="card-name">Typed Metric Engine</div>
+            <div class="card-tag">5 metric types · completion functions · 0–1 score drives grid color · kills F2</div>
+          </div>
+          <div class="card-badges"><span class="b b-hot">🔥 Core upgrade</span><span class="b b-new">NEW</span></div>
+        </div>
+        <div class="card-body" onclick="event.stopPropagation()">
+          <p>Replace <code>completed: Boolean</code> with typed metrics. Each type has a <b>completion function</b> normalizing every log to a 0–1.25 <code>score</code> — the single number that colors the heat-wall, feeds streaks, and powers the day composite.</p>
+          <div class="tbl-scroll"><table class="tbl">
+            <tr><th>Type</th><th>Input</th><th>Completion fn</th><th>Example</th></tr>
+            <tr><td><b>BINARY</b></td><td>one tap</td><td><code>1 | 0</code></td><td>"Made bed"</td></tr>
+            <tr><td><b>QUANTITY</b></td><td>number + unit (stepper)</td><td><code>min(value/target, 1.25)</code></td><td>"3L water", "40 pages"</td></tr>
+            <tr><td><b>DURATION</b></td><td>minutes — manual or auto from Focus Engine</td><td><code>min(value/target, 1.25)</code></td><td>"90 min deep work"</td></tr>
+            <tr><td><b>SCALE</b></td><td>1–5 single tap</td><td><code>value / 5</code></td><td>"Energy", "Sleep quality"</td></tr>
+            <tr><td><b>DERIVED</b></td><td><b>none</b> — computed from other modules</td><td>module-specific</td><td>"Trained" ← GymLog · "Under budget" ← Transactions</td></tr>
+          </table></div>
+          <div class="grid2">
+            <div class="sec">
+              <div class="sec-title t-crud">⬡ CRUD contract</div>
+              <div class="li crud"><b>C</b> — <code>POST /metrics</code> creates def + version v1 (name, type, target, unit, schedule, derivedSource?)</div>
+              <div class="li crud"><b>R</b> — <code>GET /metrics/matrix?from&amp;to</code> one call: defs + logs + server-cached streaks/scores</div>
+              <div class="li crud"><b>U</b> — <code>PATCH /metrics/:id</code> writes a new <b>version row</b> (effectiveFrom) — history never mutates</div>
+              <div class="li crud"><b>D</b> — soft-archive only; logs persist, greyed in history, absent from today</div>
+            </div>
+            <div class="sec">
+              <div class="sec-title t-fix">◉ Rules</div>
+              <div class="li fix">Score capped at 1.25 — overshoot renders as a <code>#39FF8E</code> shimmer without breaking the scale</div>
+              <div class="li fix">Cell color bands: score → signal-100 / 300 / 500 / 700 / 900</div>
+              <div class="li fix">Migration is lossless: <code>Habit→MetricDef(BINARY)</code>, <code>HabitLog→MetricLog(value:1)</code> in one Prisma migration</div>
+            </div>
+          </div>
+          <div class="lib-row"><span class="lib key">MetricDef</span><span class="lib key">MetricVersion</span><span class="lib key">MetricLog</span><span class="lib">score: Float 0–1.25</span><span class="lib">source: MANUAL|DERIVED|REPAIR</span></div>
+        </div>
+      </div>
+
+      <div class="card" onclick="tg(this)">
+        <div class="card-hdr">
+          <div class="card-num">A2</div>
+          <div class="card-info">
+            <div class="card-name">Daily Console — ⌘K Batch Logger</div>
+            <div class="card-tag">glass overlay · whole day in ~45–60s · one batched commit · kills F1 + F4</div>
+          </div>
+          <div class="card-badges"><span class="b b-hot">🔥 Flagship UX</span><span class="b b-new">NEW</span></div>
+        </div>
+        <div class="card-body" onclick="event.stopPropagation()">
+          <p>One glass surface, opened from anywhere via <code>⌘K</code> or the FAB, that batches the entire day. Date-scoped (<code>←/→</code> switches days), so backfilling yesterday is the same gesture as logging today — F4 dies for free.</p>
+          <pre class="ascii">┌─ DAILY CONSOLE ──────────────────────────── <span class="w">~45–60s total</span> ─┐
+│ 1 AUTO-RESOLVED (0s, pre-checked, shown for trust):          │
+│     <span class="g">✓ DEEP WORK 1h24m</span> ←FocusSession   <span class="g">✓ GYM</span> ←GymLog        │
+│     <span class="g">✓ RENT POSTED</span>     ←recurring engine                     │
+│ 2 ONE-TAP ROW (~10s):  [<span class="g">▣ Read</span>] [▢ Run] [▢ No-sugar]        │
+│ 3 STEPPER ROW (~15s):  WATER ‹ 2.5L ›  ·  PROTEIN ‹ 120g ›   │
+│ 4 SCALE ROW  (~5s):    SLEEP ① ② ③ ④ ⑤                       │
+│ 5 VARIABLE SPEND (~15s, skippable): [ ₹420 ] → [food ▾] ↵    │
+│                                                              │
+│                  [ <span class="n">SEAL DAY ▰▰▰▰▰</span> ]                          │
+└──────────────────────────────────────────────────────────────┘</pre>
+          <div class="grid2">
+            <div class="sec">
+              <div class="sec-title t-how">◈ Engineering contract</div>
+              <div class="li how">Optimistic UI — grid updates instantly on tap, before network</div>
+              <div class="li how">One batched <code>POST /days/:date/commit</code> — never N calls</div>
+              <div class="li how">Server recomputes day score + streaks and returns them in the same response — client never re-derives</div>
+              <div class="li how">Pre-hydrated from the matrix endpoint → opens in &lt;100ms</div>
+            </div>
+            <div class="sec">
+              <div class="sec-title t-fix">◉ Reward loop</div>
+              <div class="li fix">SEAL DAY on a 100% day fires the neon column sweep on the heat-wall — scarce, earned, chased</div>
+              <div class="li fix">Auto-resolved section is shown (not hidden) — trust is built by seeing the system work for you</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" onclick="tg(this)">
+        <div class="card-hdr">
+          <div class="card-num">A3</div>
+          <div class="card-info">
+            <div class="card-name">FOCUS//ENGINE — Deep Work View</div>
+            <div class="card-tag">full-bleed timer · contexts from Project rows · distraction capture · auto-logs DURATION metrics</div>
+          </div>
+          <div class="card-badges"><span class="b b-hot">Biggest student win</span><span class="b b-new">NEW</span></div>
+        </div>
+        <div class="card-body" onclick="event.stopPropagation()">
+          <pre class="ascii">┌─ FOCUS//ENGINE ────────────────────────────────────────────┐
+│           <span class="g">▰▰▰▰▰▰▰</span>▱▱▱   <span class="n">00:34:12</span> / 00:50:00                 │
+│           CONTEXT: [ MATH-204 ▾ ]    BLOCK 2 OF 4           │
+│   (everything else on screen drops to 20% opacity)          │
+│                                                             │
+│  session ledger ──────────────── today: 1h24m · wk: 9h10m   │
+│  [ ⏸ PAUSE ]  [ <span class="g">■ END &amp; LOG</span> ]  [ + CAPTURE THOUGHT ]        │
+└─────────────────────────────────────────────────────────────┘</pre>
+          <div class="grid2">
+            <div class="sec">
+              <div class="sec-title t-how">◈ Structural workflow</div>
+              <div class="li how">Pick a <b>Context</b> — reuses existing <code>Project</code> rows (courses, projects)</div>
+              <div class="li how">Timer runs 50/10 default, configurable; UI dims everything else</div>
+              <div class="li how">Distraction? <code>+ CAPTURE THOUGHT</code> dumps a one-liner to an inbox without leaving the session</div>
+              <div class="li how"><code>END &amp; LOG</code> writes a <code>FocusSession</code> → any DURATION metric targeting that context <b>auto-completes</b></div>
+            </div>
+            <div class="sec">
+              <div class="sec-title t-crud">⬡ CRUD contract</div>
+              <div class="li crud"><b>C</b> — <code>POST /focus/sessions</code> auto on END (contextId, startedAt, minutes, capturedNotes)</div>
+              <div class="li crud"><b>R</b> — <code>GET /focus/summary?week</code> → context-stacked rollup: where hours actually went vs. intended</div>
+              <div class="li crud"><b>U</b> — trim/re-tag within a 24h window only</div>
+              <div class="li crud"><b>D</b> — sessions immutable after 24h; integrity beats tidiness</div>
+            </div>
+          </div>
+          <div class="verdict">
+            <div class="verdict-label">✦ Why it matters</div>
+            <div class="verdict-text">The student never "logs studying" — studying logs itself. The weekly view gains a context-stacked bar chart, and the Runway page gets an hours-invested lane per project for free.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" onclick="tg(this)">
+        <div class="card-hdr">
+          <div class="card-num">A4</div>
+          <div class="card-info">
+            <div class="card-name">BODY//SYSTEMS — Physical Output Console</div>
+            <div class="card-tag">existing gym module + recovery + fuel on one screen · computed Readiness score</div>
+          </div>
+          <div class="card-badges"><span class="b b-new">NEW VIEW</span><span class="b b-keep">GYM LOGGER UNTOUCHED</span></div>
+        </div>
+        <div class="card-body" onclick="event.stopPropagation()">
+          <div class="grid2">
+            <div class="sec">
+              <div class="sec-title t-how">◈ Three panels, one screen</div>
+              <div class="li how"><b>OUTPUT</b> — existing GymSplit/GymLog logger + weekly tonnage sparkline</div>
+              <div class="li how"><b>RECOVERY</b> — sleep as SCALE tap + hours (persisted, fixing the sleep-persistence bug class)</div>
+              <div class="li how"><b>FUEL</b> — water/protein as QUANTITY steppers: <code>+0.5L</code>, <code>+25g</code>. Two taps. <b>No food database, ever.</b></div>
+            </div>
+            <div class="sec">
+              <div class="sec-title t-crud">⬡ CRUD contract</div>
+              <div class="li crud"><b>C</b> — gym: existing routes; fuel/sleep: <code>POST /metrics/:id/logs</code></div>
+              <div class="li crud"><b>R</b> — <code>GET /body/readiness?date</code> — computed on read, never stored</div>
+              <div class="li crud"><b>U</b> — today's logs editable via console only</div>
+              <div class="li crud"><b>D</b> — log delete = tombstone + day-score recompute</div>
+            </div>
+          </div>
+          <div class="verdict">
+            <div class="verdict-label">✦ The readiness mechanic</div>
+            <div class="verdict-text">Readiness = sleep × recovery × yesterday's load. It renders as the panel's <b>border intensity</b> — signal-100 (deload) to signal-700 (push). The panel itself tells you what kind of day it is, with zero extra UI.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" onclick="tg(this)">
+        <div class="card-hdr">
+          <div class="card-num">A5</div>
+          <div class="card-info">
+            <div class="card-name">Streak 2.0 — Anti-Fragile Chains</div>
+            <div class="card-tag">partial credit · scheduled-days-only · Repair Tokens · kills F3</div>
+          </div>
+          <div class="card-badges"><span class="b b-new">NEW</span><span class="b b-hot">Retention-critical</span></div>
+        </div>
+        <div class="card-body" onclick="event.stopPropagation()">
+          <div class="grid2">
+            <div class="sec">
+              <div class="sec-title t-how">◈ The rules</div>
+              <div class="li how">Streak = consecutive <b>scheduled</b> days with <code>score ≥ 0.5</code> — partial credit counts</div>
+              <div class="li how">Rest days defined in <code>targetDays</code> never break chains</div>
+              <div class="li how">Every 7 perfect days banks <b>1 Repair Token</b> (max 2)</div>
+              <div class="li how">A token auto-fills a missed day at <code>score 0.5</code>, source <code>REPAIR</code></div>
+            </div>
+            <div class="sec">
+              <div class="sec-title t-fix">◉ Honest rendering</div>
+              <div class="li fix">Repaired days render as a <b>hollow ring</b> — visibly repaired, never faked</div>
+              <div class="li fix">Unlogged past days are <code>--carbon-3</code> with a dot — neutral, recoverable, shame-free. Never red.</div>
+              <div class="li fix">Milestones at 7/30/100: neon chip, double glow pulse, mono toast <code>STREAK_07 // SYSTEM NOMINAL</code></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" onclick="tg(this)">
+        <div class="card-hdr">
+          <div class="card-num">A6</div>
+          <div class="card-info">
+            <div class="card-name">DayAggregate Cache + Offline Queue</div>
+            <div class="card-tag">server-side composite scores · IndexedDB replay · kills F5 + F6</div>
+          </div>
+          <div class="card-badges"><span class="b b-new">NEW INFRA</span></div>
+        </div>
+        <div class="card-body" onclick="event.stopPropagation()">
+          <div class="grid2">
+            <div class="sec">
+              <div class="sec-title t-how">◈ DayAggregate</div>
+              <div class="li how">One row per <code>(userId, date)</code>: compositeScore, sealed flag, streakCount</div>
+              <div class="li how">Written by the server inside every <code>/days/:date/commit</code> transaction</div>
+              <div class="li how">Heat-wall reads 365 aggregate rows — not thousands of logs. F6 dead.</div>
+            </div>
+            <div class="sec">
+              <div class="sec-title t-how">◈ Offline queue</div>
+              <div class="li how">Failed commits land in IndexedDB with a monotonic sequence</div>
+              <div class="li how">Replay on reconnect; server upserts are idempotent via <code>(defId, loggedDate)</code> uniqueness</div>
+              <div class="li how">This is what makes deleting the localStorage fork safe (DELETE-04)</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════ UPDATE ════════════════════════ -->
+  <div class="content panel" id="panel-update">
+    <div class="intro amber">
+      <h3>◈ Upgrades to what already exists — keep the bones, replace the skin and nerves</h3>
+      <p>Five updates. None throw away working code: they re-skin, re-route, or re-prime existing modules to world-class tier.</p>
+    </div>
+
+    <div class="card-list">
+
+      <div class="card up-card" onclick="tg(this)">
+        <div class="card-hdr">
+          <div class="card-num">U1</div>
+          <div class="card-info">
+            <div class="card-name">Design Token System — Carbon-Green</div>
+            <div class="card-tag">exact hex values · one-hue signal scale · glass rules · ship as tokens.css</div>
+          </div>
+          <div class="card-badges"><span class="b b-up">UPDATE</span><span class="b b-hot">Do first</span></div>
+        </div>
+        <div class="card-body" onclick="event.stopPropagation()">
+          <div class="tbl-scroll"><table class="tbl">
+            <tr><th>Token</th><th>Value</th><th>Behavior</th></tr>
+            <tr><td><code>--carbon-0</code></td><td><span class="sw" style="background:#0A0C0B"></span><b>#0A0C0B</b></td><td>App void — never pure black</td></tr>
+            <tr><td><code>--carbon-1</code></td><td><span class="sw" style="background:#101312"></span><b>#101312</b></td><td>Base panel</td></tr>
+            <tr><td><code>--carbon-2</code></td><td><span class="sw" style="background:#161A18"></span><b>#161A18</b></td><td>Raised card</td></tr>
+            <tr><td><code>--carbon-3</code></td><td><span class="sw" style="background:#1D2220"></span><b>#1D2220</b></td><td>Hover surface / input wells</td></tr>
+            <tr><td><code>--carbon-4</code></td><td><span class="sw" style="background:#262C29"></span><b>#262C29</b></td><td>Borders, dividers</td></tr>
+            <tr><td><code>--signal-100</code></td><td><span class="sw" style="background:#1A3326"></span><b>#1A3326</b></td><td>Dormant — empty cells, disabled</td></tr>
+            <tr><td><code>--signal-300</code></td><td><span class="sw" style="background:#1F7A4D"></span><b>#1F7A4D</b></td><td>Partial completion (25–75%)</td></tr>
+            <tr><td><code>--signal-500</code></td><td><span class="sw" style="background:#10B981"></span><b>#10B981</b></td><td>Complete state, primary buttons</td></tr>
+            <tr><td><code>--signal-700</code></td><td><span class="sw" style="background:#00E676"></span><b>#00E676</b></td><td>Active / hover interactive</td></tr>
+            <tr><td><code>--signal-900</code></td><td><span class="sw" style="background:#39FF8E"></span><b>#39FF8E</b></td><td><b>Neon — streaks &amp; live counters ONLY, max 2/viewport</b></td></tr>
+          </table></div>
+          <div class="grid2">
+            <div class="sec">
+              <div class="sec-title t-how">◈ Typography — 3 voices</div>
+              <div class="li how"><b>Data:</b> JetBrains Mono, <code>tabular-nums</code>, every number right-aligned</div>
+              <div class="li how"><b>Interface:</b> Inter variable — labels, body, nav</div>
+              <div class="li how"><b>Display:</b> Space Grotesk — titles, milestones</div>
+              <div class="li how">Scale: 11 / 13 / 15 / clamp(18,1.6vw,22) / clamp(28,3.2vw,40)px</div>
+            </div>
+            <div class="sec">
+              <div class="sec-title t-how">◈ Glass + motion</div>
+              <div class="li how">Glass = <code>rgba(22,26,24,.72)</code> + blur(20px) — <b>overlays only</b>; base panels stay matte</div>
+              <div class="li how"><code>--ease-snap: cubic-bezier(.2,.9,.3,1.2)</code> for completions; <code>--ease-glide</code> for layout</div>
+              <div class="li how">Durations: 120ms taps / 240ms panels / 600ms celebrations · <code>prefers-reduced-motion</code> → opacity fades</div>
+              <div class="li how">Errors stay monochrome: white-on-carbon-3 with a 1px <b>#E8B44A</b> left rule — amber is the only second hue</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card up-card" onclick="tg(this)">
+        <div class="card-hdr">
+          <div class="card-num">U2</div>
+          <div class="card-info">
+            <div class="card-name">page-home → The Console</div>
+            <div class="card-tag">high-density single-screen dashboard · 4 zones · zero desktop scrolling</div>
+          </div>
+          <div class="card-badges"><span class="b b-up">UPDATE</span></div>
+        </div>
+        <div class="card-body" onclick="event.stopPropagation()">
+          <pre class="ascii">┌─ TOPBAR ── GRID//OS · 2026.06.12 · ⌘K ────────────── <span class="n">streak ▮ 18</span> ─┐
+├─────────────────────────────┬─────────────────────────────────────┤
+│  <span class="w">ZONE A · TODAY STRIP (60%)</span> │  <span class="w">ZONE B · THE GRID (40%)</span>            │
+│  ┌─ habit chips, 1-tap ──┐  │  365-day heat-wall, signal-100→900  │
+│  │ <span class="g">▣ Gym  ▣ Read</span>  ▢ Run  │  │  cell density = composite score     │
+│  └───────────────────────┘  │  hover → day breakdown tooltip      │
+│  ┌─ NOW CARD ────────────┐  ├─────────────────────────────────────┤
+│  │ next calendar block + │  │  <span class="w">ZONE C · VITALS</span> (mono numerals)    │
+│  │ <span class="g">[▶ START FOCUS]</span> CTA   │  │  focus hrs · safe-to-spend · sleep  │
+├──┴───────────────────────┴──┴─────────────────────────────────────┤
+│  <span class="w">ZONE D · DOCK</span> ─ Habits · Focus · Body · Money · Work · Calendar  │
+└────────────────────────────────────────────────────────────────────┘</pre>
+          <div class="li how">Laws: 8px base grid · max 3 hierarchy levels per zone · exactly one primary CTA per screen (the NOW card's contextual action) · density from typography discipline, not cramming</div>
+          <div class="li how">The NOW card reads the next <code>CalendarEvent</code> and renders a context CTA: study block → <code>▶ START FOCUS</code>, gym block → <code>▶ OPEN SESSION</code></div>
+        </div>
+      </div>
+
+      <div class="card up-card" onclick="tg(this)">
+        <div class="card-hdr">
+          <div class="card-num">U3</div>
+          <div class="card-info">
+            <div class="card-name">Completion Feedback — The Ignition Sequence</div>
+            <div class="card-tag">600ms timeline · streak digit roll · scarce neon sweep · no confetti</div>
+          </div>
+          <div class="card-badges"><span class="b b-up">UPDATE</span><span class="b b-hot">Addiction layer</span></div>
+        </div>
+        <div class="card-body" onclick="event.stopPropagation()">
+          <pre class="ascii">t=0ms     tap → cell scales 0.92 (--ease-snap) — instant input ack
+t=60ms    fill wipes left→right carbon-1 → <span class="g">signal-500</span> (180ms)
+t=120ms   1px <span class="g">signal-700</span> ring expands +6px, fades (240ms)
+t=200ms   check glyph draws in via stroke-dashoffset (160ms)
+t=300ms   IF streak continues: counter ticks +1, slot-machine
+          single-digit roll, digit flashes <span class="n">signal-900</span>
+t=400ms   today's heat-wall column brightens one intensity step
+          — the user SEES the wall respond to the tap
+t=600ms   settle. <span class="w">Dopamine round-trip &lt; 1s. No confetti.</span></pre>
+          <div class="li fix"><b>Variable reward:</b> completing the <b>final</b> metric of the day fires a bottom-to-top neon sweep (450ms) on the day column — "day sealed." Fires only on 100% days. Scarce → chased.</div>
+          <div class="li fix"><b>Milestones</b> 7/30/100: streak chip goes neon, glow pulses ×2 (600ms apart), mono toast <code>STREAK_07 // SYSTEM NOMINAL</code>. Brand-consistent, not a party popper.</div>
+        </div>
+      </div>
+
+      <div class="card up-card" onclick="tg(this)">
+        <div class="card-hdr">
+          <div class="card-num">U4</div>
+          <div class="card-info">
+            <div class="card-name">Finance → Safe-to-Spend Engine</div>
+            <div class="card-tag">recurring auto-post · variable-spend-only logging · one daily number</div>
+          </div>
+          <div class="card-badges"><span class="b b-up">UPDATE</span></div>
+        </div>
+        <div class="card-body" onclick="event.stopPropagation()">
+          <div class="grid2">
+            <div class="sec">
+              <div class="sec-title t-how">◈ The inversion</div>
+              <div class="li how">Promote <code>gridFinRecurItems</code> to a server-side <code>RecurringItem</code> model — rent, subscriptions, salary auto-post on schedule</div>
+              <div class="li how">User logs only <b>variable</b> spend: 2-tap amount + category sheet inside the Daily Console</div>
+              <div class="li how"><b>safe-to-spend/day</b> = (income − fixed − sunk-this-month) ÷ days-remaining — computed on read</div>
+            </div>
+            <div class="sec">
+              <div class="sec-title t-fix">◉ Surface</div>
+              <div class="li fix">Console Vitals shows one mono number: <code>SAFE ₹740/day</code> in signal-500, dropping to amber-ruled mono when negative</div>
+              <div class="li fix">A DERIVED "Under budget" metric feeds the grid automatically — finance joins the streak system with zero extra logging</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card up-card" onclick="tg(this)">
+        <div class="card-hdr">
+          <div class="card-num">U5</div>
+          <div class="card-info">
+            <div class="card-name">Habits → Metrics Migration</div>
+            <div class="card-tag">lossless one-shot Prisma migration · zero user-visible disruption</div>
+          </div>
+          <div class="card-badges"><span class="b b-up">UPDATE</span></div>
+        </div>
+        <div class="card-body" onclick="event.stopPropagation()">
+          <pre class="ascii">Habit row            →  MetricDef { type: BINARY, name, icon, sortOrder }
+                        + MetricVersion { targetDays, effectiveFrom: createdAt }
+HabitLog row         →  MetricLog { value: 1, score: 1, source: MANUAL }
+Habit.archived       →  MetricDef.archived          <span class="g">(semantics identical)</span>
+unique(habit, date)  →  unique(defId, loggedDate)   <span class="g">(constraint preserved)</span></pre>
+          <div class="li how">Runs as one transaction; old tables kept read-only for one release, then dropped</div>
+          <div class="li how">Existing grid UI keeps rendering — BINARY metrics behave exactly like old habits on day one, so the migration ships invisible and types unlock incrementally</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════ DELETE ════════════════════════ -->
+  <div class="content panel" id="panel-delete">
+    <div class="intro red">
+      <h3>✕ Cuts — every deletion is a feature for the user's attention</h3>
+      <p>Logging fatigue is death by a thousand inputs. Each cut below names the mechanism of harm and the exact replacement. Nothing is deleted without something cheaper absorbing its job.</p>
+    </div>
+
+    <div class="card-list">
+
+      <div class="card del-card" onclick="tg(this)">
+        <div class="card-hdr">
+          <div class="card-num">D1</div>
+          <div class="card-info">
+            <div class="card-name">Manual "studied / worked" habits</div>
+            <div class="card-tag">redundant the moment the Focus Engine exists</div>
+          </div>
+          <div class="card-badges"><span class="b b-del">DELETE INPUT</span></div>
+        </div>
+        <div class="card-body" onclick="event.stopPropagation()">
+          <div class="li pain"><b>Harm:</b> double entry — you did the work in a timer, then you log the work again. Every duplicate input erodes trust in the whole system.</div>
+          <div class="li fix"><b>Replacement:</b> DERIVED metrics auto-complete from <code>FocusSession</code> rows. The metric stays on the grid; only the input disappears.</div>
+        </div>
+      </div>
+
+      <div class="card del-card" onclick="tg(this)">
+        <div class="card-hdr">
+          <div class="card-num">D2</div>
+          <div class="card-info">
+            <div class="card-name">Per-transaction finance entry as the default</div>
+            <div class="card-tag">the #1 documented finance-tracker killer</div>
+          </div>
+          <div class="card-badges"><span class="b b-del">DELETE DEFAULT</span></div>
+        </div>
+        <div class="card-body" onclick="event.stopPropagation()">
+          <div class="li pain"><b>Harm:</b> nobody itemizes every coffee past week 3; once entries lapse, the budget view becomes fiction and the user abandons the module entirely.</div>
+          <div class="li fix"><b>Replacement:</b> U4 — recurring engine auto-posts fixed costs; only variable spend is logged (2 taps, in-console); full transaction entry remains available but demoted to power-user path.</div>
+        </div>
+      </div>
+
+      <div class="card del-card" onclick="tg(this)">
+        <div class="card-hdr">
+          <div class="card-num">D3</div>
+          <div class="card-info">
+            <div class="card-name">Mood / journal / gratitude prompts</div>
+            <div class="card-tag">guilt generators masquerading as wellness</div>
+          </div>
+          <div class="card-badges"><span class="b b-del">NEVER ADD</span></div>
+        </div>
+        <div class="card-body" onclick="event.stopPropagation()">
+          <div class="li pain"><b>Harm:</b> open-text prompts create a nightly homework assignment; skipping them produces visible blanks that read as failure.</div>
+          <div class="li fix"><b>Replacement:</b> one optional end-of-day SCALE tap ("Energy ①–⑤"). Skippable with zero visual penalty. Never nagging, no notifications.</div>
+        </div>
+      </div>
+
+      <div class="card del-card" onclick="tg(this)">
+        <div class="card-hdr">
+          <div class="card-num">D4</div>
+          <div class="card-info">
+            <div class="card-name">The demo/localStorage storage fork</div>
+            <div class="card-tag">14+ duplicated keys · wipe-on-switch · 2× implementation tax</div>
+          </div>
+          <div class="card-badges"><span class="b b-del">DELETE</span><span class="b b-hot">Top bug factory</span></div>
+        </div>
+        <div class="card-body" onclick="event.stopPropagation()">
+          <div class="li pain"><b>Harm:</b> two truth sources; the last five commits are all persistence/sync firefighting; demo users lose all data at signup.</div>
+          <div class="li fix"><b>Replacement:</b> one API client everywhere + the A6 offline queue. "Demo" becomes a server-seeded sandbox account; signup claims the account and keeps the data. One code path, forever.</div>
+        </div>
+      </div>
+
+      <div class="card del-card" onclick="tg(this)">
+        <div class="card-hdr">
+          <div class="card-num">D5</div>
+          <div class="card-info">
+            <div class="card-name">Per-module navigation for daily logging</div>
+            <div class="card-tag">5+ page visits to update one day</div>
+          </div>
+          <div class="card-badges"><span class="b b-del">DELETE PATH</span></div>
+        </div>
+        <div class="card-body" onclick="event.stopPropagation()">
+          <div class="li pain"><b>Harm:</b> friction F1 — ~4–6 minutes of navigation per day purely to record what already happened.</div>
+          <div class="li fix"><b>Replacement:</b> the Daily Console (A2). Module pages survive for deep dives and editing; they just stop being the logging path.</div>
+        </div>
+      </div>
+
+      <div class="card del-card" onclick="tg(this)">
+        <div class="card-hdr">
+          <div class="card-num">D6</div>
+          <div class="card-info">
+            <div class="card-name">Resume builder's permanent dock slot</div>
+            <div class="card-tag">quarterly tool in a daily loop</div>
+          </div>
+          <div class="card-badges"><span class="b b-del">DEMOTE</span></div>
+        </div>
+        <div class="card-body" onclick="event.stopPropagation()">
+          <div class="li pain"><b>Harm:</b> prime navigation real estate spent on a tool touched four times a year.</div>
+          <div class="li fix"><b>Replacement:</b> feature moves intact to a utility drawer (with settings/export). Its dock slot goes to FOCUS — a daily-use surface.</div>
+        </div>
+      </div>
+
+      <div class="card del-card" onclick="tg(this)">
+        <div class="card-hdr">
+          <div class="card-num">D7</div>
+          <div class="card-info">
+            <div class="card-name">Streak-zeroing & red "missed" days</div>
+            <div class="card-tag">punishes the user for living</div>
+          </div>
+          <div class="card-badges"><span class="b b-del">DELETE MECHANIC</span></div>
+        </div>
+        <div class="card-body" onclick="event.stopPropagation()">
+          <div class="li pain"><b>Harm:</b> a single sick day wipes 40 days of accumulated identity. The day after a broken streak is the highest-churn moment in any tracker.</div>
+          <div class="li fix"><b>Replacement:</b> Streak 2.0 (A5) — partial credit, scheduled-days-only, Repair Tokens rendered as hollow rings. Missed days render neutral carbon, never red.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════ SYSTEMS ════════════════════════ -->
+  <div class="content panel" id="panel-systems">
+    <div class="intro">
+      <h3>⬡ Systems architecture — data contracts an engineer can build against today</h3>
+      <p>Core principle: <b>definitions are versioned, logs are immutable facts, renders are joins.</b> Below: the two critical workflows and the target Prisma schema.</p>
+    </div>
+
+    <div class="slabel">// Workflow 1 — the daily 60-second commit path</div>
+    <pre class="ascii">USER (any screen, any time)
+  │  ⌘K  /  taps ◉ FAB
+  ▼
+DAILY CONSOLE — pre-hydrated from <span class="g">GET /metrics/matrix</span> (&lt;100ms open)
+  │  auto-resolved ✓ · one-taps · steppers · scales · variable spend
+  ▼
+[ <span class="n">SEAL DAY</span> ]
+  │
+  ├─► optimistic UI commit — grid updates INSTANTLY
+  │
+  ▼
+one batched <span class="g">POST /days/:date/commit</span> ──fail──► offline queue
+  │                                          (IndexedDB, monotonic
+  ▼                                           seq, replay on
+SERVER TRANSACTION                            reconnect; upserts
+  1. upsert MetricLogs (idempotent on         idempotent via
+     unique defId+loggedDate)                 defId+date unique)
+  2. recompute DayAggregate.compositeScore
+  3. recompute streakCount (+ Repair Token
+     spend if applicable)
+  4. return aggregates in the SAME response
+  ▼
+CLIENT applies server truth — never re-derives
+  ▼
+if 100%: <span class="n">neon column sweep · streak digit roll · day sealed</span></pre>
+
+    <div class="slabel mt">// Workflow 2 — state modification without breaking history</div>
+    <pre class="ascii">USER: "change Water target 2L → 3L, starting today"
+  ▼
+<span class="g">PATCH /metrics/:id { target: 3000, effectiveFrom: "2026-06-12" }</span>
+  ▼
+┌─ METRIC VERSIONING ────────────────────────────────────────┐
+│ metric_defs              metric_versions                   │
+│ id ─┬─ name, type        defId · target · targetDays       │
+│     └─ archived          effectiveFrom · effectiveTo(null) │
+│                                                            │
+│ old row: effectiveTo = 2026-06-11   <span class="w">(closed, untouched)</span>   │
+│ new row: target 3000, effectiveFrom = 2026-06-12           │
+└────────────────────────────────────────────────────────────┘
+  ▼
+RENDER: score(log) = completionFn(log.value,
+          version WHERE log.date BETWEEN effectiveFrom/To)
+  ▼
+RESULT: May's 2L days still complete <span class="g">✓</span> · June 12+ judged
+        against 3L <span class="g">✓</span> · zero historical rewrites <span class="g">✓</span>
+
+DELETE  → archived=true · today: gone · history: greyed but
+          scored · restorable
+CREATE  → def + version v1 · grid renders from effectiveFrom
+          only — no fake empty past
+LOG EDIT→ &lt;24h: update in place · &gt;24h: tombstone + corrected
+          row (audit-true)</pre>
+
+    <div class="slabel mt">// Target Prisma schema — the build-ready core</div>
+    <pre class="ascii"><span class="w">model MetricDef {</span>
+  id            String   @id @default(uuid())
+  userId        String
+  name          String
+  type          MetricType        <span class="g">// BINARY|QUANTITY|DURATION|SCALE|DERIVED</span>
+  unit          String?
+  derivedSource String?           <span class="g">// "focus.context:MATH-204" | "gym.session"</span>
+  sortOrder     Int      @default(0)
+  archived      Boolean  @default(false)
+  versions      MetricVersion[]
+  logs          MetricLog[]
+<span class="w">}</span>
+
+<span class="w">model MetricVersion {</span>
+  id            String   @id @default(uuid())
+  defId         String
+  target        Float?
+  targetDays    Json?             <span class="g">// [0..6]</span>
+  effectiveFrom String            <span class="g">// YYYY-MM-DD</span>
+  effectiveTo   String?           <span class="g">// null = current</span>
+  @@index([defId, effectiveFrom])
+<span class="w">}</span>
+
+<span class="w">model MetricLog {</span>
+  id         String  @id @default(uuid())
+  defId      String
+  userId     String
+  loggedDate String
+  value      Float                <span class="g">// 1/0, ml, minutes, 1–5</span>
+  score      Float                <span class="g">// denormalized 0–1.25, set server-side</span>
+  source     LogSource            <span class="g">// MANUAL | DERIVED | REPAIR</span>
+  @@unique([defId, loggedDate])
+<span class="w">}</span>
+
+<span class="w">model DayAggregate {</span>               <span class="g">// cached — kills F6</span>
+  userId         String
+  date           String
+  compositeScore Float             <span class="g">// drives heat-wall intensity</span>
+  sealed         Boolean
+  streakCount    Int
+  @@id([userId, date])
+<span class="w">}</span>
+
+<span class="w">model FocusSession {</span>
+  id            String  @id @default(uuid())
+  userId        String
+  contextId     String?            <span class="g">// → Project.id</span>
+  startedAt     DateTime
+  minutes       Int
+  capturedNotes Json?
+<span class="w">}</span>
+
+<span class="w">model RecurringItem {</span>              <span class="g">// promoted from gridFinRecurItems</span>
+  id        String  @id @default(uuid())
+  userId    String
+  label     String
+  amount    Float                  <span class="g">// negative = cost, positive = income</span>
+  cadence   String                 <span class="g">// monthly | weekly | yearly</span>
+  postDay   Int                    <span class="g">// day-of-cadence to auto-post</span>
+  active    Boolean @default(true)
+<span class="w">}</span></pre>
+
+    <div class="slabel mt">// Endpoint surface — complete API delta</div>
+    <div class="tbl-scroll"><table class="tbl">
+      <tr><th>Method</th><th>Endpoint</th><th>Purpose</th><th>Status</th></tr>
+      <tr><td><b>GET</b></td><td><code>/metrics/matrix?from&amp;to</code></td><td>Defs + versions + logs + cached aggregates, one call</td><td><span class="b b-new">NEW</span></td></tr>
+      <tr><td><b>POST</b></td><td><code>/metrics</code></td><td>Create def + version v1</td><td><span class="b b-new">NEW</span></td></tr>
+      <tr><td><b>PATCH</b></td><td><code>/metrics/:id</code></td><td>New version row (effectiveFrom)</td><td><span class="b b-new">NEW</span></td></tr>
+      <tr><td><b>DELETE</b></td><td><code>/metrics/:id</code></td><td>Soft-archive</td><td><span class="b b-new">NEW</span></td></tr>
+      <tr><td><b>POST</b></td><td><code>/days/:date/commit</code></td><td>Batched day commit + aggregate recompute</td><td><span class="b b-new">NEW</span></td></tr>
+      <tr><td><b>POST</b></td><td><code>/focus/sessions</code></td><td>Auto-created on END &amp; LOG</td><td><span class="b b-new">NEW</span></td></tr>
+      <tr><td><b>GET</b></td><td><code>/focus/summary?week</code></td><td>Context-stacked hours rollup</td><td><span class="b b-new">NEW</span></td></tr>
+      <tr><td><b>GET</b></td><td><code>/body/readiness?date</code></td><td>Computed readiness — never stored</td><td><span class="b b-new">NEW</span></td></tr>
+      <tr><td><b>GET</b></td><td><code>/finance/safe-to-spend</code></td><td>(income − fixed − sunk) ÷ days left</td><td><span class="b b-new">NEW</span></td></tr>
+      <tr><td>—</td><td><code>/habits/*</code></td><td>Superseded by /metrics after U5 migration</td><td><span class="b b-del">RETIRE</span></td></tr>
+      <tr><td>—</td><td><code>/gym/* /calendar/* /projects/* /auth/*</code></td><td>Unchanged</td><td><span class="b b-keep">KEEP</span></td></tr>
+    </table></div>
+  </div>
+
+  <!-- ════════════════════════ BUILD ════════════════════════ -->
+  <div class="content panel" id="panel-ux">
+    <div class="intro neon">
+      <h3>◐ UX optimizations — approved 2026.07.23</h3>
+      <p>Eight structural findings beyond the fake-data problem, plus one cross-domain vector. These are <b>interaction-model</b> fixes, not cosmetics: Grid is used daily by <b>one power user</b>, so the optimization target is <b>velocity and behaviour change</b>, not discoverability or onboarding.</p>
+    </div>
+
+    <div class="slabel">// V1–V8 · structural findings</div>
+    <div class="tbl-scroll"><table class="tbl">
+      <tr><th>#</th><th>Finding</th><th>Fix</th><th>Phase</th></tr>
+      <tr><td><b>V1</b></td><td><b>Nav is 9 equal-weight items</b> → choice paralysis. A glass cockpit surfaces what's actionable now; everything else on demand. Grid is a "steam-gauge" cockpit — 9 dials, no hierarchy.</td><td>Collapse 9 → 7 via the V8 windows; weight the dock by daily use</td><td>P5</td></tr>
+      <tr><td><b>V2</b></td><td><b>No command palette.</b> Runway shows a <code>⌘K</code> chip that does nothing — a promise the app doesn't keep.</td><td>Real ⌘K: jump to any page, log any metric, start focus, add tx. <b>Highest-ROI interaction in the app</b></td><td>P4</td></tr>
+      <tr><td><b>V3</b></td><td><b>Every page is view-mode; none is act-mode.</b> You navigate <i>to</i> a page in order to log.</td><td>Invert — logging comes to you (Daily Console, ADD-A2)</td><td>P4</td></tr>
+      <tr><td><b>V4</b></td><td><b>Mobile unusable</b> — desktop grid layouts, yet the phone is exactly where gym sets and spend get logged in the moment.</td><td>Responsive pass; mobile-first quick-log sheet</td><td>P5</td></tr>
+      <tr><td><b>V5</b></td><td><b>Zero empty / loading / error states.</b> The moment real data is wired, first-run reads as broken.</td><td>Three states per data surface; skeletons, not spinners</td><td>P4</td></tr>
+      <tr><td><b>V6</b></td><td><b>Writes give no feedback</b> — or <code>alert()</code> theater.</td><td>Optimistic UI + the 600ms ignition sequence (UPDATE-U3)</td><td>P4</td></tr>
+      <tr><td><b>V7</b></td><td><b>Time-to-first-insight is infinite</b> — home is 8 nav tiles and zero information.</td><td>home → The Console (UPDATE-U2)</td><td>P4</td></tr>
+      <tr><td><b>V8</b></td><td><b>Overlapping mental models</b> across weekly / work / runway.</td><td><b>2 windows × 2 pages</b> — see below</td><td>P5</td></tr>
+    </table></div>
+
+    <div class="verdict">
+      <div class="verdict-label">✦ V8 — the corrected cut (user decision, 2026.07.23)</div>
+      <div class="verdict-text">Do <b>not</b> collapse all three into one spine. Timetable is <b>recurring time-blocking</b>; projects are <b>long-running execution</b> — different objects, different cadences, keep them apart.<br><br>
+      <b>Window 1 · PROJECTS</b> → page 1 <code>Runway / projects</code> · page 2 <code>Focus / deep-work</code> &nbsp;(execution)<br>
+      <b>Window 2 · WEEKLY</b> → page 1 <code>Timetable</code> · page 2 <code>Tasks</code> &nbsp;(planning)<br><br>
+      Runway + Focus merge because focus sessions <i>are</i> project execution — one window, tabbed. Weekly keeps its existing two-tab structure. Net nav: <b>9 → 7</b>.</div>
+    </div>
+
+    <div class="slabel mt">// 💡 Visionary Vector — risk-first habits</div>
+    <div class="card-list">
+      <div class="card" onclick="tg(this)">
+        <div class="card-hdr">
+          <div class="card-num">VV</div>
+          <div class="card-info">
+            <div class="card-name">Fragility Score — borrowed from spaced repetition</div>
+            <div class="card-tag">cross-domain: Anki / SM-2 → habit surfacing</div>
+          </div>
+          <div class="card-badges"><span class="b b-new">APPROVED</span><span class="b b-hot">🔥 Behaviour change</span></div>
+        </div>
+        <div class="card-body" onclick="event.stopPropagation()">
+          <div class="grid2">
+            <div class="sec">
+              <div class="sec-title t-pain">✕ The dogma</div>
+              <div class="li pain">Every habit tracker ever built shows all N habits at <b>equal weight</b> — a wall of checkboxes.</div>
+              <div class="li pain">Anki does the opposite: it never shows you 5,000 cards, only the ones about to be forgotten.</div>
+              <div class="li pain">Grid currently shows 12 nodes with identical visual priority. The user must do the triage the system should do.</div>
+            </div>
+            <div class="sec">
+              <div class="sec-title t-fix">◉ The mechanic</div>
+              <div class="li fix"><code>fragility = (1 − recentCompletionRate) × streakValueAtStake × daysSinceLastLog</code></div>
+              <div class="li fix">Surface <b>the single node most likely to break today</b>, not the wall.</div>
+              <div class="li fix">Home reads as one sentence: <i>"Protect your 18-day reading streak — it's the one at risk."</i></div>
+              <div class="li fix">Computes entirely from data <code>DayAggregate</code> + <code>MetricLog</code> already produce. Near-zero marginal cost.</div>
+            </div>
+          </div>
+          <div class="verdict">
+            <div class="verdict-label">✦ Why it matters</div>
+            <div class="verdict-text">This is the difference between a dashboard you <b>look at</b> and one that <b>changes behaviour</b>. Pairs with Streak 2.0 repair tokens: the system warns before the break, then forgives one if it happens.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="slabel mt">// Charts — engine decision</div>
+    <div class="verdict warn">
+      <div class="verdict-label">✦ ECharts over Bklit UI (constraint-forced, 2026.07.23)</div>
+      <div class="verdict-text"><b>Bklit UI requires React 19 + Next 15 + Tailwind 4 + shadcn/ui</b> (it's a shadcn registry using Visx). Grid is one 11.2k-line vanilla file with no build step — Bklit cannot drop in without a full frontend rewrite.<br><br>
+      <b>Decision:</b> Apache <b>ECharts via CDN</b> (no build step) + a single <code>echarts.registerTheme('ethos', …)</code> holding the carbon-green palette, so every chart inherits the Bklit-style look from one place — Bklit's composable-themed philosophy without the framework cost.<br><br>
+      <b>ECharts also unblocks two blueprint features Chart.js cannot render:</b> the 365-day <b>heat-wall</b> (native <code>calendar</code> + <code>heatmap</code> series) and the Runway <b>sunburst</b>. Bklit UI stays as a <i>design reference</i> for the theme, not a dependency. Revisit natively only if the frontend is ever componentized to React.</div>
+    </div>
+  </div>
+
+  <div class="content panel" id="panel-integrations">
+    <div class="intro neon">
+      <h3>⇄ Integrations — make the data log itself</h3>
+      <p>External signals flow in through <b>one secured ingest spine</b>, not bespoke code per source. Every integration reuses the shipped security layer (<code>validate()</code> + rate limiter + API key). Three connectors planned: <b>GitHub → Projects</b>, <b>Fitbit → Vitals</b>, <b>GPay → Finances</b>.</p>
+    </div>
+
+    <div class="slabel">// The ingest spine — one endpoint, all sources</div>
+<pre class="ascii">GitHub webhook ─┐
+Fitbit cron    ─┼─► <span class="g">POST /api/ingest</span>  (x-api-key + HMAC verify)
+GPay SMS/email ─┘        │
+                        ▼
+        1. verify API key (constant-time)      ← reuse security.js
+        2. zod schema per `type`               ← reuse validate()
+        3. dedupe on (source, externalId)      ← idempotent, replay-safe
+        4. write raw <span class="w">IngestEvent</span> inbox row (audit trail)
+        5. route → module upsert
+              ├ <span class="g">Transaction</span>   (gpay)
+              ├ <span class="g">Project</span>       (github)
+              └ <span class="g">HealthDaily</span>   (fitbit)</pre>
+    <div class="verdict">
+      <div class="verdict-label">✦ Why a spine, not N endpoints</div>
+      <div class="verdict-text">Bespoke route per source = 8× maintenance. One <code>IngestEvent</code> inbox gives an audit trail + replay + "did that bank SMS actually land?" debugging. The <code>(source, externalId)</code> unique key kills duplicate logs — banks resend, GitHub/Strava retry — the one thing naive email-scraping always misses.</div>
+    </div>
+
+    <div class="card-list">
+
+      <div class="card" onclick="tg(this)">
+        <div class="card-hdr">
+          <div class="card-num">I1</div>
+          <div class="card-info">
+            <div class="card-name">GitHub → Projects</div>
+            <div class="card-tag">webhook (push · PR merged) · HMAC-verified · real-time · ship first</div>
+          </div>
+          <div class="card-badges"><span class="b b-new">NEW</span><span class="b b-keep">EASIEST</span></div>
+        </div>
+        <div class="card-body" onclick="event.stopPropagation()">
+          <div class="grid2">
+            <div class="sec">
+              <div class="sec-title t-how">◈ Setup</div>
+              <div class="li how">Repo/org → Settings → Webhooks → payload <code>/api/ingest/github</code>, content-type JSON, set a <b>secret</b> (→ env)</div>
+              <div class="li how">Events: <code>push</code>, <code>pull_request</code> (merged PR → bump progress)</div>
+              <div class="li how">Verify <code>X-Hub-Signature-256</code> = HMAC-SHA256(body, secret); reject on mismatch</div>
+              <div class="li how">One-time fine-grained <b>PAT</b> → <code>GET /user/repos</code> to backfill existing projects on day one</div>
+            </div>
+            <div class="sec">
+              <div class="sec-title t-fix">◉ Effect</div>
+              <div class="li fix">Maps repo → existing <code>Project</code>: commits, last-activity, progress update themselves</div>
+              <div class="li fix">No OAuth dance — pure webhook + secret. Lowest-risk connector, build first.</div>
+              <div class="li fix">Feeds the Runway "hours/activity invested" lane (see PAGE-AUDIT P8)</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" onclick="tg(this)">
+        <div class="card-hdr">
+          <div class="card-num">I2</div>
+          <div class="card-info">
+            <div class="card-name">Fitbit → new VITALS page</div>
+            <div class="card-tag">Web API OAuth 2.0 + PKCE · daily Railway cron · steps/sleep/HR → Readiness</div>
+          </div>
+          <div class="card-badges"><span class="b b-new">NEW PAGE</span><span class="b b-up">= BODY//SYSTEMS (A4)</span></div>
+        </div>
+        <div class="card-body" onclick="event.stopPropagation()">
+          <div class="verdict warn" style="margin-top:0">
+            <div class="verdict-label">⚠ Correction that saves a dead end</div>
+            <div class="verdict-text">"Fitbit" and "Google Health" are NOT the same. <b>Fitbit Web API</b> = real cloud OAuth → use this. <b>Google Health Connect</b> = Android on-device only, <b>no server API</b>; Google Fit REST is being shut down. You cannot pull Google Health to a website directly. Build toward Fitbit. (No "Fitbit Air" model exists, but the API is model-agnostic — Charge/Versa/Sense/Inspire all work.)</div>
+          </div>
+          <div class="grid2">
+            <div class="sec">
+              <div class="sec-title t-how">◈ Setup</div>
+              <div class="li how">Register app at <code>dev.fitbit.com</code> → <code>client_id</code> + <code>client_secret</code> (→ env)</div>
+              <div class="li how">OAuth 2.0 Auth-Code + PKCE — same shape as existing Google login. Scopes: <code>activity heartrate sleep profile</code></div>
+              <div class="li how">Store <code>access_token</code> + <code>refresh_token</code> server-side (encrypted); refresh on expiry</div>
+              <div class="li how"><b>Daily cron on Railway</b> (long-lived process; Vercel can't poll) → <code>GET /1/user/-/activities|sleep|heart/date/[d].json</code> → <code>HealthDaily</code></div>
+            </div>
+            <div class="sec">
+              <div class="sec-title t-fix">◉ The VITALS page</div>
+              <div class="li fix">New dock page rendering steps / sleep / resting-HR / active-min</div>
+              <div class="li fix">This IS blueprint <b>BODY//SYSTEMS (A4)</b>: the Fitbit feed powers the real <b>Readiness score</b> (sleep × recovery × load)</div>
+              <div class="li fix">DERIVED metrics ("Slept 7h+", "10k steps") auto-fill the grid — zero manual logging</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" onclick="tg(this)">
+        <div class="card-hdr">
+          <div class="card-num">I3</div>
+          <div class="card-info">
+            <div class="card-name">GPay → Finances</div>
+            <div class="card-tag">bank SMS or email → n8n parser → ingest → Transaction</div>
+          </div>
+          <div class="card-badges"><span class="b b-new">NEW</span><span class="b b-up">SMS RECOMMENDED</span></div>
+        </div>
+        <div class="card-body" onclick="event.stopPropagation()">
+          <div class="tbl-scroll"><table class="tbl">
+            <tr><th>Path</th><th>Coverage</th><th>Automation</th><th>Verdict</th></tr>
+            <tr><td><b>SMS</b></td><td>~100% of UPI debits (bank always texts)</td><td>Tiny Android SMS-forwarder app → webhook</td><td><b style="color:#39FF8E">Recommended — complete ledger</b></td></tr>
+            <tr><td><b>Email</b></td><td>Spotty — GPay/banks email inconsistently</td><td>Clean: Gmail API / n8n trigger, no app</td><td>Fallback if no app wanted (accept gaps)</td></tr>
+          </table></div>
+          <div class="grid2">
+            <div class="sec">
+              <div class="sec-title t-how">◈ Flow</div>
+              <div class="li how">n8n watches SMS-webhook / Gmail → regex parse (amount, merchant, date)</div>
+              <div class="li how">Example: <code>Rs\.\s?(\d+\.\d{2})</code> → structured JSON</div>
+              <div class="li how">POST to <code>/api/ingest/tx</code> with <code>externalId</code> (SMS hash) for dedupe → <code>Transaction</code></div>
+            </div>
+            <div class="sec">
+              <div class="sec-title t-fix">◉ Note</div>
+              <div class="li fix">Same backend either way — start email, add SMS later, no code change</div>
+              <div class="li fix">n8n over Make/Zapier: self-hosted = owns the financial data (privacy), and it's in your stack</div>
+              <div class="li fix">Feeds UPDATE-U4 safe-to-spend as real variable-spend input</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="slabel mt">// New Prisma models</div>
+<pre class="ascii"><span class="w">model IngestEvent {</span>          <span class="g">// audit + replay + dedupe spine</span>
+  id         String  @id @default(uuid())
+  userId     String
+  source     String              <span class="g">// github | fitbit | gpay</span>
+  type       String
+  externalId String              <span class="g">// provider event id / SMS hash</span>
+  payload    Json
+  processedAt DateTime?
+  @@unique([source, externalId])
+<span class="w">}</span>
+
+<span class="w">model OAuthConnection {</span>        <span class="g">// Fitbit tokens (encrypt at rest)</span>
+  id           String  @id @default(uuid())
+  userId       String
+  provider     String              <span class="g">// "fitbit"</span>
+  accessToken  String
+  refreshToken String
+  expiresAt    DateTime
+  scope        String
+  @@unique([userId, provider])
+<span class="w">}</span>
+
+<span class="w">model HealthDaily {</span>            <span class="g">// Fitbit daily rollup → Vitals page</span>
+  userId       String
+  date         String
+  steps        Int?
+  sleepMinutes Int?
+  restingHr    Int?
+  activeMinutes Int?
+  caloriesOut  Int?
+  @@id([userId, date])
+<span class="w">}</span></pre>
+
+    <div class="slabel mt">// Endpoint + security delta</div>
+    <div class="tbl-scroll"><table class="tbl">
+      <tr><th>Method</th><th>Endpoint</th><th>Guard</th><th>Purpose</th></tr>
+      <tr><td><b>POST</b></td><td><code>/api/ingest</code></td><td>x-api-key</td><td>Generic spine → IngestEvent → route</td></tr>
+      <tr><td><b>POST</b></td><td><code>/api/ingest/github</code></td><td>HMAC-256 secret</td><td>push / PR → Project</td></tr>
+      <tr><td><b>POST</b></td><td><code>/api/ingest/tx</code></td><td>x-api-key</td><td>parsed SMS/email → Transaction</td></tr>
+      <tr><td><b>GET</b></td><td><code>/api/auth/fitbit</code> + <code>/callback</code></td><td>OAuth+PKCE</td><td>connect Fitbit account</td></tr>
+      <tr><td><b>GET</b></td><td><code>/api/vitals?range</code></td><td>requireAuth</td><td>HealthDaily for Vitals page</td></tr>
+    </table></div>
+    <div class="verdict kill">
+      <div class="verdict-label">✦ Security (financial + health data)</div>
+      <div class="verdict-text">OAuth <code>client_secret</code> + webhook secrets + API keys → env vars only, never client-side. Encrypt stored Fitbit refresh tokens at rest. GitHub webhook: constant-time HMAC compare. Ingest routes: keep them off the 300/15min global limiter's user path but rate-limit per source. Filter GPay parsing to official bank/provider senders only.</div>
+    </div>
+
+    <div class="verdict" style="margin-top:14px">
+      <div class="verdict-label">✦ Build order (easiest → hardest)</div>
+      <div class="verdict-text"><b>1.</b> Ingest spine + models + API-key middleware &nbsp;<b>2.</b> GitHub → Projects (webhook+HMAC, no OAuth) &nbsp;<b>3.</b> GPay → Transactions (n8n parser) &nbsp;<b>4.</b> Fitbit OAuth + cron + Vitals page (most work: token refresh + new UI). Slots into BUILD after the metric engine lands.</div>
+    </div>
+  </div>
+
+  <div class="content panel" id="panel-build">
+    <div class="intro neon">
+      <h3>◉ Build order — sequenced so an engineer starts Monday</h3>
+      <p>Visible wins first, dopamine layer last — the reward system only pays off once the data layer underneath it is honest. Click each phase for the breakdown.</p>
+    </div>
+
+    <div class="card-list">
+
+      <div class="card" onclick="tg(this)">
+        <div class="card-hdr">
+          <div class="card-num">P1</div>
+          <div class="card-info">
+            <div class="card-name">Tokens + Console Shell</div>
+            <div class="card-tag">pure CSS/layout · zero backend risk · immediate visible win</div>
+          </div>
+          <div class="card-badges"><span class="b b-dim">~3 days</span><span class="b b-new">Start here</span></div>
+        </div>
+        <div class="card-body" onclick="event.stopPropagation()">
+          <div class="li fix">Ship <code>tokens.css</code> (U1) and re-skin existing pages against it — no logic changes</div>
+          <div class="li fix">Rebuild page-home as the 4-zone Console layout (U2) reading existing data</div>
+          <div class="li fix">Demote resume to drawer (D6); dock becomes Habits · Focus(stub) · Body · Money · Work · Calendar</div>
+          <div class="verdict"><div class="verdict-label">✦ Milestone</div><div class="verdict-text">The app looks world-class before a single schema change. Screenshot-worthy in 3 days.</div></div>
+        </div>
+      </div>
+
+      <div class="card" onclick="tg(this)">
+        <div class="card-hdr">
+          <div class="card-num">P2</div>
+          <div class="card-info">
+            <div class="card-name">Metric Engine Migration</div>
+            <div class="card-tag">schema · matrix endpoint · batched commit · habit migration</div>
+          </div>
+          <div class="card-badges"><span class="b b-dim">~5 days</span><span class="b b-hot">Core</span></div>
+        </div>
+        <div class="card-body" onclick="event.stopPropagation()">
+          <div class="li fix">Prisma migration: MetricDef / MetricVersion / MetricLog / DayAggregate (SYSTEMS tab schema)</div>
+          <div class="li fix">U5 one-shot habit migration; old tables read-only for one release</div>
+          <div class="li fix"><code>GET /metrics/matrix</code> + <code>POST /days/:date/commit</code> with transactional aggregate recompute</div>
+          <div class="verdict"><div class="verdict-label">✦ Milestone</div><div class="verdict-text">Grid renders from DayAggregate rows. QUANTITY/SCALE/DURATION types creatable. History intact to the day.</div></div>
+        </div>
+      </div>
+
+      <div class="card" onclick="tg(this)">
+        <div class="card-hdr">
+          <div class="card-num">P3</div>
+          <div class="card-info">
+            <div class="card-name">Daily Console + Storage Unification</div>
+            <div class="card-tag">⌘K overlay · offline queue · demo fork deleted</div>
+          </div>
+          <div class="card-badges"><span class="b b-dim">~5 days</span></div>
+        </div>
+        <div class="card-body" onclick="event.stopPropagation()">
+          <div class="li fix">Build the A2 console wired to the batch endpoint; date-scoped for backfill</div>
+          <div class="li fix">A6 IndexedDB offline queue; then execute D4 — delete the localStorage fork, seed sandbox accounts</div>
+          <div class="li fix">U4 safe-to-spend: RecurringItem model + auto-post job + console spend sheet</div>
+          <div class="verdict"><div class="verdict-label">✦ Milestone</div><div class="verdict-text">A full day logged in under 60 seconds, offline-safe, one code path. F1, F4, F5 all dead.</div></div>
+        </div>
+      </div>
+
+      <div class="card" onclick="tg(this)">
+        <div class="card-hdr">
+          <div class="card-num">P4</div>
+          <div class="card-info">
+            <div class="card-name">Focus Engine + Body Systems</div>
+            <div class="card-tag">FocusSession table · derived metrics · readiness score</div>
+          </div>
+          <div class="card-badges"><span class="b b-dim">~6 days</span></div>
+        </div>
+        <div class="card-body" onclick="event.stopPropagation()">
+          <div class="li fix">A3 full-bleed focus view; contexts from Project rows; capture inbox; DERIVED auto-completion</div>
+          <div class="li fix">A4 Body Systems screen wrapping the existing gym logger + sleep/fuel steppers + readiness border</div>
+          <div class="li fix">NOW card CTAs wired to calendar events (U2 finish)</div>
+          <div class="verdict"><div class="verdict-label">✦ Milestone</div><div class="verdict-text">Study and training log themselves. The console's auto-resolved row is half the day. D1 executes here.</div></div>
+        </div>
+      </div>
+
+      <div class="card" onclick="tg(this)">
+        <div class="card-hdr">
+          <div class="card-num">P5</div>
+          <div class="card-info">
+            <div class="card-name">Streak 2.0 + Ignition Animations</div>
+            <div class="card-tag">repair tokens · 600ms sequence · neon sweep · milestones</div>
+          </div>
+          <div class="card-badges"><span class="b b-dim">~4 days</span><span class="b b-new">The payoff</span></div>
+        </div>
+        <div class="card-body" onclick="event.stopPropagation()">
+          <div class="li fix">A5 server-side streak rules + token banking inside the commit transaction; D7 executes</div>
+          <div class="li fix">U3 ignition timeline, digit roll, milestone toasts, 100%-day neon sweep, reduced-motion fallbacks</div>
+          <div class="verdict"><div class="verdict-label">✦ Milestone</div><div class="verdict-text">The system is honest AND addictive. Last because dopamine built on dirty data is churn with extra steps.</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+function sw(id) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('panel-' + id).classList.add('active');
+  document.querySelector('.tab[onclick*="' + id + '"]').classList.add('active');
+}
+function tg(el) { el.classList.toggle('open'); }
+</script>
+</body>
+</html>
