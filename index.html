@@ -3728,9 +3728,8 @@ html, body {
       </div>
 
       <div class="status-bar">
-        <div class="status-item"><div class="status-dot"></div> NODE: 0X4F2_PRIMARY</div>
-        <div class="status-item">ENCRYPTION: AES_256</div>
-        <div class="status-item">LATENCY: 12MS</div>
+        <div class="status-item"><div class="status-dot"></div> SECURE SESSION</div>
+        <div class="status-item">DATA STORED PRIVATELY</div>
       </div>
     </div>
 
@@ -4412,43 +4411,38 @@ html, body {
         <!-- Kanban columns -->
         <div class="arc-kanban" id="arcKanban"></div>
 
-        <!-- Stats bar -->
+        <!-- Stats bar — values hydrated by renderArcStats(); no placeholder numbers -->
         <div class="arc-stats-bar">
           <div class="arc-stat-item">
-            <div class="arc-stat-label">NEURAL_LOAD</div>
+            <div class="arc-stat-label">WEEK_LOAD</div>
             <div style="display:flex;align-items:baseline;gap:8px">
-              <div class="arc-stat-big">88%</div>
-              <div class="arc-stat-tag">SYNC</div>
+              <div class="arc-stat-big" id="arcStatLoad">—</div>
             </div>
-            <div class="rw-agg-bar" style="margin-top:6px;width:120px"><div class="rw-agg-fill" style="width:88%"></div></div>
+            <div class="rw-agg-bar" style="margin-top:6px;width:120px"><div class="rw-agg-fill" id="arcStatLoadBar" style="width:0%"></div></div>
           </div>
           <div class="arc-stat-divider"></div>
           <div class="arc-stat-item">
             <div class="arc-stat-label">COMPLETED_TASKS</div>
             <div style="display:flex;align-items:baseline;gap:8px">
-              <div class="arc-stat-big">24</div>
-              <div class="arc-stat-tag">/ 56 UNITS</div>
+              <div class="arc-stat-big" id="arcStatDone">—</div>
+              <div class="arc-stat-tag" id="arcStatDoneOf"></div>
             </div>
           </div>
           <div class="arc-stat-divider"></div>
           <div class="arc-stat-item">
             <div class="arc-stat-label">DEADLINES_TODAY</div>
             <div style="display:flex;align-items:baseline;gap:8px">
-              <div class="arc-stat-big" style="color:var(--pink)">03</div>
-              <div class="arc-stat-tag">CRITICAL</div>
+              <div class="arc-stat-big" id="arcStatDeadlines">—</div>
+              <div class="arc-stat-tag" id="arcStatDeadlinesTag"></div>
             </div>
           </div>
           <div class="arc-stat-divider"></div>
           <div class="arc-stat-item">
-            <div class="arc-stat-label">CALCULATED_FREE_TIME</div>
+            <div class="arc-stat-label">FREE_TIME</div>
             <div style="display:flex;align-items:baseline;gap:8px">
-              <div class="arc-stat-big">08.2H</div>
-              <div class="arc-stat-tag">WEEKLY_GAP</div>
+              <div class="arc-stat-big" id="arcStatFree">—</div>
+              <div class="arc-stat-tag" id="arcStatFreeTag"></div>
             </div>
-          </div>
-          <div style="display:flex;flex-direction:column;gap:8px;margin-left:auto">
-            <button class="fin-modify-btn" style="padding:8px 14px">STITCH_ALL_TO_CALENDAR</button>
-            <button class="fin-modify-btn" style="padding:8px 14px">EXPORT_SYSTEM_REPORT</button>
           </div>
         </div>
 
@@ -4474,29 +4468,25 @@ html, body {
       <div class="hb-stat-row">
         <div class="hb-stat-card">
           <div class="hb-stat-label">CURRENT_MONTH_%</div>
-          <div class="hb-stat-val">84.2<span class="hb-stat-unit">%</span></div>
-          <div class="hb-delta">+2.4% <span class="hb-delta-arrow">▲</span></div>
-          <div class="rw-agg-bar" style="margin-top:8px"><div class="rw-agg-fill" style="width:84.2%"></div></div>
+          <div class="hb-stat-val" id="hbStatMonth">—</div>
+          <div class="hb-delta" id="hbStatDelta"></div>
+          <div class="rw-agg-bar" style="margin-top:8px"><div class="rw-agg-fill" id="hbStatMonthBar" style="width:0%"></div></div>
         </div>
         <div class="hb-stat-card">
           <div class="hb-stat-label">CURRENT_STREAK</div>
-          <div class="hb-stat-val hb-streak">18_<span class="hb-stat-unit">DAYS</span>
-            <svg viewBox="0 0 24 24" width="22" height="22" stroke="var(--green)" fill="none" stroke-width="2.5" style="margin-left:6px;margin-bottom:2px"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-          </div>
-          <div class="hb-stat-sub">LOGIC: PERSISTENCE ACTIVE</div>
+          <div class="hb-stat-val hb-streak" id="hbStatStreak">—</div>
+          <div class="hb-stat-sub" id="hbStatStreakSub"></div>
         </div>
         <div class="hb-stat-card">
           <div class="hb-stat-label">TODAYS_NODES</div>
-          <div class="hb-stat-val">10/12 <span class="hb-stat-unit">NODES</span></div>
-          <div class="hb-stat-sub">SYSTEM_LOAD: OPTIMAL</div>
+          <div class="hb-stat-val" id="hbStatToday">—</div>
+          <div class="hb-stat-sub" id="hbStatTodaySub"></div>
         </div>
-        <div class="hb-stat-card hb-alert-card">
-          <div class="hb-stat-label">LOW_PERFORMANCE_NODES</div>
-          <div class="hb-stat-val red" style="display:flex;align-items:center;gap:10px">
-            01
-            <svg viewBox="0 0 24 24" width="22" height="22" stroke="var(--orange)" fill="none" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-          </div>
-          <div class="hb-stat-sub" style="color:var(--orange)">&lt; 50% COMPLETION</div>
+        <!-- At-risk node — fragility score (blueprint Visionary Vector), not a guilt alert -->
+        <div class="hb-stat-card">
+          <div class="hb-stat-label">AT_RISK_NODE</div>
+          <div class="hb-stat-val" id="hbStatRisk">—</div>
+          <div class="hb-stat-sub" id="hbStatRiskSub"></div>
         </div>
       </div>
 
@@ -4971,23 +4961,23 @@ html, body {
       <div class="nl-stat-row">
         <div class="nl-stat-card">
           <div class="hb-stat-label">TOTAL LOGGED (TODAY)</div>
-          <div class="nl-stat-val" id="nlTotalLogged">04:42 <span class="nl-stat-unit">HRS</span></div>
-          <div class="nl-stat-sub"><svg viewBox="0 0 24 24" width="10" height="10" stroke="currentColor" fill="none" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> COMPLETED</div>
+          <div class="nl-stat-val" id="nlTotalLogged">—</div>
+          <div class="nl-stat-sub" id="nlTotalLoggedSub"></div>
         </div>
         <div class="nl-stat-card">
           <div class="hb-stat-label">SESSIONS (TODAY)</div>
-          <div class="nl-stat-val">06 <span class="nl-stat-unit">SESSIONS</span></div>
-          <div class="nl-stat-sub"><svg viewBox="0 0 24 24" width="10" height="10" stroke="currentColor" fill="none" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> ACTIVE PROTOCOL</div>
+          <div class="nl-stat-val" id="nlSessionsToday">—</div>
+          <div class="nl-stat-sub" id="nlSessionsTodaySub"></div>
         </div>
         <div class="nl-stat-card">
           <div class="hb-stat-label">MONTHLY AVG (DAILY)</div>
-          <div class="nl-stat-val">05:15 <span class="nl-stat-unit">HRS</span></div>
-          <div class="nl-stat-sub" style="color:var(--green)"><svg viewBox="0 0 24 24" width="10" height="10" stroke="currentColor" fill="none" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg> +12% VS LAST MONTH</div>
+          <div class="nl-stat-val" id="nlMonthlyAvg">—</div>
+          <div class="nl-stat-sub" id="nlMonthlyAvgSub"></div>
         </div>
         <div class="nl-stat-card">
-          <div class="hb-stat-label">ARCHITECT SYNC</div>
-          <div class="nl-stat-val">04 <span class="nl-stat-unit">TASKS</span></div>
-          <div class="nl-stat-sub"><svg viewBox="0 0 24 24" width="10" height="10" stroke="currentColor" fill="none" stroke-width="2"><polyline points="18 15 12 9 6 15"/></svg> MODULE INTEGRATED</div>
+          <div class="hb-stat-label">LINKED TASKS</div>
+          <div class="nl-stat-val" id="nlLinkedTasks">—</div>
+          <div class="nl-stat-sub" id="nlLinkedTasksSub"></div>
         </div>
       </div>
 
@@ -5000,20 +4990,14 @@ html, body {
           <!-- Cognitive flow chart -->
           <div class="nl-section">
             <div class="nl-section-head">
-              <div class="nl-section-title">COGNITIVE FLOW ANALYTICS</div>
+              <div class="nl-section-title">FOCUS HOURS</div>
               <div class="rw-toggle-group">
-                <div class="rw-toggle active" onclick="nlToggle(this)">REAL-TIME</div>
-                <div class="rw-toggle" onclick="nlToggle(this)">HISTORY</div>
+                <div class="rw-toggle active" onclick="nlToggle(this)">WEEK</div>
+                <div class="rw-toggle" onclick="nlToggle(this)">MONTH</div>
               </div>
             </div>
-            <div style="position:relative">
-              <canvas id="cogFlowChart" height="200"></canvas>
-              <div class="nl-chart-annotation">
-                <div class="nl-annotation-val">782 mflops</div>
-                <div class="nl-annotation-label">CURRENT LOG</div>
-                <div class="nl-annotation-sub">OPTIMAL FLOW</div>
-              </div>
-            </div>
+            <!-- ECharts renders into this div (ethos theme) -->
+            <div id="cogFlowChart" style="width:100%;height:200px"></div>
           </div>
 
           <!-- Timer -->
@@ -5110,29 +5094,23 @@ html, body {
         <div class="rw-stat-row">
           <div class="rw-stat-card">
             <div class="rw-stat-label">OVERALL AGGREGATE</div>
-            <div class="rw-stat-val">76.4<span class="rw-stat-unit">%</span></div>
-            <div class="rw-agg-bar"><div class="rw-agg-fill" style="width:76.4%"></div></div>
+            <div class="rw-stat-val" id="rwStatAgg">—</div>
+            <div class="rw-agg-bar"><div class="rw-agg-fill" id="rwStatAggBar" style="width:0%"></div></div>
           </div>
           <div class="rw-stat-card">
             <div class="rw-stat-label">ACTIVE PROJECTS (14D)</div>
-            <div class="rw-stat-val">08</div>
-            <div class="rw-stat-sub">
-              <svg viewBox="0 0 24 24" width="10" height="10" stroke="var(--green)" fill="none" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-              ACTIVE HEARTBEAT DETECTED
-            </div>
+            <div class="rw-stat-val" id="rwStatActive">—</div>
+            <div class="rw-stat-sub" id="rwStatActiveSub"></div>
           </div>
           <div class="rw-stat-card">
             <div class="rw-stat-label">NEARLY COMPLETE</div>
-            <div class="rw-stat-val">03</div>
-            <div class="rw-stat-sub">THRESHOLD >= 80%</div>
+            <div class="rw-stat-val" id="rwStatNearly">—</div>
+            <div class="rw-stat-sub" id="rwStatNearlySub"></div>
           </div>
           <div class="rw-stat-card">
             <div class="rw-stat-label">URGENT DEADLINES</div>
-            <div class="rw-stat-val red">02</div>
-            <div class="rw-stat-sub red">
-              <svg viewBox="0 0 24 24" width="10" height="10" stroke="var(--pink)" fill="none" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-              CRITICAL PROXIMITY &lt; 30D
-            </div>
+            <div class="rw-stat-val" id="rwStatUrgent">—</div>
+            <div class="rw-stat-sub" id="rwStatUrgentSub"></div>
           </div>
         </div>
 
@@ -5153,46 +5131,11 @@ html, body {
             </div>
 
             <div class="rw-traj-body">
-              <!-- Donut -->
-              <div class="rw-donut-wrap">
-                <canvas id="rwDonut" width="260" height="260"></canvas>
-                <div class="rw-donut-center">
-                  <div class="rw-donut-label">AGGREGATE</div>
-                  <div class="rw-donut-val">92%</div>
-                </div>
-              </div>
+              <!-- Real sunburst (ECharts) — track → project, sized by count, shaded by progress -->
+              <div id="rwSunburst" style="width:280px;height:280px;flex-shrink:0"></div>
 
-              <!-- Category bars -->
-              <div class="rw-cat-bars">
-                <div class="rw-cat-item">
-                  <div class="rw-cat-row">
-                    <span class="rw-cat-name">ACADEMIC_TRACK</span>
-                    <span class="rw-cat-pf">0.04 P/F</span>
-                  </div>
-                  <div class="rw-cat-bar-bg"><div class="rw-cat-bar-fill" style="width:4%;background:var(--pink)"></div></div>
-                </div>
-                <div class="rw-cat-item">
-                  <div class="rw-cat-row">
-                    <span class="rw-cat-name">CAREER_SYNC</span>
-                    <span class="rw-cat-pf">0.76 P/F</span>
-                  </div>
-                  <div class="rw-cat-bar-bg"><div class="rw-cat-bar-fill" style="width:76%;background:var(--green)"></div></div>
-                </div>
-                <div class="rw-cat-item">
-                  <div class="rw-cat-row">
-                    <span class="rw-cat-name">PERSONAL_OPT</span>
-                    <span class="rw-cat-pf">0.68 P/F</span>
-                  </div>
-                  <div class="rw-cat-bar-bg"><div class="rw-cat-bar-fill" style="width:68%;background:var(--blue)"></div></div>
-                </div>
-                <div class="rw-cat-item">
-                  <div class="rw-cat-row">
-                    <span class="rw-cat-name">RESOURCE_LIMIT</span>
-                    <span class="rw-cat-pf">0.92 P/F</span>
-                  </div>
-                  <div class="rw-cat-bar-bg"><div class="rw-cat-bar-fill" style="width:92%;background:var(--orange)"></div></div>
-                </div>
-              </div>
+              <!-- Category bars — hydrated from real projects by renderRwCategories() -->
+              <div class="rw-cat-bars" id="rwCatBars"></div>
             </div>
           </div>
 
@@ -5436,29 +5379,27 @@ html, body {
 
           <!-- Stats -->
           <div class="rs-stats">
-            <div class="rs-stat-card">
+            <!-- CGPA is user-entered; the rest are real counts from the registry -->
+            <div class="rs-stat-card" onclick="rsEditCgpa()" style="cursor:pointer">
               <div class="rs-stat-label">CUMULATIVE CGPA</div>
-              <div class="rs-stat-val">9.1 <span class="rs-stat-denom">/ 10.0</span></div>
-              <div class="rs-stat-bar"><div class="rs-stat-bar-fill" style="width:91%"></div></div>
-              <div class="rs-stat-status">SYSTEM_STABLE</div>
+              <div class="rs-stat-val"><span id="rsStatCgpa">—</span> <span class="rs-stat-denom">/ 10.0</span></div>
+              <div class="rs-stat-bar"><div class="rs-stat-bar-fill" id="rsStatCgpaBar" style="width:0%"></div></div>
+              <div class="rs-stat-status" id="rsStatCgpaSub">TAP TO SET</div>
             </div>
             <div class="rs-stat-card">
-              <div class="rs-stat-label">COMPLETED PROJECTS</div>
-              <div class="rs-stat-val">4</div>
-              <div class="rs-stat-bar"><div class="rs-stat-bar-fill" style="width:40%"></div></div>
-              <div class="rs-stat-status">SYSTEM_STABLE</div>
+              <div class="rs-stat-label">PROJECTS</div>
+              <div class="rs-stat-val" id="rsStatProjects">—</div>
+              <div class="rs-stat-status" id="rsStatProjectsSub"></div>
             </div>
             <div class="rs-stat-card">
-              <div class="rs-stat-label">INTERNSHIPS NO.</div>
-              <div class="rs-stat-val">24</div>
-              <div class="rs-stat-bar"><div class="rs-stat-bar-fill" style="width:80%"></div></div>
-              <div class="rs-stat-status">REGISTRY_SYNC_COMPLETE</div>
+              <div class="rs-stat-label">INTERNSHIPS</div>
+              <div class="rs-stat-val" id="rsStatInternships">—</div>
+              <div class="rs-stat-status" id="rsStatInternshipsSub"></div>
             </div>
             <div class="rs-stat-card">
               <div class="rs-stat-label">RESEARCH PAPERS</div>
-              <div class="rs-stat-val">2</div>
-              <div class="rs-stat-bar"><div class="rs-stat-bar-fill" style="width:20%"></div></div>
-              <div class="rs-stat-status">PEER_REVIEW_PENDING</div>
+              <div class="rs-stat-val" id="rsStatResearch">—</div>
+              <div class="rs-stat-status" id="rsStatResearchSub"></div>
             </div>
           </div>
 
@@ -5517,10 +5458,10 @@ html, body {
             </button>
           </div>
 
-          <!-- Footer -->
+          <!-- Footer — real registry counts, no fake build hashes -->
           <div class="rs-footer-bar">
-            <span>VERSION: 4.2.1-STABLE</span>
-            <span id="rsShaTag">SHA256: 7e9a8f...b23c</span>
+            <span id="rsFooterCount">—</span>
+            <span id="rsFooterUpdated"></span>
           </div>
 
         </div><!-- /rs-wrap -->
@@ -8055,43 +7996,47 @@ function initWork() {
 }
 
 function initCogFlowChart() {
-  const ctx = document.getElementById('cogFlowChart');
-  if (!ctx) return;
-  if (cogFlowChartInst) cogFlowChartInst.destroy();
+  const el = document.getElementById('cogFlowChart');
+  if (!el || typeof echarts === 'undefined') return;
+  const chart = ethosChart(el);
+  if (!chart) return;
 
-  // Generate spiky focus data across 24h
-  const labels = ['00:00','04:00','08:00','12:00','16:00','20:00','23:59'];
-  const data = [12, 8, 45, 380, 782, 210, 95];
+  // Real data only. focusLogs entries carry duration inside `meta`
+  // (e.g. "Efficiency: 92% | Duration: 45m"), so parse it out.
+  const sessions = (typeof focusLogs !== 'undefined' && Array.isArray(focusLogs))
+    ? focusLogs.filter(l => !l.isErr)
+    : [];
 
-  cogFlowChartInst = new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels,
-      datasets: [{
-        label: 'COGNITIVE FLOW',
-        data,
-        borderColor: '#76b372',
-        backgroundColor: 'rgba(118,179,114,0.08)',
-        borderWidth: 1.5,
-        pointRadius: 0,
-        fill: true,
-        tension: 0.1,
-      }]
-    },
-    options: {
-      responsive: true,
-      animation: { duration: 800 },
-      plugins: { legend: { display: false }, tooltip: { enabled: true,
-        bodyFont: { family: 'Space Mono' },
-        backgroundColor: '#1a1a1a',
-        borderColor: 'rgba(255,255,255,0.08)',
-        borderWidth: 1,
-      }},
-      scales: {
-        x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: 'rgba(232,232,232,0.3)', font: { family: 'Space Mono', size: 10 } } },
-        y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: 'rgba(232,232,232,0.3)', font: { family: 'Space Mono', size: 10 } }, min: 0 },
+  const parsed = sessions.map(l => {
+    const m = /Duration:\s*(\d+)\s*m/i.exec(l.meta || '');
+    return { name: l.name || l.id, time: l.time || '', mins: m ? parseInt(m[1], 10) : 0 };
+  }).filter(x => x.mins > 0);
+
+  if (!parsed.length) {
+    chart.clear();
+    chart.setOption({
+      title: {
+        text: 'NO SESSIONS LOGGED',
+        subtext: 'Run the timer, then STOP & LOG to populate',
+        left: 'center', top: 'center'
       }
-    }
+    });
+    return;
+  }
+
+  parsed.reverse(); // oldest → newest, left to right
+
+  chart.setOption({
+    tooltip: {
+      trigger: 'axis',
+      formatter: pts => {
+        const p = pts[0];
+        return `${parsed[p.dataIndex].name}<br/>${p.value} min @ ${parsed[p.dataIndex].time}`;
+      }
+    },
+    xAxis: { type: 'category', data: parsed.map(p => p.time) },
+    yAxis: { type: 'value', name: 'MIN', nameTextStyle: { fontSize: 9 } },
+    series: [{ type: 'bar', data: parsed.map(p => p.mins) }]
   });
 }
 
@@ -8185,11 +8130,11 @@ function nlToggle(el) {
 // Timetable data: [day 0-6][hour 0-23] = label or ''
 const ttData = [
   // MON
-  { 2:'SLEEP',6:'MAINT',8:'NEURAL_LOAD',10:'ALGOS_LAB',12:'BREAK',14:'RESEARCH' },
+  { 2:'SLEEP',6:'MAINT',8:'DEEP_WORK',10:'ALGOS_LAB',12:'BREAK',14:'RESEARCH' },
   // TUE
   { 2:'SLEEP',6:'MAINT',8:'IDLE',10:'PHYSICS_SIM',12:'BREAK',14:'SYNC' },
   // WED
-  { 2:'SLEEP',6:'MAINT',8:'NEURAL_LOAD',10:'ALGOS_LAB',12:'BREAK',14:'RESEARCH' },
+  { 2:'SLEEP',6:'MAINT',8:'DEEP_WORK',10:'ALGOS_LAB',12:'BREAK',14:'RESEARCH' },
   // THU
   { 2:'SLEEP',6:'MAINT',8:'DEEP_CODE',10:'OS_STRUCT',12:'BREAK',14:'RESEARCH' },
   // FRI
@@ -8903,16 +8848,7 @@ async function initRunway() {
     } catch(e) { console.warn('Projects API load failed:', e); }
   }
   
-  const canvas = document.getElementById('rwDonut');
-  if (canvas) {
-    canvas.style.cursor = 'pointer';
-    canvas.onclick = () => {
-      const statusTab = document.querySelector('.rw-tab[onclick*="status"]');
-      if (statusTab) {
-        rwTab(statusTab, 'status');
-      }
-    };
-  }
+  // Sunburst drill-down is wired inside initRwDonut() via chart.on('click')
 }
 
 function renderFeed() {
@@ -9082,68 +9018,72 @@ function openAddQueueTaskModal() {
 }
 
 function initRwDonut() {
-  const ctx = document.getElementById('rwDonut');
-  if (!ctx) return;
-  if (rwDonutChart) { rwDonutChart.destroy(); }
-  
-  // Custom multi-tiered nested Category inside Category sunburst chart via Chart.js
-  rwDonutChart = new Chart(ctx, {
-    type: 'doughnut',
-    data: {
-      labels: [
-        'Academic Track', 'Career Sync', 'Personal Optimization', 'Resource Limits',
-        'Aeon Engine', 'Distributed Logs', 'Cyber Dynamics', 'Resume Prep',
-        'Hypertrophy', 'Habits Lab', 'Budget Ledgers', 'Stasis Consensus'
-      ],
-      datasets: [
-        // Dataset 0: Outer ring (Sub-categories / Specific projects)
-        {
-          data: [15, 10, 12, 13, 10, 15, 12, 13],
-          backgroundColor: [
-            'rgba(255, 77, 143, 0.7)', 'rgba(255, 77, 143, 0.4)', // Academic Pink
-            'rgba(118, 179, 114, 0.7)', 'rgba(118, 179, 114, 0.4)', // Career Green
-            'rgba(59, 130, 246, 0.7)', 'rgba(59, 130, 246, 0.4)', // Personal Blue
-            'rgba(249, 115, 22, 0.7)', 'rgba(249, 115, 22, 0.4)'  // Resources Orange
-          ],
-          borderWidth: 1,
-          borderColor: 'var(--bg-2)',
-          cutout: '62%',
-          weight: 1
-        },
-        // Dataset 1: Inner ring (Level 1 Categories)
-        {
-          data: [25, 25, 25, 25],
-          backgroundColor: [
-            '#ff4d8f', // Academic Track
-            '#76b372', // Career Sync
-            '#3b82f6', // Personal Optimization
-            '#f97316'  // Resource Limits
-          ],
-          borderWidth: 1,
-          borderColor: 'var(--bg-2)',
-          cutout: '45%',
-          weight: 0.7
-        }
-      ]
+  const el = document.getElementById('rwSunburst');
+  if (!el || typeof echarts === 'undefined') return;
+  const chart = ethosChart(el);
+  if (!chart) return;
+
+  // Real sunburst: track (inner ring) → project (outer ring).
+  // Leaf value = 1 per project so arc width reflects portfolio composition;
+  // leaf colour opacity encodes that project's progress.
+  const TRACKS = ['ACADEMIC_TRACK', 'CAREER_SYNC', 'PERSONAL_OPT', 'RESOURCE_LIMIT'];
+  const SIG = ['#3b6839', '#76b372', '#94d68f', '#a5f79e'];
+
+  const data = TRACKS.map((track, i) => {
+    const inTrack = (rwProjects || []).filter(p => p.cat === track);
+    if (!inTrack.length) return null;
+    return {
+      name: track.replace(/_/g, ' '),
+      itemStyle: { color: SIG[i] },
+      children: inTrack.map(p => ({
+        name: p.name,
+        value: 1,
+        // progress → opacity within the track's hue
+        itemStyle: { color: SIG[i], opacity: 0.35 + 0.65 * (Math.max(0, Math.min(100, p.progress || 0)) / 100) }
+      }))
+    };
+  }).filter(Boolean);
+
+  if (!data.length) {
+    chart.clear();
+    chart.setOption({
+      title: {
+        text: 'NO PROJECTS YET',
+        subtext: 'Deploy a project node to populate the map',
+        left: 'center', top: 'center'
+      }
+    });
+    return;
+  }
+
+  chart.setOption({
+    tooltip: {
+      formatter: p => {
+        const pct = p.treePathInfo && p.treePathInfo.length > 2
+          ? (rwProjects.find(x => x.name === p.name) || {}).progress
+          : null;
+        return pct != null ? `${p.name}<br/>${pct}% complete` : p.name;
+      }
     },
-    options: {
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          enabled: true,
-          bodyFont: { family: 'Space Mono' },
-          backgroundColor: '#1a1a1a',
-          borderColor: 'rgba(255,255,255,0.08)',
-          borderWidth: 1,
-          callbacks: {
-            label: function(context) {
-              return ' ' + context.label;
-            }
-          }
-        }
-      },
-      animation: { animateRotate: true, duration: 900 }
-    }
+    series: [{
+      type: 'sunburst',
+      data,
+      radius: ['18%', '92%'],
+      sort: null,
+      emphasis: { focus: 'ancestor' },
+      levels: [
+        {},
+        { r0: '18%', r: '52%', label: { rotate: 'tangential', fontSize: 9 } },
+        { r0: '52%', r: '92%', label: { position: 'outside', fontSize: 8, silent: false } }
+      ]
+    }]
+  });
+
+  // Clicking a project drills into the status board
+  chart.off('click');
+  chart.on('click', () => {
+    const statusTab = document.querySelector('.rw-tab[onclick*="status"]');
+    if (statusTab) statusTab.click();
   });
 }
 
@@ -10156,11 +10096,10 @@ function rsCompile() {
   const btn = document.querySelector('.rs-compile-btn');
   if (!btn) return;
   const orig = btn.innerHTML;
-  btn.innerHTML = `<svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:var(--green);fill:none;stroke-width:2.5"><polyline points="20 6 9 17 4 12"/></svg> COMPILATION COMPLETE — SHA256 SEALED`;
+  btn.innerHTML = `<svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:var(--green);fill:none;stroke-width:2.5"><polyline points="20 6 9 17 4 12"/></svg> COMPILATION COMPLETE`;
   btn.style.borderColor = 'var(--green)';
-  const sha = Math.random().toString(16).slice(2,10) + '...' + Math.random().toString(16).slice(2,6);
-  const tag = document.getElementById('rsShaTag');
-  if (tag) tag.textContent = `SHA256: ${sha}`;
+  const tag = document.getElementById('rsFooterUpdated');
+  if (tag) tag.textContent = 'LAST COMPILED: ' + new Date().toLocaleString();
   setTimeout(() => { btn.innerHTML = orig; }, 3000);
 }
 
@@ -11356,6 +11295,233 @@ document.addEventListener('keydown', e => {
 
 // Run the Single Page Application mount sequence
 checkSPAAuth();
+
+
+/* ── REAL-DATA HYDRATION ──────────────────────────────────────────────────────
+   P1 truth pass: every stat below is computed from actual stored data.
+   Where data genuinely does not exist yet, we render an explicit empty state
+   rather than a placeholder number. No tile ever shows an invented value.     */
+
+function _hyd(id, value, emptyText) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  // '' is an intentional clear (sub-labels), not missing data.
+  if (value === '') { el.textContent = ''; el.style.opacity = ''; return; }
+  const isEmpty = value === null || value === undefined ||
+                  (typeof value === 'number' && !isFinite(value));
+  el.textContent = isEmpty ? (emptyText !== undefined ? emptyText : '—') : value;
+  el.style.opacity = isEmpty ? '0.4' : '';
+}
+function _hydBar(id, pct) {
+  const el = document.getElementById(id);
+  if (el) el.style.width = Math.max(0, Math.min(100, pct || 0)) + '%';
+}
+
+// ── WEEKLY ──
+function renderArcStats() {
+  const cols = (typeof kanbanTasks !== 'undefined' && Array.isArray(kanbanTasks)) ? kanbanTasks : [];
+  const all  = cols.flat();
+  const done = all.filter(t => t && (t.done || t.completed)).length;
+
+  if (!all.length) {
+    _hyd('arcStatLoad', null, 'NO TASKS');
+    _hyd('arcStatDone', null, '—');
+    _hyd('arcStatDoneOf', '');
+    _hydBar('arcStatLoadBar', 0);
+  } else {
+    const pct = Math.round((done / all.length) * 100);
+    _hyd('arcStatLoad', pct + '%');
+    _hydBar('arcStatLoadBar', pct);
+    _hyd('arcStatDone', String(done).padStart(2, '0'));
+    _hyd('arcStatDoneOf', '/ ' + all.length + ' TASKS');
+  }
+
+  const today = new Date().toISOString().split('T')[0];
+  const due = all.filter(t => t && t.deadline === today).length;
+  _hyd('arcStatDeadlines', all.length ? String(due).padStart(2, '0') : null, '—');
+  _hyd('arcStatDeadlinesTag', due ? 'DUE TODAY' : '');
+
+  // Free time needs the timetable to be populated; stay honest until it is.
+  const filled = document.querySelectorAll('#arcTTBody .arc-tt-cell.filled').length;
+  if (filled) {
+    const free = Math.max(0, (7 * 16) - filled);
+    _hyd('arcStatFree', free + 'H');
+    _hyd('arcStatFreeTag', 'UNBLOCKED');
+  } else {
+    _hyd('arcStatFree', null, 'NO TIMETABLE');
+    _hyd('arcStatFreeTag', '');
+  }
+}
+
+// ── HABITS (incl. fragility score — blueprint Visionary Vector) ──
+function renderHbStats() {
+  const hs = (typeof habits !== 'undefined' && Array.isArray(habits)) ? habits : [];
+  if (!hs.length) {
+    ['hbStatMonth','hbStatStreak','hbStatToday','hbStatRisk'].forEach(id => _hyd(id, null, 'NO HABITS'));
+    ['hbStatDelta','hbStatStreakSub','hbStatTodaySub','hbStatRiskSub'].forEach(id => _hyd(id, ''));
+    _hydBar('hbStatMonthBar', 0);
+    return;
+  }
+
+  const avg = Math.round(hs.reduce((s, h) => s + (h.pct || 0), 0) / hs.length);
+  _hyd('hbStatMonth', avg + '%');
+  _hydBar('hbStatMonthBar', avg);
+  _hyd('hbStatDelta', '');
+
+  const dom = new Date().getDate();
+  const doneToday = hs.filter(h => (h.checked || []).includes(dom)).length;
+  _hyd('hbStatToday', doneToday + '/' + hs.length);
+  _hyd('hbStatTodaySub', doneToday === hs.length ? 'ALL NODES CLEAR' : '');
+
+  // Longest current streak across habits, counting back from today.
+  let best = 0, bestName = '';
+  hs.forEach(h => {
+    const set = new Set(h.checked || []);
+    let run = 0;
+    for (let d = dom; d >= 1; d--) { if (set.has(d)) run++; else break; }
+    if (run > best) { best = run; bestName = h.name; }
+  });
+  _hyd('hbStatStreak', best ? best + ' DAYS' : null, 'NO STREAK');
+  _hyd('hbStatStreakSub', best ? bestName : '');
+
+  // fragility = (1 − completion) × streakAtStake × daysSinceLastLog
+  let risk = null, riskScore = -1;
+  hs.forEach(h => {
+    const set = new Set(h.checked || []);
+    let since = 0;
+    for (let d = dom; d >= 1; d--) { if (set.has(d)) break; since++; }
+    let run = 0;
+    for (let d = dom - since; d >= 1; d--) { if (set.has(d)) run++; else break; }
+    const score = (1 - (h.pct || 0) / 100) * (run + 1) * (since + 1);
+    if (score > riskScore) { riskScore = score; risk = { name: h.name, since, run }; }
+  });
+  if (risk && riskScore > 0) {
+    _hyd('hbStatRisk', risk.name);
+    _hyd('hbStatRiskSub', risk.since === 0 ? 'HOLDING' : 'MISSED ' + risk.since + 'D — ' + risk.run + 'D AT STAKE');
+  } else {
+    _hyd('hbStatRisk', null, 'ALL STABLE');
+    _hyd('hbStatRiskSub', '');
+  }
+}
+
+// ── FOCUS ──
+function renderNlStats() {
+  const logs = (typeof focusLogs !== 'undefined' && Array.isArray(focusLogs)) ? focusLogs : [];
+  const real = logs.filter(l => !l.isErr);
+  const mins = real.reduce((s, l) => {
+    const m = /Duration:\s*(\d+)\s*m/i.exec(l.meta || '');
+    return s + (m ? parseInt(m[1], 10) : 0);
+  }, 0);
+
+  if (!real.length) {
+    ['nlTotalLogged','nlSessionsToday','nlMonthlyAvg','nlLinkedTasks'].forEach(id => _hyd(id, null, 'NO DATA'));
+    ['nlTotalLoggedSub','nlSessionsTodaySub','nlMonthlyAvgSub','nlLinkedTasksSub'].forEach(id => _hyd(id, ''));
+    return;
+  }
+  _hyd('nlTotalLogged', Math.floor(mins / 60) + ':' + String(mins % 60).padStart(2, '0') + ' HRS');
+  _hyd('nlTotalLoggedSub', 'ACROSS ' + real.length + ' SESSIONS');
+  _hyd('nlSessionsToday', String(real.length).padStart(2, '0'));
+  _hyd('nlSessionsTodaySub', '');
+  _hyd('nlMonthlyAvg', Math.round(mins / real.length) + ' MIN');
+  _hyd('nlMonthlyAvgSub', 'AVG / SESSION');
+
+  const projs = (typeof rwProjects !== 'undefined' && Array.isArray(rwProjects)) ? rwProjects : [];
+  const active = projs.filter(p => p.status === 'running').length;
+  _hyd('nlLinkedTasks', String(active).padStart(2, '0'));
+  _hyd('nlLinkedTasksSub', 'RUNNING PROJECTS');
+}
+
+// ── RUNWAY ──
+function renderRwStats() {
+  const ps = (typeof rwProjects !== 'undefined' && Array.isArray(rwProjects)) ? rwProjects : [];
+  if (!ps.length) {
+    ['rwStatAgg','rwStatActive','rwStatNearly','rwStatUrgent'].forEach(id => _hyd(id, null, 'NONE'));
+    ['rwStatActiveSub','rwStatNearlySub','rwStatUrgentSub'].forEach(id => _hyd(id, ''));
+    _hydBar('rwStatAggBar', 0);
+    renderRwCategories();
+    return;
+  }
+  const agg = Math.round(ps.reduce((s, p) => s + (p.progress || 0), 0) / ps.length);
+  _hyd('rwStatAgg', agg + '%');
+  _hydBar('rwStatAggBar', agg);
+
+  const active = ps.filter(p => p.status === 'running').length;
+  _hyd('rwStatActive', String(active).padStart(2, '0'));
+  _hyd('rwStatActiveSub', active ? 'IN FLIGHT' : '');
+
+  const nearly = ps.filter(p => (p.progress || 0) >= 80 && p.status !== 'completed').length;
+  _hyd('rwStatNearly', String(nearly).padStart(2, '0'));
+  _hyd('rwStatNearlySub', 'THRESHOLD ≥ 80%');
+
+  const soon = new Date(); soon.setDate(soon.getDate() + 30);
+  const urgent = ps.filter(p => p.deadline && new Date(p.deadline) <= soon && p.status !== 'completed').length;
+  _hyd('rwStatUrgent', String(urgent).padStart(2, '0'));
+  _hyd('rwStatUrgentSub', urgent ? 'WITHIN 30 DAYS' : '');
+  renderRwCategories();
+}
+
+function renderRwCategories() {
+  const wrap = document.getElementById('rwCatBars');
+  if (!wrap) return;
+  const ps = (typeof rwProjects !== 'undefined' && Array.isArray(rwProjects)) ? rwProjects : [];
+  const TRACKS = ['ACADEMIC_TRACK', 'CAREER_SYNC', 'PERSONAL_OPT', 'RESOURCE_LIMIT'];
+  const rows = TRACKS.map(t => {
+    const inT = ps.filter(p => p.cat === t);
+    if (!inT.length) return '';
+    const pct = Math.round(inT.reduce((s, p) => s + (p.progress || 0), 0) / inT.length);
+    return `<div class="rw-cat-item">
+        <div class="rw-cat-row">
+          <span class="rw-cat-name">${t}</span>
+          <span class="rw-cat-pf">${pct}% · ${inT.length}</span>
+        </div>
+        <div class="rw-cat-bar-bg"><div class="rw-cat-bar-fill" style="width:${pct}%;background:var(--sig-500)"></div></div>
+      </div>`;
+  }).join('');
+  wrap.innerHTML = rows || '<div style="font-size:10px;color:var(--text-muted);letter-spacing:1px">NO PROJECTS YET</div>';
+}
+
+// ── RESUME ──
+function renderRsStats() {
+  const d = (typeof rsTabData !== 'undefined' && rsTabData) ? rsTabData : {};
+  const n = k => Array.isArray(d[k]) ? d[k].length : 0;
+  _hyd('rsStatProjects', n('projects') || null, '0');
+  _hyd('rsStatProjectsSub', n('projects') ? 'REGISTERED' : 'NONE YET');
+  _hyd('rsStatInternships', n('internships') || null, '0');
+  _hyd('rsStatInternshipsSub', n('internships') ? 'REGISTERED' : 'NONE YET');
+  _hyd('rsStatResearch', n('research') || null, '0');
+  _hyd('rsStatResearchSub', n('research') ? 'REGISTERED' : 'NONE YET');
+
+  const cgpa = localStorage.getItem('gridCgpa');
+  _hyd('rsStatCgpa', cgpa || null, '—');
+  _hydBar('rsStatCgpaBar', cgpa ? (parseFloat(cgpa) / 10) * 100 : 0);
+  _hyd('rsStatCgpaSub', cgpa ? 'SELF-REPORTED' : 'TAP TO SET');
+
+  const total = ['projects','internships','positions','courses','research','achievements']
+    .reduce((s, k) => s + n(k), 0);
+  _hyd('rsFooterCount', total + ' REGISTRY NODES');
+}
+
+function rsEditCgpa() {
+  const cur = localStorage.getItem('gridCgpa') || '';
+  const val = prompt('Enter your CGPA (out of 10):', cur);
+  if (val === null) return;
+  const num = parseFloat(val);
+  if (isNaN(num) || num < 0 || num > 10) { alert('Enter a number between 0 and 10.'); return; }
+  localStorage.setItem('gridCgpa', num.toFixed(2));
+  renderRsStats();
+}
+
+// Master hydrate — safe to call repeatedly.
+function hydrateRealStats() {
+  try { renderArcStats(); } catch (e) { console.warn('arc stats:', e); }
+  try { renderHbStats(); }  catch (e) { console.warn('hb stats:', e); }
+  try { renderNlStats(); }  catch (e) { console.warn('nl stats:', e); }
+  try { renderRwStats(); }  catch (e) { console.warn('rw stats:', e); }
+  try { renderRsStats(); }  catch (e) { console.warn('rs stats:', e); }
+}
+
+document.addEventListener('DOMContentLoaded', () => setTimeout(hydrateRealStats, 60));
+
 </script>
 </body>
 </html>
