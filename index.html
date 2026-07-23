@@ -6225,35 +6225,76 @@ function handleSPAGoogle() {
   window.location.href = GRID_API + '/api/auth/google';
 }
 
-function launchDemo() {
+async function launchDemo() {
+  const btn = document.querySelector('.btn-demo');
+  if (btn) { btn.disabled = true; btn.textContent = 'CREATING DEMO…'; }
+
+  // Preferred path: a real seeded sandbox ACCOUNT on the server. A sandbox is an
+  // ordinary authenticated account, so every feature runs the normal API path —
+  // no isDemo branching, and the data survives if the user later claims it.
+  try {
+    const r = await gridFetch('/api/auth/sandbox', { method: 'POST' });
+    if (r && r.user) {
+      sessionStorage.setItem('gridMode', 'user');       // it IS a real session
+      localStorage.setItem('gridActiveMode', 'user');
+      sessionStorage.setItem('gridUser', r.user.email);
+      sessionStorage.setItem('gridUserId', r.user.id);
+      sessionStorage.setItem('gridUserName', r.user.name || 'Demo User');
+      sessionStorage.setItem('gridIsSandbox', '1');
+      location.reload();
+      return;
+    }
+  } catch (e) {
+    // Endpoint not deployed yet (migration pending) or offline — fall through.
+    console.info('[demo] sandbox unavailable, using local demo:', e && e.message);
+  }
+
+  if (btn) { btn.disabled = false; btn.textContent = 'VIEW DEMO →'; }
+  launchLocalDemo();
+}
+
+/**
+ * LEGACY local demo. Kept only until the sandbox migration is applied in
+ * production; delete this together with the remaining isDemo branches.
+ */
+function launchLocalDemo() {
+  const DEMO_KEYS = [
+    'gymDBVersion', 'gymSplitData', 'gymExerciseRegistry', 'gymMuscleGroups', 'gymLogs',
+    'rwProjects', 'rsTabData', 'gridEntries', 'gridHabits', 'gridBudget', 'gridTxLog',
+    'gridFinTelemetry', 'gridFinRecurItems', 'gridFinDebtItems', 'gridQueueItems',
+    'gridRsStackData', 'gridFocusLogs', 'gridWorkProjectsList', 'gridKanbanTasks', 'gridSleepData'
+  ];
+
   const sessionUser = sessionStorage.getItem('gridUser') || localStorage.getItem('gridUser');
   if (sessionUser) {
-    const keysToBackup = [
-      'gymDBVersion', 'gymSplitData', 'gymExerciseRegistry', 'gymMuscleGroups', 'gymLogs',
-      'rwProjects', 'rsTabData', 'gridEntries', 'gridHabits', 'gridBudget', 'gridTxLog', 'gridFinTelemetry',
-      'gridFinRecurItems', 'gridFinDebtItems', 'gridQueueItems', 'gridRsStackData', 'gridFocusLogs', 'gridWorkProjectsList', 'gridKanbanTasks', 'gridSleepData'
-    ];
-    keysToBackup.forEach(k => {
+    DEMO_KEYS.forEach(k => {
       const val = localStorage.getItem(k);
-      if (val !== null) {
-        localStorage.setItem('userBackup_' + k, val);
-      }
+      if (val !== null) localStorage.setItem('userBackup_' + k, val);
     });
   }
 
   sessionStorage.setItem('gridMode', 'demo');
   localStorage.setItem('gridActiveMode', 'demo');
-  
-  // Wipe all user database parameters to let demo presets load correctly
-  const keysToWipe = [
-    'gymDBVersion', 'gymSplitData', 'gymExerciseRegistry', 'gymMuscleGroups', 'gymLogs',
-    'rwProjects', 'rsTabData', 'gridEntries', 'gridHabits', 'gridBudget', 'gridTxLog', 'gridFinTelemetry',
-    'gridFinRecurItems', 'gridFinDebtItems', 'gridQueueItems', 'gridRsStackData', 'gridFocusLogs', 'gridWorkProjectsList', 'gridKanbanTasks', 'gridSleepData'
-  ];
-  keysToWipe.forEach(k => localStorage.removeItem(k));
-  
+  DEMO_KEYS.forEach(k => localStorage.removeItem(k));
   location.reload();
 }
+
+/**
+ * Sandbox users get a prompt to keep their data instead of losing it at signup.
+ * Called by the signup form when the current session is a sandbox.
+ */
+async function claimSandbox(email, password, name) {
+  const r = await gridFetch('/api/auth/claim', {
+    method: 'POST',
+    body: JSON.stringify({ email, password, name }),
+  });
+  sessionStorage.removeItem('gridIsSandbox');
+  sessionStorage.setItem('gridUser', r.user.email);
+  sessionStorage.setItem('gridUserName', r.user.name || '');
+  return r;
+}
+
+function isSandboxSession() { return sessionStorage.getItem('gridIsSandbox') === '1'; }
 
 function setAuthLoading(form, on) {
   const isLogin = form === 'login';
