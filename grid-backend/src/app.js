@@ -51,7 +51,8 @@ app.use(globalLimiter);
 // ─── Routes ───────────────────────────────────────────────────────────────────
 app.use('/api/auth',     require('./routes/auth'));
 app.use('/api/profile',  require('./routes/profile'));
-app.use('/api/habits',   require('./routes/habits'));
+app.use('/api/habits',   require('./routes/habits'));   // legacy — superseded by /api/metrics
+app.use('/api/metrics',  require('./routes/metrics'));
 app.use('/api/gym',      require('./routes/gym'));
 app.use('/api/finance',  require('./routes/finance'));
 app.use('/api/calendar', require('./routes/calendar'));

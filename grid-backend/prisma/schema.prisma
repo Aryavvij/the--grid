@@ -9,8 +9,8 @@ generator client {
 
 datasource db {
   provider  = "postgresql"
-  url       = env("DATABASE_URL")   // Supabase pooled URL (port 6543) — used at runtime
-  directUrl = env("DIRECT_URL")     // Supabase direct URL (port 5432) — used for migrations
+  url       = env("DATABASE_URL") // Supabase pooled URL (port 6543) — used at runtime
+  directUrl = env("DIRECT_URL") // Supabase direct URL (port 5432) — used for migrations
 }
 
 // ─── Auth ─────────────────────────────────────────────────────────────────────
@@ -25,16 +25,18 @@ model User {
   updatedAt    DateTime @updatedAt @map("updated_at")
 
   // Relations
-  profile       UserProfile?
-  habits        Habit[]
-  habitLogs     HabitLog[]
-  gymSplits     GymSplit[]
-  gymLogs       GymLog[]
+  profile          UserProfile?
+  habits           Habit[]
+  habitLogs        HabitLog[]
+  metricDefs       MetricDef[]
+  metricLogs       MetricLog[]
+  gymSplits        GymSplit[]
+  gymLogs          GymLog[]
   budgetCategories BudgetCategory[]
-  transactions  Transaction[]
-  calendarEvents CalendarEvent[]
-  projects      Project[]
-  resumeData    ResumeData?
+  transactions     Transaction[]
+  calendarEvents   CalendarEvent[]
+  projects         Project[]
+  resumeData       ResumeData?
 
   @@map("users")
 }
@@ -44,13 +46,16 @@ model User {
 model UserProfile {
   id         String   @id @default(uuid())
   userId     String   @unique @map("user_id")
-  dob        String?  // stored as YYYY-MM-DD string
+  dob        String? // stored as YYYY-MM-DD string
   gender     String?
   city       String?
   occupation String?
   heightCm   Float?   @map("height_cm")
   weightKg   Float?   @map("weight_kg")
   bio        String?
+  // IANA zone (e.g. "Asia/Kolkata"). Defines which midnight a loggedDate means —
+  // without this, late-night logs land on the wrong day.
+  timezone   String   @default("UTC")
   updatedAt  DateTime @updatedAt @map("updated_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -61,16 +66,16 @@ model UserProfile {
 // ─── Habits ───────────────────────────────────────────────────────────────────
 
 model Habit {
-  id          String   @id @default(uuid())
-  userId      String   @map("user_id")
-  name        String
-  icon        String?
-  color       String?
-  frequency   String   @default("daily") // daily | weekly | custom
-  targetDays  Json?    @map("target_days") // [0,1,2,3,4,5,6] — day indices
-  sortOrder   Int      @default(0) @map("sort_order")
-  archived    Boolean  @default(false)
-  createdAt   DateTime @default(now()) @map("created_at")
+  id         String   @id @default(uuid())
+  userId     String   @map("user_id")
+  name       String
+  icon       String?
+  color      String?
+  frequency  String   @default("daily") // daily | weekly | custom
+  targetDays Json?    @map("target_days") // [0,1,2,3,4,5,6] — day indices
+  sortOrder  Int      @default(0) @map("sort_order")
+  archived   Boolean  @default(false)
+  createdAt  DateTime @default(now()) @map("created_at")
 
   user User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   logs HabitLog[]
@@ -79,12 +84,12 @@ model Habit {
 }
 
 model HabitLog {
-  id          String   @id @default(uuid())
-  habitId     String   @map("habit_id")
-  userId      String   @map("user_id")
-  loggedDate  String   @map("logged_date") // YYYY-MM-DD
-  completed   Boolean  @default(true)
-  createdAt   DateTime @default(now()) @map("created_at")
+  id         String   @id @default(uuid())
+  habitId    String   @map("habit_id")
+  userId     String   @map("user_id")
+  loggedDate String   @map("logged_date") // YYYY-MM-DD
+  completed  Boolean  @default(true)
+  createdAt  DateTime @default(now()) @map("created_at")
 
   habit Habit @relation(fields: [habitId], references: [id], onDelete: Cascade)
   user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -99,7 +104,7 @@ model GymSplit {
   id        String   @id @default(uuid())
   userId    String   @map("user_id")
   name      String   @default("My Split")
-  days      Json     // array of { title, muscles, exercises[] }
+  days      Json // array of { title, muscles, exercises[] }
   isActive  Boolean  @default(true) @map("is_active")
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -115,8 +120,8 @@ model GymLog {
   userId      String   @map("user_id")
   splitId     String?  @map("split_id")
   workoutDate String   @map("workout_date") // YYYY-MM-DD
-  dayIndex    Int?     @map("day_index")    // which day of the split (0–6)
-  exercises   Json     // [{ name, sets: [{ reps, weight, done }] }]
+  dayIndex    Int?     @map("day_index") // which day of the split (0–6)
+  exercises   Json // [{ name, sets: [{ reps, weight, done }] }]
   notes       String?
   durationMin Int?     @map("duration_min")
   createdAt   DateTime @default(now()) @map("created_at")
@@ -133,7 +138,7 @@ model BudgetCategory {
   id           String   @id @default(uuid())
   userId       String   @map("user_id")
   name         String
-  type         String   // income | expense
+  type         String // income | expense
   color        String?
   budgetAmount Float?   @map("budget_amount")
   sortOrder    Int      @default(0) @map("sort_order")
@@ -146,16 +151,16 @@ model BudgetCategory {
 }
 
 model Transaction {
-  id           String   @id @default(uuid())
-  userId       String   @map("user_id")
-  categoryId   String?  @map("category_id")
-  amount       Float
-  description  String?
-  date         String   // YYYY-MM-DD
-  type         String   // income | expense
-  recurring    Boolean  @default(false)
-  recurringFreq String? @map("recurring_freq") // monthly | weekly | yearly
-  createdAt    DateTime @default(now()) @map("created_at")
+  id            String   @id @default(uuid())
+  userId        String   @map("user_id")
+  categoryId    String?  @map("category_id")
+  amount        Float
+  description   String?
+  date          String // YYYY-MM-DD
+  type          String // income | expense
+  recurring     Boolean  @default(false)
+  recurringFreq String?  @map("recurring_freq") // monthly | weekly | yearly
+  createdAt     DateTime @default(now()) @map("created_at")
 
   user     User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   category BudgetCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
@@ -166,17 +171,17 @@ model Transaction {
 // ─── Calendar ─────────────────────────────────────────────────────────────────
 
 model CalendarEvent {
-  id          String   @id @default(uuid())
-  userId      String   @map("user_id")
+  id          String    @id @default(uuid())
+  userId      String    @map("user_id")
   title       String
   description String?
-  startTime   DateTime @map("start_time")
+  startTime   DateTime  @map("start_time")
   endTime     DateTime? @map("end_time")
-  allDay      Boolean  @default(false) @map("all_day")
+  allDay      Boolean   @default(false) @map("all_day")
   color       String?
-  recurrence  Json?    // { rule: 'weekly', days: [1,3,5] } etc
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  recurrence  Json? // { rule: 'weekly', days: [1,3,5] } etc
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -191,10 +196,10 @@ model Project {
   title       String
   description String?
   status      String   @default("active") // active | on-hold | completed | archived
-  priority    String?  // high | medium | low
-  deadline    String?  // YYYY-MM-DD
+  priority    String? // high | medium | low
+  deadline    String? // YYYY-MM-DD
   color       String?
-  tasks       Json?    // [{ id, title, done, dueDate }]
+  tasks       Json? // [{ id, title, done, dueDate }]
   notes       String?
   sortOrder   Int      @default(0) @map("sort_order")
   createdAt   DateTime @default(now()) @map("created_at")
@@ -210,10 +215,75 @@ model Project {
 model ResumeData {
   id        String   @id @default(uuid())
   userId    String   @unique @map("user_id")
-  sections  Json     // { experience: [], education: [], skills: [], links: {} }
+  sections  Json // { experience: [], education: [], skills: [], links: {} }
   updatedAt DateTime @updatedAt @map("updated_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("resume_data")
+}
+
+// ─── Metric Engine ────────────────────────────────────────────────────────────
+// Replaces Habit/HabitLog. Design notes:
+//  • History is FROZEN: each log snapshots `targetAtLog` + a computed `score`,
+//    so changing a target never re-scores the past and the grid needs no joins.
+//  • Streaks and repair-token balances are DERIVED from logs, never stored —
+//    no cache-invalidation bugs.
+//  • One row per (metric, day). `value` is the day TOTAL; repeated quantity
+//    taps accumulate via an atomic increment.
+
+enum MetricType {
+  BINARY // one tap                       → 1 | 0
+  QUANTITY // number + unit (3L water)      → min(value/target, 1.25)
+  DURATION // minutes (90m deep work)       → min(value/target, 1.25)
+  SCALE // 1–5 tap (sleep quality)       → value/5
+  DERIVED // no input; computed from other modules
+}
+
+enum LogSource {
+  MANUAL // user entered
+  DERIVED // auto-written by gym/focus/finance hooks
+  REPAIR // streak repair token spent — rendered as a hollow ring
+}
+
+model MetricDef {
+  id            String     @id @default(uuid())
+  userId        String     @map("user_id")
+  name          String
+  type          MetricType
+  unit          String?
+  icon          String?
+  color         String?
+  target        Float? // CURRENT target; past days keep targetAtLog
+  targetDays    Json?      @map("target_days") // [0..6]; days off are SKIPPED, never streak-breaking
+  derivedSource String?    @map("derived_source") // "gym.session" | "focus.context:MATH-204"
+  sortOrder     Int        @default(0) @map("sort_order")
+  archived      Boolean    @default(false)
+  createdAt     DateTime   @default(now()) @map("created_at")
+
+  user User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  logs MetricLog[]
+
+  @@index([userId, archived])
+  @@map("metric_defs")
+}
+
+model MetricLog {
+  id          String    @id @default(uuid())
+  defId       String    @map("def_id")
+  userId      String    @map("user_id")
+  loggedDate  String    @map("logged_date") // YYYY-MM-DD in the user's timezone
+  value       Float // day total
+  targetAtLog Float?    @map("target_at_log") // snapshot of the rule this day was judged by
+  score       Float // denormalized 0..1.25, computed at write
+  source      LogSource @default(MANUAL)
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  def  MetricDef @relation(fields: [defId], references: [id], onDelete: Cascade)
+  user User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([defId, loggedDate]) // idempotent upsert key — safe offline replay
+  @@index([userId, loggedDate]) // the only index the grid needs
+  @@map("metric_logs")
 }
