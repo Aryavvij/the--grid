@@ -3811,6 +3811,66 @@ html, body {
 .gk-fab:hover { background: var(--sig-700); transform: translateY(-1px); }
 @media (max-width: 640px) { .gk-overlay { padding-top: 6vh; } .gk-fab { right: 14px; bottom: 14px; } }
 
+/* ── U2: THE CONSOLE (page-home) ──────────────────────────────── */
+.cn-wrap { padding: 26px 30px 40px; max-width: 1500px; margin: 0 auto; }
+.cn-hero { display:flex; align-items:flex-start; justify-content:space-between; gap:20px; margin-bottom:20px; }
+.cn-greet { font-family:'Bebas Neue',var(--font); font-size:38px; letter-spacing:2px; line-height:1; color:var(--text); }
+.cn-sub { font-size:10px; letter-spacing:2px; color:var(--text-muted); margin-top:6px; }
+.cn-streakchip {
+  display:flex; flex-direction:column; align-items:flex-end; gap:2px;
+  border:1px solid var(--carbon-4); border-radius:8px; padding:8px 14px; background:var(--carbon-1);
+}
+.cn-streak-label { font-size:8px; letter-spacing:2px; color:var(--text-muted); }
+.cn-streak-val { font-size:22px; font-variant-numeric:tabular-nums; color:var(--sig-900); line-height:1; }
+.cn-streakchip.hot { border-color:rgba(165,247,158,.35); box-shadow:var(--sig-glow); }
+
+.cn-grid { display:grid; grid-template-columns: 1.35fr 1fr; grid-template-rows:auto auto; gap:14px; }
+.cn-zone-a { display:flex; flex-direction:column; gap:14px; }
+.cn-zone-b { grid-row:1 / span 1; }
+.cn-zone-c { grid-column:1 / -1; display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:14px; }
+
+.cn-card { background:var(--carbon-1); border:1px solid var(--carbon-4); border-radius:10px; padding:16px 18px; }
+.cn-card-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
+.cn-card-title { font-size:10px; letter-spacing:2px; color:var(--sig-500); }
+.cn-card-meta { font-size:9px; letter-spacing:1.2px; color:var(--text-muted); }
+
+.cn-chips { display:flex; flex-wrap:wrap; gap:8px; }
+.cn-chip {
+  display:flex; align-items:center; gap:7px; cursor:pointer; user-select:none;
+  border:1px solid var(--carbon-4); border-radius:20px; padding:6px 13px;
+  font-size:11px; letter-spacing:.5px; color:var(--text-dim); background:var(--carbon-2);
+  transition:all 120ms var(--ease-snap);
+}
+.cn-chip:hover { border-color:var(--sig-700); color:var(--text); }
+.cn-chip.on { background:var(--sig-500); border-color:var(--sig-500); color:#08110b; }
+.cn-chip .cn-dot { width:7px; height:7px; border-radius:50%; background:var(--carbon-4); }
+.cn-chip.on .cn-dot { background:#08110b; }
+.cn-chip.pulse { animation:cnPulse 600ms var(--ease-snap); }
+@keyframes cnPulse { 0%{transform:scale(.92)} 55%{transform:scale(1.06)} 100%{transform:scale(1)} }
+.cn-empty { font-size:10px; letter-spacing:1px; color:var(--text-muted); }
+
+.cn-now-title { font-size:15px; color:var(--text); margin-bottom:12px; }
+.cn-cta {
+  width:100%; padding:10px; border-radius:6px; cursor:pointer; border:none;
+  background:var(--sig-500); color:#08110b; font-family:var(--font);
+  font-size:11px; letter-spacing:1.6px; font-weight:700;
+  transition:all 140ms var(--ease-snap);
+}
+.cn-cta:hover { background:var(--sig-700); }
+
+.cn-vital { background:var(--carbon-1); border:1px solid var(--carbon-4); border-radius:10px; padding:14px 16px; }
+.cn-vital-label { font-size:9px; letter-spacing:1.6px; color:var(--text-muted); margin-bottom:6px; }
+.cn-vital-val { font-size:24px; font-variant-numeric:tabular-nums; color:var(--text); line-height:1; }
+.cn-vital-sub { font-size:9px; letter-spacing:1px; color:var(--text-muted); margin-top:5px; }
+.cn-vital.risk .cn-vital-val { font-size:14px; color:var(--sig-700); }
+
+@media (max-width:1000px) {
+  .cn-grid { grid-template-columns:1fr; }
+  .cn-zone-b { grid-row:auto; }
+  .cn-wrap { padding:18px 16px 32px; }
+  .cn-greet { font-size:28px; }
+}
+
 </style>
 </head>
 <body>
@@ -4283,131 +4343,58 @@ html, body {
 
     <!-- ── HOME ──────────────────────────────────────── -->
     <div class="page active" id="page-home">
-      <div class="hm-wrap">
+      <div class="cn-wrap">
 
         <!-- Hero -->
-        <div class="hm-hero">
+        <div class="cn-hero">
           <div>
-            <div class="hm-greet-label">ACTIVE USER SESSION</div>
-            <div class="hm-greet-name">COMMAND CENTER</div>
-            <div class="hm-greet-sub">THE GRID // SYSTEM OVERVIEW — ALL MODULES NOMINAL</div>
+            <div class="cn-greet" id="cnGreet">—</div>
+            <div class="cn-sub" id="cnSub">—</div>
           </div>
-          <div class="hm-clock">
-            <div class="hm-clock-time" id="hmClockTime">00:00:00</div>
-            <div class="hm-clock-date" id="hmClockDate">——</div>
+          <div class="cn-streakchip" id="cnStreakChip" title="Longest active streak">
+            <span class="cn-streak-label">STREAK</span>
+            <span class="cn-streak-val" id="cnStreakVal">—</span>
           </div>
         </div>
 
-        <!-- Module Status Grid 3+2+3 Format -->
-        <div class="hm-modules-323">
-          
-          <!-- Card 1: Calendar (Row 1, span 2) -->
-          <div class="hm-card-323 span-2" onclick="navigate('calendar')">
-            <div class="hm-c-top">
-              <div class="hm-c-name">CALENDAR HUB</div>
-              <div class="hm-c-dot" id="hm-cal-dot"></div>
+        <div class="cn-grid">
+          <!-- ZONE A -->
+          <div class="cn-zone-a">
+            <div class="cn-card">
+              <div class="cn-card-head">
+                <span class="cn-card-title">TODAY</span>
+                <span class="cn-card-meta" id="cnTodayMeta">—</span>
+              </div>
+              <div class="cn-chips" id="cnChips"></div>
             </div>
-            <div class="hm-c-val" id="hm-cal-val">—</div>
-            <div class="hm-c-details" id="hm-cal-details">
-              <!-- Dynamically hydrated -->
+
+            <!-- NOW card: next event + contextual action -->
+            <div class="cn-card cn-now">
+              <div class="cn-card-head">
+                <span class="cn-card-title">NOW</span>
+                <span class="cn-card-meta" id="cnNowMeta">—</span>
+              </div>
+              <div class="cn-now-title" id="cnNowTitle">—</div>
+              <button class="cn-cta" id="cnCta" onclick="cnRunCta()">OPEN DAILY CONSOLE</button>
             </div>
-            <div class="hm-c-footer" id="hm-cal-footer">ENTRIES_SYNCED</div>
           </div>
 
-          <!-- Card 2: Weekly Design (Row 1, span 2) -->
-          <div class="hm-card-323 span-2" onclick="navigate('weekly')">
-            <div class="hm-c-top">
-              <div class="hm-c-name">WEEKLY DESIGN</div>
-              <div class="hm-c-dot" id="hm-weekly-dot"></div>
+          <!-- ZONE B: heat-wall -->
+          <div class="cn-zone-b">
+            <div class="cn-card" style="height:100%">
+              <div class="cn-card-head">
+                <span class="cn-card-title">THE GRID</span>
+                <span class="cn-card-meta">365 DAYS</span>
+              </div>
+              <div id="cnHeatWall" style="width:100%;height:190px"></div>
             </div>
-            <div class="hm-c-val" id="hm-weekly-val">—</div>
-            <div class="hm-c-details" id="hm-weekly-details">
-              <!-- Dynamically hydrated -->
-            </div>
-            <div class="hm-c-footer" id="hm-weekly-footer">TASKS_NOMINAL</div>
           </div>
 
-          <!-- Card 3: Focus Tracker (Row 1, span 2) -->
-          <div class="hm-card-323 span-2" onclick="navigate('work')">
-            <div class="hm-c-top">
-              <div class="hm-c-name">FOCUS TRACKER</div>
-              <div class="hm-c-dot" id="hm-focus-dot"></div>
-            </div>
-            <div class="hm-c-val" id="hm-focus-val">—</div>
-            <div class="hm-c-details" id="hm-focus-details">
-              <!-- Dynamically hydrated -->
-            </div>
-            <div class="hm-c-footer" id="hm-focus-footer">TIMER_READY</div>
-          </div>
+          <!-- ZONE C: vitals -->
+          <div class="cn-zone-c" id="cnVitals"></div>
+        </div>
 
-          <!-- Card 4: Ledger Portfolio (Row 2, span 3) -->
-          <div class="hm-card-323 span-3" onclick="navigate('finances')">
-            <div class="hm-c-top">
-              <div class="hm-c-name">LEDGER PORTFOLIO</div>
-              <div class="hm-c-dot" id="hm-ledger-dot"></div>
-            </div>
-            <div class="hm-c-val" id="hm-ledger-val">—</div>
-            <div class="hm-c-details" id="hm-ledger-details">
-              <!-- Dynamically hydrated -->
-            </div>
-            <div class="hm-c-footer" id="hm-ledger-footer">FINANCIAL_SYS_ACTIVE</div>
-          </div>
-
-          <!-- Card 5: Gym Performance (Row 2, span 3) -->
-          <div class="hm-card-323 span-3" onclick="navigate('workout')">
-            <div class="hm-c-top">
-              <div class="hm-c-name">GYM PERFORMANCE</div>
-              <div class="hm-c-dot" id="hm-gym-dot"></div>
-            </div>
-            <div class="hm-c-val" id="hm-gym-val">—</div>
-            <div class="hm-c-details" id="hm-gym-details">
-              <!-- Dynamically hydrated -->
-            </div>
-            <div class="hm-c-footer" id="hm-gym-footer">ATHLETIC_PROFILE_OK</div>
-          </div>
-
-          <!-- Card 6: Habit Lab (Row 3, span 2) -->
-          <div class="hm-card-323 span-2" onclick="navigate('habits')">
-            <div class="hm-c-top">
-              <div class="hm-c-name">HABIT LAB</div>
-              <div class="hm-c-dot" id="hm-habit-dot"></div>
-            </div>
-            <div class="hm-c-val" id="hm-habit-val">—</div>
-            <div class="hm-c-details" id="hm-habit-details">
-              <!-- Dynamically hydrated -->
-            </div>
-            <div class="hm-c-footer" id="hm-habit-footer">BIO_MATRIX_SYNCED</div>
-          </div>
-
-          <!-- Card 7: Runway Projections (Row 3, span 2) -->
-          <div class="hm-card-323 span-2" onclick="navigate('runway')">
-            <div class="hm-c-top">
-              <div class="hm-c-name">RUNWAY PROJECTIONS</div>
-              <div class="hm-c-dot" id="hm-runway-dot"></div>
-            </div>
-            <div class="hm-c-val" id="hm-runway-val">—</div>
-            <div class="hm-c-details" id="hm-runway-details">
-              <!-- Dynamically hydrated -->
-            </div>
-            <div class="hm-c-footer" id="hm-runway-footer">TRAJECTORY_STABLE</div>
-          </div>
-
-          <!-- Card 8: Resume Synthesizer (Row 3, span 2) -->
-          <div class="hm-card-323 span-2" onclick="navigate('resume')">
-            <div class="hm-c-top">
-              <div class="hm-c-name">RESUME SYNTHESIZER</div>
-              <div class="hm-c-dot" id="hm-resume-dot"></div>
-            </div>
-            <div class="hm-c-val" id="hm-resume-val">—</div>
-            <div class="hm-c-details" id="hm-resume-details">
-              <!-- Dynamically hydrated -->
-            </div>
-            <div class="hm-c-footer" id="hm-resume-footer">REGISTRY_VERIFIED</div>
-          </div>
-
-        </div><!-- /hm-modules-323 -->
-
-      </div><!-- /hm-wrap -->
+      </div><!-- /cn-wrap -->
     </div><!-- /page-home -->
 
     <!-- ── CALENDAR ─────────────────────────────────── -->
@@ -6452,6 +6439,7 @@ function navigate(page) {
   if (fab) fab.style.display = page === 'calendar' ? 'flex' : 'none';
 
   // page-specific init
+  if (page === 'home')     { try { renderConsole(); } catch (e) { console.warn('console render:', e); } }
   if (page === 'finances') initFinances();
   if (page === 'runway')   initRunway();
   if (page === 'habits')   initHabits();
@@ -11802,6 +11790,253 @@ document.addEventListener('DOMContentLoaded', () => {
   if (inp) inp.addEventListener('input', e => gkRender(e.target.value));
   GridQueue.flush();
 });
+
+
+
+/* ══ U2: THE CONSOLE (page-home) ════════════════════════════════════════════
+   Replaces the 8-tile nav menu. Home is now the logging surface, not a
+   launcher: one-tap chips, a contextual NOW action, the 365-day heat-wall,
+   and real vitals. Everything reads from live data or renders an empty state. */
+
+function cnToday() {
+  const d = new Date();
+  return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+}
+
+function cnRenderHero() {
+  const g = document.getElementById('cnGreet');
+  const sub = document.getElementById('cnSub');
+  if (!g || !sub) return;
+
+  const name = sessionStorage.getItem('gridUserName') ||
+               sessionStorage.getItem('gridUser') || '';
+  const h = new Date().getHours();
+  const part = h < 5 ? 'UP LATE' : h < 12 ? 'GOOD MORNING' : h < 18 ? 'GOOD AFTERNOON' : 'GOOD EVENING';
+  g.textContent = name ? part + ', ' + String(name).split('@')[0].toUpperCase() : part;
+  sub.textContent = new Date().toLocaleDateString(undefined,
+    { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' }).toUpperCase();
+
+  // Longest active streak across habits.
+  const hs = (typeof habits !== 'undefined' && Array.isArray(habits)) ? habits : [];
+  const dom = new Date().getDate();
+  let best = 0;
+  hs.forEach(x => {
+    const set = new Set(x.checked || []);
+    let run = 0;
+    for (let d = dom; d >= 1; d--) { if (set.has(d)) run++; else break; }
+    if (run > best) best = run;
+  });
+  const chip = document.getElementById('cnStreakChip');
+  const val  = document.getElementById('cnStreakVal');
+  if (val) val.textContent = best ? best : '—';
+  if (chip) chip.classList.toggle('hot', best >= 7);
+}
+
+function cnRenderChips() {
+  const wrap = document.getElementById('cnChips');
+  const meta = document.getElementById('cnTodayMeta');
+  if (!wrap) return;
+
+  const hs = (typeof habits !== 'undefined' && Array.isArray(habits)) ? habits : [];
+  if (!hs.length) {
+    wrap.innerHTML = '<div class="cn-empty">No metrics yet — add one on the Habits page.</div>';
+    if (meta) meta.textContent = '';
+    return;
+  }
+
+  const day = new Date().getDate();
+  wrap.innerHTML = hs.map((h, i) => {
+    const on = (h.checked || []).indexOf(day) !== -1;
+    return '<div class="cn-chip' + (on ? ' on' : '') + '" data-i="' + i + '" onclick="cnTapChip(' + i + ')">' +
+           '<span class="cn-dot"></span>' + h.name + '</div>';
+  }).join('');
+
+  const done = hs.filter(h => (h.checked || []).indexOf(day) !== -1).length;
+  if (meta) meta.textContent = done + '/' + hs.length + ' LOGGED';
+}
+
+/** One-tap logging straight from home — the whole point of the Console. */
+function cnTapChip(i) {
+  const day = new Date().getDate();
+  const hs = (typeof habits !== 'undefined' && Array.isArray(habits)) ? habits : [];
+  const h = hs[i];
+  if (!h) return;
+  const on = (h.checked || []).indexOf(day) === -1;   // desired next state
+
+  if (typeof dcSetHabit === 'function') dcSetHabit(i, day, on);
+
+  cnRenderChips();
+  cnRenderHero();
+  cnRenderVitals();
+  cnRenderHeatWall();
+  try { if (typeof buildHabitMatrix === 'function') buildHabitMatrix(); } catch (e) {}
+  try { hydrateRealStats(); } catch (e) {}
+
+  const el = document.querySelector('.cn-chip[data-i="' + i + '"]');
+  if (el && on) { el.classList.add('pulse'); setTimeout(() => el.classList.remove('pulse'), 620); }
+}
+
+/** NOW card: next upcoming calendar event drives a contextual action. */
+let cnCtaMode = 'console';
+function cnRenderNow() {
+  const title = document.getElementById('cnNowTitle');
+  const meta  = document.getElementById('cnNowMeta');
+  const cta   = document.getElementById('cnCta');
+  if (!title || !cta) return;
+
+  let next = null;
+  try {
+    const evs = (typeof calendarEntries !== 'undefined' && Array.isArray(calendarEntries))
+      ? calendarEntries
+      : (typeof gridEntries !== 'undefined' && Array.isArray(gridEntries) ? gridEntries : []);
+    const now = Date.now();
+    next = evs
+      .map(e => ({ e, t: new Date(e.start || e.date || e.startTime || 0).getTime() }))
+      .filter(x => isFinite(x.t) && x.t > now)
+      .sort((a, b) => a.t - b.t)[0];
+  } catch (e) {}
+
+  if (next && next.e) {
+    const label = next.e.title || next.e.name || 'Scheduled block';
+    title.textContent = label;
+    if (meta) meta.textContent = new Date(next.t)
+      .toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+    const l = label.toLowerCase();
+    if (/gym|workout|lift|train/.test(l))      { cnCtaMode = 'gym';   cta.textContent = '▶ OPEN SESSION'; }
+    else if (/study|focus|read|work|class/.test(l)) { cnCtaMode = 'focus'; cta.textContent = '▶ START FOCUS'; }
+    else                                        { cnCtaMode = 'console'; cta.textContent = 'OPEN DAILY CONSOLE'; }
+  } else {
+    title.textContent = 'Nothing scheduled next';
+    if (meta) meta.textContent = '';
+    cnCtaMode = 'console';
+    cta.textContent = 'OPEN DAILY CONSOLE';
+  }
+}
+
+function cnRunCta() {
+  if (cnCtaMode === 'focus') {
+    navigate('work');
+    const b = document.getElementById('nlInitBtn'); if (b) b.click();
+  } else if (cnCtaMode === 'gym') {
+    navigate('workout');
+  } else if (typeof dcOpen === 'function') {
+    dcOpen();
+  }
+}
+
+/** Vitals — real numbers only; each tile degrades to an explicit empty state. */
+function cnRenderVitals() {
+  const wrap = document.getElementById('cnVitals');
+  if (!wrap) return;
+
+  const tiles = [];
+  const hs = (typeof habits !== 'undefined' && Array.isArray(habits)) ? habits : [];
+  const day = new Date().getDate();
+
+  const done = hs.filter(h => (h.checked || []).indexOf(day) !== -1).length;
+  tiles.push({ label: 'TODAY', val: hs.length ? done + '/' + hs.length : '—',
+               sub: hs.length ? (done === hs.length ? 'ALL CLEAR' : 'IN PROGRESS') : 'NO METRICS' });
+
+  // Focus minutes logged today
+  let mins = 0, sessions = 0;
+  try {
+    (focusLogs || []).filter(l => !l.isErr).forEach(l => {
+      const m = /Duration:\s*(\d+)\s*m/i.exec(l.meta || '');
+      if (m) { mins += parseInt(m[1], 10); sessions++; }
+    });
+  } catch (e) {}
+  tiles.push({ label: 'FOCUS', val: sessions ? (Math.floor(mins / 60) + 'h' + String(mins % 60).padStart(2, '0')) : '—',
+               sub: sessions ? sessions + ' SESSIONS' : 'NO SESSIONS' });
+
+  // Active projects
+  let active = null;
+  try { active = (rwProjects || []).filter(p => p.status === 'running').length; } catch (e) {}
+  tiles.push({ label: 'PROJECTS', val: active == null ? '—' : String(active).padStart(2, '0'),
+               sub: active ? 'RUNNING' : 'NONE RUNNING' });
+
+  // At-risk node (fragility) — the behaviour-changing tile
+  let risk = null, riskScore = -1;
+  hs.forEach(h => {
+    const set = new Set(h.checked || []);
+    let since = 0;
+    for (let d = day; d >= 1; d--) { if (set.has(d)) break; since++; }
+    let run = 0;
+    for (let d = day - since; d >= 1; d--) { if (set.has(d)) run++; else break; }
+    const sc = (1 - (h.pct || 0) / 100) * (run + 1) * (since + 1);
+    if (sc > riskScore) { riskScore = sc; risk = { name: h.name, since, run }; }
+  });
+  tiles.push({
+    label: 'AT RISK', risk: true,
+    val: risk ? risk.name : '—',
+    sub: risk ? (risk.since === 0 ? 'HOLDING' : 'MISSED ' + risk.since + 'D') : 'NO METRICS',
+  });
+
+  wrap.innerHTML = tiles.map(t =>
+    '<div class="cn-vital' + (t.risk ? ' risk' : '') + '">' +
+    '<div class="cn-vital-label">' + t.label + '</div>' +
+    '<div class="cn-vital-val">' + t.val + '</div>' +
+    '<div class="cn-vital-sub">' + t.sub + '</div></div>').join('');
+}
+
+/** 365-day heat-wall — ECharts calendar heatmap (the reason we picked ECharts). */
+function cnRenderHeatWall() {
+  const el = document.getElementById('cnHeatWall');
+  if (!el || typeof echarts === 'undefined') return;
+  const chart = ethosChart(el);
+  if (!chart) return;
+
+  const hs = (typeof habits !== 'undefined' && Array.isArray(habits)) ? habits : [];
+  if (!hs.length) {
+    chart.clear();
+    chart.setOption({ title: { text: 'NO DATA YET', subtext: 'Log a metric to start the wall',
+      left: 'center', top: 'center', textStyle: { fontSize: 11 }, subtextStyle: { fontSize: 9 } } });
+    return;
+  }
+
+  // Composite completion per day of the current month (all we track locally today).
+  const now = new Date();
+  const y = now.getFullYear(), m = now.getMonth();
+  const dim = new Date(y, m + 1, 0).getDate();
+  const data = [];
+  for (let d = 1; d <= dim; d++) {
+    const hit = hs.filter(h => (h.checked || []).indexOf(d) !== -1).length;
+    const date = y + '-' + String(m + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0');
+    data.push([date, +(hit / hs.length).toFixed(3)]);
+  }
+
+  chart.setOption({
+    tooltip: { formatter: p => p.value[0] + ' · ' + Math.round(p.value[1] * 100) + '%' },
+    visualMap: { min: 0, max: 1, show: false, calculable: false,
+                 inRange: { color: ['#172619', '#3b6839', '#76b372', '#94d68f', '#a5f79e'] } },
+    calendar: {
+      range: [y + '-' + String(m + 1).padStart(2, '0')],
+      cellSize: ['auto', 16], left: 34, right: 8, top: 28, bottom: 4,
+      itemStyle: { color: 'transparent', borderColor: '#262626', borderWidth: 0.5 },
+      splitLine: { show: false }, yearLabel: { show: false },
+    },
+    series: [{ type: 'heatmap', coordinateSystem: 'calendar', data }],
+  });
+}
+
+function renderConsole() {
+  try { cnRenderHero(); }     catch (e) { console.warn('cn hero:', e); }
+  try { cnRenderChips(); }    catch (e) { console.warn('cn chips:', e); }
+  try { cnRenderNow(); }      catch (e) { console.warn('cn now:', e); }
+  try { cnRenderVitals(); }   catch (e) { console.warn('cn vitals:', e); }
+  try { cnRenderHeatWall(); } catch (e) { console.warn('cn heat:', e); }
+
+  // The heat-wall is sized from its container, which has no width until the
+  // page is actually visible — resize on the next frame so it fills correctly.
+  requestAnimationFrame(() => {
+    const el = document.getElementById('cnHeatWall');
+    if (el && typeof echarts !== 'undefined') {
+      const inst = echarts.getInstanceByDom(el);
+      if (inst) inst.resize();
+    }
+  });
+}
+
+document.addEventListener('DOMContentLoaded', () => setTimeout(renderConsole, 120));
 
 </script>
 <!-- ── P4: Command palette (⌘K) ─────────────────────────────── -->
