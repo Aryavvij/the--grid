@@ -182,6 +182,7 @@ pre.ascii .a { color: #E8B44A; }
     <div class="tab" onclick="sw('update')">◈ Update</div>
     <div class="tab" onclick="sw('delete')">✕ Delete</div>
     <div class="tab" onclick="sw('systems')">⬡ Systems &amp; Data</div>
+    <div class="tab" onclick="sw('ux')">◐ UX Optimizations</div>
     <div class="tab" onclick="sw('integrations')">⇄ Integrations</div>
     <div class="tab" onclick="sw('build')">◉ Build Order</div>
   </div>
@@ -1389,6 +1390,77 @@ LOG EDIT→ &lt;24h: update in place · &gt;24h: tombstone + corrected
   </div>
 
   <!-- ════════════════════════ BUILD ════════════════════════ -->
+  <div class="content panel" id="panel-ux">
+    <div class="intro neon">
+      <h3>◐ UX optimizations — approved 2026.07.23</h3>
+      <p>Eight structural findings beyond the fake-data problem, plus one cross-domain vector. These are <b>interaction-model</b> fixes, not cosmetics: Grid is used daily by <b>one power user</b>, so the optimization target is <b>velocity and behaviour change</b>, not discoverability or onboarding.</p>
+    </div>
+
+    <div class="slabel">// V1–V8 · structural findings</div>
+    <div class="tbl-scroll"><table class="tbl">
+      <tr><th>#</th><th>Finding</th><th>Fix</th><th>Phase</th></tr>
+      <tr><td><b>V1</b></td><td><b>Nav is 9 equal-weight items</b> → choice paralysis. A glass cockpit surfaces what's actionable now; everything else on demand. Grid is a "steam-gauge" cockpit — 9 dials, no hierarchy.</td><td>Collapse 9 → 7 via the V8 windows; weight the dock by daily use</td><td>P5</td></tr>
+      <tr><td><b>V2</b></td><td><b>No command palette.</b> Runway shows a <code>⌘K</code> chip that does nothing — a promise the app doesn't keep.</td><td>Real ⌘K: jump to any page, log any metric, start focus, add tx. <b>Highest-ROI interaction in the app</b></td><td>P4</td></tr>
+      <tr><td><b>V3</b></td><td><b>Every page is view-mode; none is act-mode.</b> You navigate <i>to</i> a page in order to log.</td><td>Invert — logging comes to you (Daily Console, ADD-A2)</td><td>P4</td></tr>
+      <tr><td><b>V4</b></td><td><b>Mobile unusable</b> — desktop grid layouts, yet the phone is exactly where gym sets and spend get logged in the moment.</td><td>Responsive pass; mobile-first quick-log sheet</td><td>P5</td></tr>
+      <tr><td><b>V5</b></td><td><b>Zero empty / loading / error states.</b> The moment real data is wired, first-run reads as broken.</td><td>Three states per data surface; skeletons, not spinners</td><td>P4</td></tr>
+      <tr><td><b>V6</b></td><td><b>Writes give no feedback</b> — or <code>alert()</code> theater.</td><td>Optimistic UI + the 600ms ignition sequence (UPDATE-U3)</td><td>P4</td></tr>
+      <tr><td><b>V7</b></td><td><b>Time-to-first-insight is infinite</b> — home is 8 nav tiles and zero information.</td><td>home → The Console (UPDATE-U2)</td><td>P4</td></tr>
+      <tr><td><b>V8</b></td><td><b>Overlapping mental models</b> across weekly / work / runway.</td><td><b>2 windows × 2 pages</b> — see below</td><td>P5</td></tr>
+    </table></div>
+
+    <div class="verdict">
+      <div class="verdict-label">✦ V8 — the corrected cut (user decision, 2026.07.23)</div>
+      <div class="verdict-text">Do <b>not</b> collapse all three into one spine. Timetable is <b>recurring time-blocking</b>; projects are <b>long-running execution</b> — different objects, different cadences, keep them apart.<br><br>
+      <b>Window 1 · PROJECTS</b> → page 1 <code>Runway / projects</code> · page 2 <code>Focus / deep-work</code> &nbsp;(execution)<br>
+      <b>Window 2 · WEEKLY</b> → page 1 <code>Timetable</code> · page 2 <code>Tasks</code> &nbsp;(planning)<br><br>
+      Runway + Focus merge because focus sessions <i>are</i> project execution — one window, tabbed. Weekly keeps its existing two-tab structure. Net nav: <b>9 → 7</b>.</div>
+    </div>
+
+    <div class="slabel mt">// 💡 Visionary Vector — risk-first habits</div>
+    <div class="card-list">
+      <div class="card" onclick="tg(this)">
+        <div class="card-hdr">
+          <div class="card-num">VV</div>
+          <div class="card-info">
+            <div class="card-name">Fragility Score — borrowed from spaced repetition</div>
+            <div class="card-tag">cross-domain: Anki / SM-2 → habit surfacing</div>
+          </div>
+          <div class="card-badges"><span class="b b-new">APPROVED</span><span class="b b-hot">🔥 Behaviour change</span></div>
+        </div>
+        <div class="card-body" onclick="event.stopPropagation()">
+          <div class="grid2">
+            <div class="sec">
+              <div class="sec-title t-pain">✕ The dogma</div>
+              <div class="li pain">Every habit tracker ever built shows all N habits at <b>equal weight</b> — a wall of checkboxes.</div>
+              <div class="li pain">Anki does the opposite: it never shows you 5,000 cards, only the ones about to be forgotten.</div>
+              <div class="li pain">Grid currently shows 12 nodes with identical visual priority. The user must do the triage the system should do.</div>
+            </div>
+            <div class="sec">
+              <div class="sec-title t-fix">◉ The mechanic</div>
+              <div class="li fix"><code>fragility = (1 − recentCompletionRate) × streakValueAtStake × daysSinceLastLog</code></div>
+              <div class="li fix">Surface <b>the single node most likely to break today</b>, not the wall.</div>
+              <div class="li fix">Home reads as one sentence: <i>"Protect your 18-day reading streak — it's the one at risk."</i></div>
+              <div class="li fix">Computes entirely from data <code>DayAggregate</code> + <code>MetricLog</code> already produce. Near-zero marginal cost.</div>
+            </div>
+          </div>
+          <div class="verdict">
+            <div class="verdict-label">✦ Why it matters</div>
+            <div class="verdict-text">This is the difference between a dashboard you <b>look at</b> and one that <b>changes behaviour</b>. Pairs with Streak 2.0 repair tokens: the system warns before the break, then forgives one if it happens.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="slabel mt">// Charts — engine decision</div>
+    <div class="verdict warn">
+      <div class="verdict-label">✦ ECharts over Bklit UI (constraint-forced, 2026.07.23)</div>
+      <div class="verdict-text"><b>Bklit UI requires React 19 + Next 15 + Tailwind 4 + shadcn/ui</b> (it's a shadcn registry using Visx). Grid is one 11.2k-line vanilla file with no build step — Bklit cannot drop in without a full frontend rewrite.<br><br>
+      <b>Decision:</b> Apache <b>ECharts via CDN</b> (no build step) + a single <code>echarts.registerTheme('ethos', …)</code> holding the carbon-green palette, so every chart inherits the Bklit-style look from one place — Bklit's composable-themed philosophy without the framework cost.<br><br>
+      <b>ECharts also unblocks two blueprint features Chart.js cannot render:</b> the 365-day <b>heat-wall</b> (native <code>calendar</code> + <code>heatmap</code> series) and the Runway <b>sunburst</b>. Bklit UI stays as a <i>design reference</i> for the theme, not a dependency. Revisit natively only if the frontend is ever componentized to React.</div>
+    </div>
+  </div>
+
   <div class="content panel" id="panel-integrations">
     <div class="intro neon">
       <h3>⇄ Integrations — make the data log itself</h3>
