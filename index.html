@@ -30,6 +30,123 @@
 
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Bebas+Neue&display=swap" rel="stylesheet" />
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<!-- ECharts — chart engine for the ethos theme (heat-wall + sunburst need it).
+     Chart.js stays until the 6 legacy charts are migrated. -->
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+<script>
+/* ── ECHARTS "ETHOS" THEME ────────────────────────────────────────────────────
+   Single source of truth for chart styling. Every chart is created with
+   echarts.init(el, 'ethos') and inherits this — no per-chart colour code.
+   Hex values mirror the --sig-* / --carbon-* CSS custom properties; keep in sync.
+   Design language: matte carbon surfaces, one green hue for information,
+   minimal axes, no chartjunk, mono numerals.                                  */
+(function () {
+  if (typeof echarts === 'undefined') return;
+
+  var SIG_100 = '#172619', SIG_300 = '#3b6839', SIG_500 = '#76b372',
+      SIG_700 = '#94d68f', SIG_900 = '#a5f79e',
+      CARBON_2 = '#141414', CARBON_4 = '#262626',
+      TEXT     = '#f0f0f0',
+      TEXT_DIM = 'rgba(240,240,240,0.65)',
+      TEXT_MUT = 'rgba(240,240,240,0.38)',
+      GRID     = 'rgba(255,255,255,0.055)',
+      MONO     = "'Space Mono', monospace";
+
+  var axisCommon = {
+    axisLine:  { show: true, lineStyle: { color: CARBON_4 } },
+    axisTick:  { show: false },
+    axisLabel: { color: TEXT_MUT, fontFamily: MONO, fontSize: 10 },
+    splitLine: { show: true, lineStyle: { color: GRID, type: 'solid' } },
+    splitArea: { show: false }
+  };
+
+  echarts.registerTheme('ethos', {
+    // Sequential ramp — reads as one hue at increasing intensity.
+    color: [SIG_500, SIG_700, SIG_300, SIG_900, SIG_100],
+    backgroundColor: 'transparent',
+    textStyle: { fontFamily: MONO, color: TEXT_DIM },
+
+    title: {
+      textStyle: { color: TEXT, fontFamily: MONO, fontSize: 12, fontWeight: 700 },
+      subtextStyle: { color: TEXT_MUT, fontFamily: MONO, fontSize: 10 }
+    },
+
+    // Minimal axes — the data is the ink.
+    categoryAxis: axisCommon,
+    valueAxis:    axisCommon,
+    logAxis:      axisCommon,
+    timeAxis:     axisCommon,
+
+    grid: { left: 8, right: 12, top: 24, bottom: 8, containLabel: true },
+
+    line: {
+      smooth: true,
+      symbol: 'circle',
+      symbolSize: 0,              // clean line; points appear on hover
+      lineStyle: { width: 2 },
+      emphasis: { focus: 'series', lineStyle: { width: 2.5 } }
+    },
+    bar: {
+      // Rounded caps — the Bklit signature.
+      itemStyle: { borderRadius: [3, 3, 0, 0] },
+      barMaxWidth: 26
+    },
+    pie: {
+      itemStyle: { borderColor: CARBON_2, borderWidth: 2 },
+      label: { color: TEXT_DIM, fontFamily: MONO, fontSize: 10 },
+      labelLine: { lineStyle: { color: CARBON_4 } }
+    },
+    radar:   { symbolSize: 4, lineStyle: { width: 2 } },
+    // Heat-wall (365-day calendar) + sunburst — the two Chart.js couldn't do.
+    heatmap: { itemStyle: { borderColor: '#080808', borderWidth: 2, borderRadius: 2 } },
+    sunburst: {
+      itemStyle: { borderColor: CARBON_2, borderWidth: 2 },
+      label: { color: TEXT_DIM, fontFamily: MONO, fontSize: 9 }
+    },
+    calendar: {
+      itemStyle:   { color: 'transparent', borderColor: CARBON_4, borderWidth: 0.5 },
+      splitLine:   { show: false },
+      dayLabel:    { color: TEXT_MUT, fontFamily: MONO, fontSize: 9 },
+      monthLabel:  { color: TEXT_DIM, fontFamily: MONO, fontSize: 9 },
+      yearLabel:   { show: false }
+    },
+    visualMap: {
+      // Score 0 → dormant, 1.0+ → neon. Mirrors the metric-engine score bands.
+      inRange: { color: [SIG_100, SIG_300, SIG_500, SIG_700, SIG_900] },
+      textStyle: { color: TEXT_MUT, fontFamily: MONO, fontSize: 9 }
+    },
+
+    tooltip: {
+      backgroundColor: 'rgba(20,20,20,0.94)',
+      borderColor: CARBON_4,
+      borderWidth: 1,
+      padding: [8, 11],
+      textStyle: { color: TEXT, fontFamily: MONO, fontSize: 11 },
+      axisPointer: {
+        lineStyle:  { color: CARBON_4 },
+        crossStyle: { color: CARBON_4 },
+        shadowStyle:{ color: 'rgba(255,255,255,0.03)' }
+      }
+    },
+    legend: {
+      textStyle: { color: TEXT_MUT, fontFamily: MONO, fontSize: 10 },
+      icon: 'circle', itemWidth: 7, itemHeight: 7
+    }
+  });
+
+  /* Helper: init a themed, auto-resizing chart in one call.
+     Usage:  const c = ethosChart('momentumChart'); c.setOption({...});        */
+  window.ethosChart = function (elOrId) {
+    var el = typeof elOrId === 'string' ? document.getElementById(elOrId) : elOrId;
+    if (!el) return null;
+    var existing = echarts.getInstanceByDom(el);
+    if (existing) return existing;
+    var chart = echarts.init(el, 'ethos', { renderer: 'canvas' });
+    window.addEventListener('resize', function () { chart.resize(); });
+    return chart;
+  };
+})();
+</script>
 
 <style>
 /* ── RESET & BASE ─────────────────────────────────── */
@@ -44,6 +161,29 @@
   --green:       #76b372;
   --green-dim:   rgba(118,179,114,0.12);
   --green-glow:  rgba(118,179,114,0.25);
+
+  /* ── ETHOS SIGNAL SCALE ────────────────────────────
+     One hue, five intensities, derived from --green (#76b372).
+     Green encodes INFORMATION (completion score), never decoration.
+     Cell/series colour maps: score 0 → sig-100 … score 1.0+ → sig-900.
+     sig-900 is neon: streaks, live counters, milestones ONLY (max 2/viewport). */
+  --sig-100:     #172619;   /* dormant — empty cells, disabled     */
+  --sig-300:     #3b6839;   /* partial  — 25–75% completion        */
+  --sig-500:     #76b372;   /* complete — base ethos green         */
+  --sig-700:     #94d68f;   /* active   — hover / interactive      */
+  --sig-900:     #a5f79e;   /* neon     — streak fire, milestones  */
+  --sig-glow:    0 0 12px rgba(165,247,158,0.30), 0 0 32px rgba(165,247,158,0.10);
+
+  /* ── CARBON SURFACES ──────────────────────────────── */
+  --carbon-0:    #080808;   /* app void      (= --bg)   */
+  --carbon-1:    #0f0f0f;   /* base panel    (= --bg-2) */
+  --carbon-2:    #141414;   /* raised card   (= --bg-3) */
+  --carbon-3:    #1c1c1c;   /* hover / wells            */
+  --carbon-4:    #262626;   /* borders as fills         */
+
+  /* ── MOTION ───────────────────────────────────────── */
+  --ease-snap:   cubic-bezier(.2,.9,.3,1.2);   /* completions */
+  --ease-glide:  cubic-bezier(.3,0,.1,1);      /* layout      */
   --text:        #f0f0f0;
   --text-dim:    rgba(240,240,240,0.65);
   --text-muted:  rgba(240,240,240,0.38);
