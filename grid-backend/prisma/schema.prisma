@@ -16,13 +16,17 @@ datasource db {
 // ─── Auth ─────────────────────────────────────────────────────────────────────
 
 model User {
-  id           String   @id @default(uuid())
-  email        String   @unique
-  name         String?
-  googleId     String?  @unique @map("google_id")
-  passwordHash String?  @map("password_hash")
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
+  id               String    @id @default(uuid())
+  email            String    @unique
+  name             String?
+  googleId         String?   @unique @map("google_id")
+  passwordHash     String?   @map("password_hash")
+  // Sandbox ("demo") accounts: real rows, real API path, no signup friction.
+  // Claimable into a permanent account; prunable once expired.
+  isSandbox        Boolean   @default(false) @map("is_sandbox")
+  sandboxExpiresAt DateTime? @map("sandbox_expires_at")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
 
   // Relations
   profile          UserProfile?

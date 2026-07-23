@@ -29,4 +29,14 @@ const authLimiter = rateLimit({
   message: { error: 'Too many attempts — please wait 15 minutes before retrying.' },
 });
 
-module.exports = { globalLimiter, authLimiter };
+// Sandbox accounts are created WITHOUT credentials, so this endpoint writes real
+// rows for anonymous callers. Tightest limit in the app.
+const sandboxLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  limit: 5,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  message: { error: 'Too many demo sessions created — try again later.' },
+});
+
+module.exports = { globalLimiter, authLimiter, sandboxLimiter };
