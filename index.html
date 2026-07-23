@@ -29,9 +29,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Bebas+Neue&display=swap" rel="stylesheet" />
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<!-- ECharts — chart engine for the ethos theme (heat-wall + sunburst need it).
-     Chart.js stays until the 6 legacy charts are migrated. -->
+<!-- ECharts — sole chart engine (ethos theme). Chart.js fully removed. -->
 <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
 <script>
 /* ── ECHARTS "ETHOS" THEME ────────────────────────────────────────────────────
@@ -4526,7 +4524,7 @@ html, body {
               <span class="hb-leg-dot" style="background:rgba(255,255,255,0.3)"></span><span>PROJECTED</span>
             </div>
           </div>
-          <canvas id="momentumChart" height="200"></canvas>
+          <div id="momentumChart" style="width:100%;height:200px"></div>
         </div>
 
         <!-- Right: insights + log -->
@@ -4590,7 +4588,7 @@ html, body {
           </div>
           <div class="fin-donut-wrap">
             <div class="fin-donut-chart-area">
-              <canvas id="spendDonut" width="160" height="160"></canvas>
+              <div id="spendDonut" style="width:160px;height:160px"></div>
               <div class="fin-donut-center">
                 <div class="fin-donut-center-label">TOTAL EXP</div>
                 <div class="fin-donut-center-val" id="finDonutVal">—</div>
@@ -4882,7 +4880,7 @@ html, body {
             <div class="gym-tel-sub">Current Quarter (Q2 2026)</div>
           </div>
           <div style="position:relative; height: 160px; margin-top: 10px;">
-            <canvas id="gymMuscleQuarterlyChart"></canvas>
+            <div id="gymMuscleQuarterlyChart" style="width:100%;height:100%"></div>
           </div>
         </div>
         <div class="gym-reg-grid" id="gymRegGrid"></div>
@@ -4904,7 +4902,7 @@ html, body {
               <div class="gym-tel-sub">Estimated 1RM Progression — Weekly Average (All Logged Sessions)</div>
             </div>
             <div style="position:relative; height: 260px;">
-              <canvas id="gymStrengthChart"></canvas>
+              <div id="gymStrengthChart" style="width:100%;height:100%"></div>
             </div>
           </div>
           
@@ -7221,168 +7219,71 @@ function getWeeklyStrengthTrend() {
   return trendData;
 }
 
-let gymChartInst = null;
-let gymQuarterlyChartInst = null;
 
 function initGymQuarterlyChart(muscleName) {
-  const ctx = document.getElementById('gymMuscleQuarterlyChart');
-  if (!ctx) return;
-  if (gymQuarterlyChartInst) gymQuarterlyChartInst.destroy();
-  
-  let baseVal = 70;
-  if (muscleName === 'BACK') baseVal = 85;
-  else if (muscleName === 'LEGS') baseVal = 100;
-  else if (muscleName === 'SHOULDERS') baseVal = 55;
-  else if (muscleName === 'BICEPS' || muscleName === 'TRICEPS') baseVal = 40;
-  else if (muscleName === 'ABS' || muscleName === 'FOREARMS') baseVal = 30;
-  
-  const labels = ['Wk 01', 'Wk 02', 'Wk 03', 'Wk 04', 'Wk 05', 'Wk 06', 'Wk 07', 'Wk 08', 'Wk 09', 'Wk 10', 'Wk 11', 'Wk 12'];
-  const data = Array.from({length: 12}, (_, i) => {
-    return Math.round(baseVal * (1 + (i * 0.02) + (Math.sin(i) * 0.03)));
+  const titleEl = document.getElementById('gymMuscleChartTitle');
+  if (titleEl) titleEl.textContent = `${muscleName}: VOLUME PROGRESSION`;
+
+  const el = document.getElementById('gymMuscleQuarterlyChart');
+  if (!el || typeof echarts === 'undefined') return;
+  const chart = ethosChart(el);
+  if (!chart) return;
+
+  // Real logged sets for this muscle, bucketed per ISO week. No synthetic curve.
+  const logs = (typeof gymLogs !== 'undefined' && Array.isArray(gymLogs)) ? gymLogs : [];
+  const buckets = {};
+  logs.forEach(l => {
+    const muscles = (l.muscles || l.muscleGroups || []);
+    const match = Array.isArray(muscles)
+      ? muscles.some(m => String(m).toUpperCase() === String(muscleName).toUpperCase())
+      : String(muscles).toUpperCase().includes(String(muscleName).toUpperCase());
+    if (!match) return;
+    const d = new Date(l.date || l.loggedDate || Date.now());
+    const key = d.toISOString().slice(0, 10);
+    buckets[key] = (buckets[key] || 0) + (Number(l.sets) || Number(l.totalSets) || 1);
   });
-  
-  document.getElementById('gymMuscleChartTitle').textContent = `${muscleName}: QUARTERLY VOLUME PROGRESSION (12 WEEKS)`;
-  
-  gymQuarterlyChartInst = new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels,
-      datasets: [{
-        label: 'VOLUME INDEX (SETS * WT)',
-        data,
-        backgroundColor: 'rgba(118,179,114,0.65)',
-        borderColor: '#76b372',
-        borderWidth: 1,
-        borderRadius: 4
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          enabled: true,
-          bodyFont: { family: 'Space Mono' },
-          backgroundColor: '#1a1a1a',
-          borderColor: 'rgba(255,255,255,0.08)',
-          borderWidth: 1,
-        }
-      },
-      scales: {
-        x: {
-          grid: { color: 'rgba(255,255,255,0.04)' },
-          ticks: { color: 'rgba(232,232,232,0.3)', font: { family: 'Space Mono', size: 8 } }
-        },
-        y: {
-          grid: { color: 'rgba(255,255,255,0.04)' },
-          ticks: { color: 'rgba(232,232,232,0.3)', font: { family: 'Space Mono', size: 8 } }
-        }
-      }
-    }
+
+  const keys = Object.keys(buckets).sort();
+  if (!keys.length) {
+    chart.clear();
+    chart.setOption({ title: { text: 'NO ' + muscleName + ' SESSIONS LOGGED', subtext: 'Commit a session log to build this trend', left: 'center', top: 'center', textStyle: { fontSize: 11 }, subtextStyle: { fontSize: 9 } } });
+    return;
+  }
+
+  chart.setOption({
+    tooltip: { trigger: 'axis', valueFormatter: v => v + ' sets' },
+    xAxis: { type: 'category', data: keys.map(k => k.slice(5)) },
+    yAxis: { type: 'value', name: 'SETS', nameTextStyle: { fontSize: 9 } },
+    series: [{ type: 'bar', data: keys.map(k => buckets[k]) }]
   });
 }
 
 function initGymChart() {
-  const ctx = document.getElementById('gymStrengthChart');
-  if (!ctx) return;
-  if (gymChartInst) gymChartInst.destroy();
+  const el = document.getElementById('gymStrengthChart');
+  if (!el || typeof echarts === 'undefined') return;
+  const chart = ethosChart(el);
+  if (!chart) return;
 
   const trend = getWeeklyStrengthTrend();
-
-  let labels, data, isEmpty;
-
-  if (trend.length === 0) {
-    // No logs yet — show empty state placeholder
-    isEmpty = true;
-    labels = ['NO DATA'];
-    data   = [null];
-  } else {
-    isEmpty = false;
-    labels = trend.map(w => w.weekLabel);
-    data   = trend.map(w => w.averageStrength);
+  if (!trend.length) {
+    chart.clear();
+    chart.setOption({ title: { text: 'NO SESSIONS LOGGED', subtext: 'Commit a session log to build the 1RM trend', left: 'center', top: 'center', textStyle: { fontSize: 11 }, subtextStyle: { fontSize: 9 } } });
+    return;
   }
 
-  const minVal = data.filter(v => v !== null).length > 0
-    ? Math.max(0, Math.min(...data.filter(v => v !== null)) - 10)
-    : 0;
+  const data = trend.map(w => w.averageStrength);
+  const min = Math.max(0, Math.min.apply(null, data) - 10);
 
-  gymChartInst = new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels,
-      datasets: [{
-        label: 'AVG 1RM (KG)',
-        data,
-        borderColor: '#76b372',
-        backgroundColor: 'rgba(118,179,114,0.07)',
-        borderWidth: 1.5,
-        pointRadius: trend.length > 20 ? 2 : 4,
-        pointHoverRadius: 6,
-        pointBackgroundColor: '#76b372',
-        pointBorderColor: '#76b372',
-        fill: true,
-        tension: 0.25,
-        spanGaps: false,
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          enabled: !isEmpty,
-          callbacks: {
-            title: items => `Week of ${items[0].label}`,
-            label: item => ` Avg 1RM: ${item.raw} kg`
-          },
-          bodyFont: { family: 'Space Mono', size: 11 },
-          titleFont: { family: 'Space Mono', size: 10 },
-          backgroundColor: '#1a1a1a',
-          borderColor: 'rgba(118,179,114,0.25)',
-          borderWidth: 1,
-          padding: 10,
-        }
-      },
-      scales: {
-        x: {
-          grid: { color: 'rgba(255,255,255,0.04)' },
-          ticks: {
-            color: 'rgba(232,232,232,0.3)',
-            font: { family: 'Space Mono', size: 8 },
-            maxRotation: 45,
-            autoSkip: true,
-            maxTicksLimit: 16
-          }
-        },
-        y: {
-          grid: { color: 'rgba(255,255,255,0.04)' },
-          ticks: {
-            color: 'rgba(232,232,232,0.3)',
-            font: { family: 'Space Mono', size: 9 },
-            callback: v => v + ' kg'
-          },
-          suggestedMin: minVal
-        }
-      }
-    }
+  chart.setOption({
+    tooltip: { trigger: 'axis', valueFormatter: v => v + ' kg' },
+    xAxis: { type: 'category', data: trend.map(w => w.weekLabel) },
+    yAxis: { type: 'value', min, name: 'KG', nameTextStyle: { fontSize: 9 } },
+    series: [{
+      type: 'line', data,
+      areaStyle: { color: new echarts.graphic.LinearGradient(0,0,0,1,[
+        { offset:0, color:'rgba(118,179,114,0.28)' }, { offset:1, color:'rgba(118,179,114,0.02)' }]) }
+    }]
   });
-
-  // Show "no data" overlay if empty
-  const wrap = ctx.parentElement;
-  const existing = wrap.querySelector('.gym-chart-empty');
-  if (isEmpty) {
-    if (!existing) {
-      const msg = document.createElement('div');
-      msg.className = 'gym-chart-empty';
-      msg.style.cssText = 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:10px;letter-spacing:1.5px;color:var(--text-muted);pointer-events:none;';
-      msg.textContent = 'NO SESSIONS LOGGED YET — COMMIT A WORKOUT TO BEGIN TRACKING';
-      wrap.appendChild(msg);
-    }
-  } else {
-    if (existing) existing.remove();
-  }
 }
 
 function renderOverviewLog() {
@@ -7848,7 +7749,6 @@ function saveExerciseModal() {
 // ═══════════════════════════════════════════════════
 // WORK / NEURAL LOCK
 // ═══════════════════════════════════════════════════
-let cogFlowChartInst = null;
 let nlRunning = false;
 let nlTotalSecs = 25 * 60; // 25 min countdown
 let nlIntervalId = null;
@@ -8695,70 +8595,44 @@ function toggleHabitDay(e) {
 }
 
 function initMomentumChart() {
-  const ctx = document.getElementById('momentumChart');
-  if (!ctx) return;
-  if (momentumChartInst) momentumChartInst.destroy();
+  const el = document.getElementById('momentumChart');
+  if (!el || typeof echarts === 'undefined') return;
+  const chart = ethosChart(el);
+  if (!chart) return;
 
-  const labels = ['01_OCT','08_OCT','15_OCT','22_OCT','31_OCT'];
-  const current   = [58, 52, 67, 74, 84];
-  const projected = [58, 62, 70, 79, 92];
+  // Real consistency: % of habits completed, bucketed by week of this month.
+  const hs = (typeof habits !== 'undefined' && Array.isArray(habits)) ? habits : [];
+  if (!hs.length) {
+    chart.clear();
+    chart.setOption({ title: { text: 'NO HABITS YET', subtext: 'Add a node to track momentum', left: 'center', top: 'center' } });
+    return;
+  }
 
-  momentumChartInst = new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels,
-      datasets: [
-        {
-          label: 'CURRENT',
-          data: current,
-          borderColor: '#76b372',
-          backgroundColor: 'rgba(118,179,114,0.12)',
-          borderWidth: 2,
-          pointRadius: 4,
-          pointBackgroundColor: '#76b372',
-          pointBorderColor: '#080808',
-          pointBorderWidth: 2,
-          fill: true,
-          tension: 0.35,
-        },
-        {
-          label: 'PROJECTED',
-          data: projected,
-          borderColor: 'rgba(255,255,255,0.25)',
-          backgroundColor: 'transparent',
-          borderWidth: 1.5,
-          borderDash: [5, 4],
-          pointRadius: 3,
-          pointBackgroundColor: 'rgba(255,255,255,0.3)',
-          fill: false,
-          tension: 0.35,
-        },
-      ]
-    },
-    options: {
-      responsive: true,
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          bodyFont: { family: 'Space Mono' },
-          backgroundColor: '#1a1a1a',
-          borderColor: 'rgba(255,255,255,0.08)',
-          borderWidth: 1,
-          callbacks: { label: ctx => ` ${ctx.parsed.y}%` }
-        },
-      },
-      scales: {
-        x: {
-          grid: { color: 'rgba(255,255,255,0.04)' },
-          ticks: { color: 'rgba(232,232,232,0.35)', font: { family: 'Space Mono', size: 10 }, letterSpacing: '1px' },
-        },
-        y: {
-          grid: { color: 'rgba(255,255,255,0.04)' },
-          ticks: { color: 'rgba(232,232,232,0.35)', font: { family: 'Space Mono', size: 10 }, callback: v => v + '%' },
-          min: 40, max: 100,
-        }
-      },
-    }
+  const today = new Date();
+  const dim = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+  const weeks = [], vals = [];
+  for (let w = 0; w < Math.ceil(dim / 7); w++) {
+    const from = w * 7 + 1, to = Math.min(dim, from + 6);
+    if (from > today.getDate()) break;
+    const cap = Math.min(to, today.getDate());
+    let hit = 0, poss = 0;
+    hs.forEach(h => {
+      const set = new Set(h.checked || []);
+      for (let d = from; d <= cap; d++) { poss++; if (set.has(d)) hit++; }
+    });
+    weeks.push('W' + (w + 1));
+    vals.push(poss ? Math.round((hit / poss) * 100) : 0);
+  }
+
+  chart.setOption({
+    tooltip: { trigger: 'axis', valueFormatter: v => v + '%' },
+    xAxis: { type: 'category', data: weeks },
+    yAxis: { type: 'value', max: 100, name: '%', nameTextStyle: { fontSize: 9 } },
+    series: [{
+      type: 'line', data: vals,
+      areaStyle: { color: new echarts.graphic.LinearGradient(0,0,0,1,[
+        { offset:0, color:'rgba(118,179,114,0.28)' }, { offset:1, color:'rgba(118,179,114,0.02)' }]) }
+    }]
   });
 }
 
@@ -8807,7 +8681,6 @@ function closeHabitModal() {
 // ═══════════════════════════════════════════════════
 // RUNWAY
 // ═══════════════════════════════════════════════════
-let rwDonutChart = null;
 
 // Feed is generated dynamically from user actions
 const feedItems = [];
@@ -9344,7 +9217,6 @@ function logWorkEngine() {
 // ═══════════════════════════════════════════════════
 // FINANCES
 // ═══════════════════════════════════════════════════
-let spendDonutChart = null;
 
 let budgetData = JSON.parse(localStorage.getItem('gridBudget') || JSON.stringify([
   { sector: 'ACADEMIC',  planned: 2000, actual: 1200 },
@@ -9713,32 +9585,18 @@ function renderTxLog() {
 const donutColors = ['#9b59b6', '#ff4d8f', '#3b82f6', '#76b372', '#f97316', '#a855f7', '#ec4899', '#3f51b5', '#00bcd4', '#4caf50', '#ffeb3b', '#ff9800'];
 
 function initDonutChart() {
-  const ctx = document.getElementById('spendDonut');
-  if (!ctx) return;
-  if (spendDonutChart) { spendDonutChart.destroy(); }
-
-  // 1. Calculate actual spending and update elements
+  const el = document.getElementById('spendDonut');
   const totalActual = budgetData.reduce((sum, item) => sum + item.actual, 0);
-  
-  // Center label inside doughnut
-  const centerValEl = document.getElementById('finDonutVal');
-  if (centerValEl) {
-    centerValEl.textContent = getCurrencySymbol() + totalActual.toLocaleString('en-IN', { maximumFractionDigits: 0 });
-  }
 
-  // Telemetry Stat Card "ACTUAL SPENT"
+  const centerValEl = document.getElementById('finDonutVal');
+  if (centerValEl) centerValEl.textContent = getCurrencySymbol() + totalActual.toLocaleString('en-IN', { maximumFractionDigits: 0 });
+
   const spentStatEl = document.getElementById('fStatSpent');
   if (spentStatEl) {
-    spentStatEl.textContent = '₹' + totalActual.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    spentStatEl.textContent = '\u20B9' + totalActual.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     saveFinTelemetry();
   }
 
-  // 2. Prepare dynamic dataset
-  const labels = budgetData.map(b => b.sector);
-  const data = budgetData.map(b => b.actual);
-  const backgroundColors = budgetData.map((_, idx) => donutColors[idx % donutColors.length]);
-
-  // 3. Render the dynamic Legend
   const legendContainer = document.querySelector('.fin-legend');
   if (legendContainer) {
     legendContainer.innerHTML = budgetData.map((b, idx) => {
@@ -9747,69 +9605,26 @@ function initDonutChart() {
     }).join('');
   }
 
-  // 4. Initialize Chart.js doughnut
-  spendDonutChart = new Chart(ctx, {
-    type: 'doughnut',
-    data: {
-      labels: labels.length ? labels : ['NO DATA'],
-      datasets: [{
-        data: data.length ? data : [0],
-        backgroundColor: backgroundColors.length ? backgroundColors : ['#4b5563'],
-        borderWidth: 0,
-        hoverOffset: 6,
-      }]
-    },
-    options: {
-      cutout: '72%',
-      plugins: { legend: { display: false }, tooltip: {
-        callbacks: {
-          label: ctx => ` ₹${ctx.parsed.toLocaleString()}`
-        },
-        bodyFont: { family: 'Space Mono' },
-        backgroundColor: '#1a1a1a',
-        borderColor: 'rgba(255,255,255,0.08)',
-        borderWidth: 1,
-      }},
-      animation: { animateRotate: true, duration: 700 },
-    }
-  });
-}
+  if (!el || typeof echarts === 'undefined') return;
+  const chart = ethosChart(el);
+  if (!chart) return;
 
-async function commitTransaction() {
-  const label  = document.getElementById('txLabel').value.trim();
-  const amount = parseFloat(document.getElementById('txAmount').value);
-  const sector = document.getElementById('txSector').value;
-  const isDemo = sessionStorage.getItem('gridMode') === 'demo';
-  if (!label || isNaN(amount) || amount === 0) return;
+  const rows = budgetData.filter(b => b.actual > 0)
+    .map((b, idx) => ({ name: b.sector, value: b.actual,
+                        itemStyle: { color: donutColors[idx % donutColors.length] } }));
 
-  const now  = new Date();
-  const ts   = `${String(now.getDate()).padStart(2,'0')}.${String(now.getMonth()+1).padStart(2,'0')}.${String(now.getFullYear()).slice(2)} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
-  const hash = '0x' + Math.random().toString(16).slice(2,8) + '...' + Math.random().toString(16).slice(2,5);
-  const dateISO = now.toISOString().split('T')[0];
-
-  const entry = { ts, entity: label.toUpperCase(), sector, val: -Math.abs(amount), hash };
-  txLog.unshift(entry);
-
-  const budgetSector = budgetData.find(b => b.sector === sector);
-  if (budgetSector) budgetSector.actual += Math.abs(amount);
-
-  saveFinanceData();
-  renderTxLog();
-  renderBudgetTable();
-  initDonutChart();
-  document.getElementById('txLabel').value  = '';
-  document.getElementById('txAmount').value = '';
-
-  if (!isDemo) {
-    try {
-      const created = await gridFetch('/api/finance/transactions', {
-        method: 'POST',
-        body: JSON.stringify({ amount: Math.abs(amount), description: label, date: dateISO, type: 'expense' }),
-      });
-      entry.id = created.id;
-      localStorage.setItem('gridTxLog', JSON.stringify(txLog));
-    } catch(e) { console.warn('Transaction API save failed:', e); }
+  if (!rows.length) {
+    chart.clear();
+    chart.setOption({ title: { text: 'NO SPEND', subtext: 'Commit a transaction', left: 'center', top: 'center', textStyle: { fontSize: 11 }, subtextStyle: { fontSize: 9 } } });
+    return;
   }
+
+  chart.setOption({
+    tooltip: { trigger: 'item', valueFormatter: v => getCurrencySymbol() + Number(v).toLocaleString('en-IN') },
+    series: [{ type: 'pie', radius: ['62%', '92%'], data: rows,
+               label: { show: false }, labelLine: { show: false },
+               emphasis: { scaleSize: 6 } }]
+  });
 }
 
 function exportCSV() {
