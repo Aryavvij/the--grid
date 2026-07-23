@@ -7185,13 +7185,7 @@ function saveSplitModal() {
       finalDays.forEach((d, idx) => { gymDaySplits[idx] = d.title; });
 
       // Sync to API
-      const isDemo = sessionStorage.getItem('gridMode') === 'demo';
-      if (!isDemo) {
-        gridFetch('/api/gym/split', {
-          method: 'PUT',
-          body: JSON.stringify({ name: title, days: finalDays }),
-        }).catch(e => console.warn('Gym split API sync failed:', e));
-      }
+      gridSync('/api/gym/split', { name: title, days: finalDays }, 'PUT');
 
       initGymData();
       renderWeeklySplit();
@@ -7594,19 +7588,13 @@ function commitWorkoutLog() {
     document.querySelectorAll('.logger-reps-input').forEach(i => i.value = '');
 
     // Persist to API
-    const isDemo = sessionStorage.getItem('gridMode') === 'demo';
-    if (!isDemo) {
-      gridFetch('/api/gym/logs', {
-        method: 'POST',
-        body: JSON.stringify({
-          workoutDate: sessionLog.date,
-          dayIndex:    sessionLog.dayIndex,
-          exercises:   sessionLog.exercises,
-          notes:       sessionLog.notes || '',
-          durationMin: sessionLog.durationMin || null,
-        }),
-      }).catch(e => console.warn('Gym log API save failed:', e));
-    }
+    gridSync('/api/gym/logs', {
+      workoutDate: sessionLog.date,
+      dayIndex:    sessionLog.dayIndex,
+      exercises:   sessionLog.exercises,
+      notes:       sessionLog.notes || '',
+      durationMin: sessionLog.durationMin || null,
+    });
   }
 }
 
@@ -8693,11 +8681,8 @@ function toggleHabitDay(e) {
   saveHabits(); // localStorage cache
 
   // Persist to API
-  if (!isDemo && h.id) {
-    gridFetch(`/api/habits/${h.id}/log`, {
-      method: 'POST',
-      body: JSON.stringify({ date: _habitDateStr(d), completed: completing }),
-    }).catch(err => console.warn('Habit log sync failed:', err));
+  if (h.id) {
+    gridSync(`/api/habits/${h.id}/log`, { date: _habitDateStr(d), completed: completing });
   }
 }
 
@@ -9126,11 +9111,9 @@ async function commitRwProject() {
   if (idVal !== '') {
     const idx = parseInt(idVal);
     rwProjects[idx] = { ...rwProjects[idx], name, cat, progress, deadline, priority, status };
-    if (!isDemo && rwProjects[idx]._id) {
-      gridFetch(`/api/projects/${rwProjects[idx]._id}`, {
-        method: 'PUT',
-        body: JSON.stringify({ title: name, description: cat, progress, deadline, priority, status }),
-      }).catch(e => console.warn('Project update failed:', e));
+    if (rwProjects[idx]._id) {
+      gridSync(`/api/projects/${rwProjects[idx]._id}`,
+        { title: name, description: cat, progress, deadline, priority, status }, 'PUT');
     }
   } else {
     const newProj = { id: 'PROJ_' + String(Math.floor(Math.random()*900)+100), name, cat, progress, deadline, priority, status };
@@ -9519,21 +9502,14 @@ async function addRecurring() {
   document.getElementById('recAmount').value = '';
   document.getElementById('recDay').value = '';
   // Persist to API as a recurring transaction
-  const isDemo = sessionStorage.getItem('gridMode') === 'demo';
-  if (!isDemo) {
-    const now = new Date();
-    gridFetch('/api/finance/transactions', {
-      method: 'POST',
-      body: JSON.stringify({
-        amount: amtNum,
-        description: name.toUpperCase(),
-        date: now.toISOString().split('T')[0],
-        type: 'expense',
-        recurring: true,
-        recurringFreq: 'monthly',
-      }),
-    }).catch(e => console.warn('Recurring API save failed:', e));
-  }
+  gridSync('/api/finance/transactions', {
+    amount: amtNum,
+    description: name.toUpperCase(),
+    date: new Date().toISOString().split('T')[0],
+    type: 'expense',
+    recurring: true,
+    recurringFreq: 'monthly',
+  });
 }
 
 function renderDebtList() {
@@ -9897,11 +9873,7 @@ async function initResume() {
 }
 
 function _syncResumeToAPI() {
-  if (sessionStorage.getItem('gridMode') === 'demo') return;
-  gridFetch('/api/resume', {
-    method: 'PUT',
-    body: JSON.stringify({ sections: rsTabData }),
-  }).catch(e => console.warn('Resume API sync failed:', e));
+  gridSync('/api/resume', { sections: rsTabData }, 'PUT');
 }
 
 function renderRsStack() {
@@ -11147,22 +11119,16 @@ function saveProfileDetails() {
   localStorage.setItem('gridUserProfile', JSON.stringify(pd));
 
   // Sync to API
-  const isDemo = sessionStorage.getItem('gridMode') === 'demo';
-  if (!isDemo) {
-    gridFetch('/api/profile', {
-      method: 'PUT',
-      body: JSON.stringify({
-        name:       pd.name,
-        dob:        pd.dob,
-        gender:     pd.gender,
-        city:       pd.city,
-        occupation: pd.occupation,
-        heightCm:   pd.height ? parseFloat(pd.height) : null,
-        weightKg:   pd.weight ? parseFloat(pd.weight) : null,
-        bio:        pd.bio,
-      }),
-    }).catch(e => console.warn('Profile API save failed:', e));
-  }
+  gridSync('/api/profile', {
+    name:       pd.name,
+    dob:        pd.dob,
+    gender:     pd.gender,
+    city:       pd.city,
+    occupation: pd.occupation,
+    heightCm:   pd.height ? parseFloat(pd.height) : null,
+    weightKg:   pd.weight ? parseFloat(pd.weight) : null,
+    bio:        pd.bio,
+  }, 'PUT');
 
   // Refresh hero name + avatar if name changed
   if (pd.name) {
@@ -11519,6 +11485,27 @@ async function gridWrite(path, body, method = 'POST') {
   }
 }
 window.addEventListener('online', () => GridQueue.flush());
+
+/* ══ UNIFIED WRITE PATH ══════════════════════════════════════════════════════
+   Single place that knows about demo mode. Every persistent write should go
+   through this instead of hand-rolling `if (!isDemo) gridFetch(...)`, which
+   both duplicated the check ~21 times AND silently dropped writes whenever the
+   network was down. gridSync is a no-op in demo and offline-durable when authed.
+
+   NOTE: demo mode still reads/writes localStorage. Fully deleting the fork needs
+   a server-seeded sandbox account (no such endpoint exists yet), so the mode
+   check lives here — in ONE place — rather than scattered through the file.   */
+const GridMode = {
+  isDemo() { return sessionStorage.getItem('gridMode') === 'demo'; },
+  isAuthed() { return !this.isDemo(); },
+};
+
+function gridSync(path, body, method = 'POST') {
+  if (GridMode.isDemo()) return Promise.resolve(null);
+  return gridWrite(path, body, method)
+    .catch(e => { console.warn('[sync] ' + method + ' ' + path + ' failed:', e); return null; });
+}
+
 
 /* ══ P4: COMMAND PALETTE (⌘K) ═══════════════════════════════════════════════ */
 let gkItems = [], gkSel = 0;
