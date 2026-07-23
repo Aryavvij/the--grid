@@ -4180,7 +4180,6 @@ html, body {
           </div>
         </div>
         <div style="display:flex;align-items:center;gap:12px">
-          <button class="arc-stitch-btn" onclick="hasUnsavedChanges=false;alert('Calendar stitched successfully!')">STITCH INTO THE GRID</button>
           <div class="nav-arrows">
             <div class="nav-arrow" onclick="changeMonth(-1)">
               <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
@@ -4232,7 +4231,6 @@ html, body {
             <div class="arc-badge">Weekly View</div>
             <div class="arc-badge green">CONNECTED</div>
           </div>
-          <button class="arc-stitch-btn" onclick="arcStitch()">STITCH INTO THE GRID</button>
         </div>
       </div>
 
@@ -4325,7 +4323,6 @@ html, body {
       <div class="hb-titlebar">
         <div class="hb-page-title">HABIT TRACKER</div>
         <div style="display:flex;align-items:center;gap:12px">
-          <button class="arc-stitch-btn" onclick="hasUnsavedChanges=false;alert('Habits stitched successfully!')">STITCH INTO THE GRID</button>
           <div class="hb-search">
             <svg viewBox="0 0 24 24" width="13" height="13" stroke="currentColor" fill="none" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
             <input class="rw-search-input" placeholder="Search habits..." />
@@ -4368,7 +4365,7 @@ html, body {
         <div class="hb-matrix-head">
           <div>
             <div class="hb-matrix-title">PERFORMANCE_MATRIX</div>
-            <div class="hb-matrix-period">PERIOD: OCTOBER_2023</div>
+            <div class="hb-matrix-period" id="hbMatrixPeriod">PERIOD: —</div>
           </div>
           <button class="hb-add-btn" onclick="openAddHabitModal()">ADD_NODE</button>
         </div>
@@ -4427,7 +4424,6 @@ html, body {
             Personal Asset Management and Sector Budgets
           </div>
         </div>
-        <button class="arc-stitch-btn" onclick="hasUnsavedChanges=false;saveFinanceData();if(typeof gymShowToast==='function')gymShowToast('FINANCES STITCHED — Data saved successfully.','var(--green)');">STITCH INTO THE GRID</button>
       </div>
 
       <!-- 4 stat cards -->
@@ -4616,7 +4612,6 @@ html, body {
           <div class="gym-tab" onclick="gymTab(this,'log')">OVERVIEW &amp; LOG</div>
         </div>
         <div class="gym-actions">
-          <button class="arc-stitch-btn" onclick="gymStitch()" style="padding: 7px 14px; font-size: 9px;">STITCH INTO THE GRID</button>
           <button class="gym-action-btn" onclick="openSplitModal()">
             <svg viewBox="0 0 24 24" width="11" height="11" stroke="currentColor" fill="none" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
             Edit Weekly Split
@@ -4821,7 +4816,6 @@ html, body {
             Deep Work Sessions and Cognitive Performance Tracking
           </div>
         </div>
-        <button class="arc-stitch-btn" onclick="hasUnsavedChanges=false;alert('Focus sessions stitched successfully!')">STITCH INTO THE GRID</button>
       </div>
 
       <!-- Hero -->
@@ -4952,7 +4946,6 @@ html, body {
             Project Blueprints, Strategic Objectives and Growth Trajectory
           </div>
         </div>
-        <button class="arc-stitch-btn" onclick="hasUnsavedChanges=false;alert('Runway stitched successfully!')">STITCH INTO THE GRID</button>
       </div>
 
       <!-- Sub-nav tabs -->
@@ -5285,7 +5278,6 @@ html, body {
             Academic Metrics, Professional Portfolio and Career Milestones
           </div>
         </div>
-        <button class="arc-stitch-btn" onclick="hasUnsavedChanges=false;alert('Profile stitched successfully!')">STITCH INTO THE GRID</button>
       </div>
 
       <!-- Subpages tabs -->
@@ -8432,6 +8424,14 @@ function saveHabits() {
 }
 
 async function initHabits() {
+  // Update the period label to current month
+  const periodEl = document.getElementById('hbMatrixPeriod');
+  if (periodEl) {
+    const now = new Date();
+    const monthName = now.toLocaleString('en-US', { month: 'long' }).toUpperCase();
+    periodEl.textContent = `PERIOD: ${monthName}_${now.getFullYear()}`;
+  }
+
   const isDemo = sessionStorage.getItem('gridMode') === 'demo';
 
   if (isDemo) {
@@ -9446,18 +9446,35 @@ function openAddRecurringModal() {
   });
 }
 
-function addRecurring() {
+async function addRecurring() {
   const name = document.getElementById('recName').value.trim();
   const amt  = document.getElementById('recAmount').value;
   const cat  = document.getElementById('recCat').value;
   const day  = parseInt(document.getElementById('recDay').value) || 1;
   if (!name || !amt) return;
-  finRecurItems.push({ name: name.toUpperCase(), amount: `₹${parseFloat(amt).toLocaleString()}`, cat, day });
+  const amtNum = parseFloat(amt);
+  finRecurItems.push({ name: name.toUpperCase(), amount: `₹${amtNum.toLocaleString()}`, cat, day });
   saveFinRecurItems();
   renderRecurringList();
   document.getElementById('recName').value = '';
   document.getElementById('recAmount').value = '';
   document.getElementById('recDay').value = '';
+  // Persist to API as a recurring transaction
+  const isDemo = sessionStorage.getItem('gridMode') === 'demo';
+  if (!isDemo) {
+    const now = new Date();
+    gridFetch('/api/finance/transactions', {
+      method: 'POST',
+      body: JSON.stringify({
+        amount: amtNum,
+        description: name.toUpperCase(),
+        date: now.toISOString().split('T')[0],
+        type: 'expense',
+        recurring: true,
+        recurringFreq: 'monthly',
+      }),
+    }).catch(e => console.warn('Recurring API save failed:', e));
+  }
 }
 
 function renderDebtList() {
@@ -9773,17 +9790,30 @@ function openBudgetModal() {
   document.getElementById('runwaySectorModal').classList.add('open');
 }
 
-function saveBudgetModal() {
+async function saveBudgetModal() {
   const name = document.getElementById('rsecName').value.trim().toUpperCase();
   const planned = parseFloat(document.getElementById('rsecPlanned').value) || 0;
   const actual = parseFloat(document.getElementById('rsecActual').value) || 0;
   if (!name) return;
-  budgetData.push({ sector: name, planned: planned, actual: actual });
+  const entry = { sector: name, planned, actual };
+  budgetData.push(entry);
   saveFinanceData();
   populateTxSectorDropdown();
   renderBudgetTable();
   initDonutChart();
   closeBudgetModal();
+  // Persist to API
+  const isDemo = sessionStorage.getItem('gridMode') === 'demo';
+  if (!isDemo) {
+    try {
+      const created = await gridFetch('/api/finance/categories', {
+        method: 'POST',
+        body: JSON.stringify({ name, type: 'expense', budgetAmount: planned }),
+      });
+      if (created?.id) entry.id = created.id;
+      saveFinanceData();
+    } catch(e) { console.warn('Budget category API save failed:', e); }
+  }
 }
 
 function closeBudgetModal() {
