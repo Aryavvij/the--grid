@@ -45,7 +45,7 @@ Carbon-green aesthetic. Deployed on Vercel (frontend + serverless API). Postgres
 npm run dev          # nodemon local server (port 4000), /health to check
 npm start            # production server
 npm run db:migrate   # prisma migrate dev (create + apply migration)
-npm run db:deploy    # prisma migrate deploy (prod, runs on Railway start)
+npm run db:deploy    # prisma migrate deploy (production)
 npm run db:studio    # Prisma Studio
 ```
 Frontend has no build — open `index.html` (Live Server) or it's served statically by Vercel.

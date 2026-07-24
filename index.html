@@ -11625,6 +11625,16 @@ const GridMode = {
   isAuthed() { return !this.isDemo(); },
 };
 
+/* Escape user-controlled text before it goes into innerHTML or a double-quoted
+   attribute. Metric/project names are per-user private data today (self-XSS
+   only), but escaping at the sink means these render paths stay safe if names
+   are ever shown across users (sharing, admin, leaderboards). */
+function escHtml(v) {
+  return String(v == null ? '' : v)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
 function gridSync(path, body, method = 'POST') {
   if (GridMode.isDemo()) return Promise.resolve(null);
   return gridWrite(path, body, method)
@@ -11675,7 +11685,7 @@ function gkRender(filter) {
   list.innerHTML = shown.length
     ? shown.map((it, i) =>
         '<div class="gk-item' + (i === 0 ? ' sel' : '') + '" data-i="' + i + '">' +
-        '<span>' + it.label + '</span><span class="gk-item-kind">' + it.kind + '</span></div>').join('')
+        '<span>' + escHtml(it.label) + '</span><span class="gk-item-kind">' + escHtml(it.kind) + '</span></div>').join('')
     : '<div class="gk-empty">No matches</div>';
   list._shown = shown;
   Array.prototype.forEach.call(list.querySelectorAll('.gk-item'), el => {
@@ -11804,10 +11814,10 @@ function dcRender() {
   body.innerHTML = items.map(it => {
     const on = (it.idx in dcDraft) ? dcDraft[it.idx] : it.done;
     return '<div class="dc-row' + (on ? ' done' : '') + '" data-idx="' + it.idx + '">' +
-      '<button class="dc-check" onclick="dcToggle(' + it.idx + ')" aria-label="toggle ' + it.name + '">' +
+      '<button class="dc-check" onclick="dcToggle(' + it.idx + ')" aria-label="toggle ' + escHtml(it.name) + '">' +
       '<svg viewBox="0 0 24 24" stroke="#08110b" fill="none" stroke-width="3.5">' +
       '<polyline points="20 6 9 17 4 12"/></svg></button>' +
-      '<span class="dc-name">' + it.name + '</span></div>';
+      '<span class="dc-name">' + escHtml(it.name) + '</span></div>';
   }).join('');
 
   const done = items.filter(it => (it.idx in dcDraft) ? dcDraft[it.idx] : it.done).length;
@@ -11960,7 +11970,7 @@ function cnRenderChips() {
   wrap.innerHTML = hs.map((h, i) => {
     const on = (h.checked || []).indexOf(day) !== -1;
     return '<div class="cn-chip' + (on ? ' on' : '') + '" data-i="' + i + '" onclick="cnTapChip(' + i + ')">' +
-           '<span class="cn-dot"></span>' + h.name + '</div>';
+           '<span class="cn-dot"></span>' + escHtml(h.name) + '</div>';
   }).join('');
 
   const done = hs.filter(h => (h.checked || []).indexOf(day) !== -1).length;
@@ -12085,9 +12095,9 @@ function cnRenderVitals() {
 
   wrap.innerHTML = tiles.map(t =>
     '<div class="cn-vital' + (t.risk ? ' risk' : '') + '">' +
-    '<div class="cn-vital-label">' + t.label + '</div>' +
-    '<div class="cn-vital-val">' + t.val + '</div>' +
-    '<div class="cn-vital-sub">' + t.sub + '</div></div>').join('');
+    '<div class="cn-vital-label">' + escHtml(t.label) + '</div>' +
+    '<div class="cn-vital-val">' + escHtml(t.val) + '</div>' +
+    '<div class="cn-vital-sub">' + escHtml(t.sub) + '</div></div>').join('');
 }
 
 /** 365-day heat-wall — ECharts calendar heatmap (the reason we picked ECharts). */
