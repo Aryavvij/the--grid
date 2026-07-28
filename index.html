@@ -951,24 +951,45 @@ html, body {
 .drawer-close svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2; }
 .drawer-body {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr 1fr;
-  gap: 0;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
   flex: 1;
   overflow: hidden;
+  padding: 16px;
+  background: var(--carbon-0);
 }
+/* Each column is its own card so the four sections read as equals rather than
+   as one long divided strip. */
 .drawer-col {
-  padding: 20px 16px;
-  border-right: 1px solid var(--card-border);
+  background: var(--carbon-1);
+  border: 1px solid var(--carbon-4);
+  border-radius: 11px;
+  padding: 14px;
   overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
-.drawer-col:last-child { border-right: none; }
+.drawer-col::-webkit-scrollbar { width: 3px; }
+.drawer-col::-webkit-scrollbar-thumb { background: var(--carbon-4); border-radius: 2px; }
 .drawer-col-title {
   font-size: 9px;
   font-weight: 700;
   letter-spacing: 2px;
-  color: var(--text-muted);
+  color: var(--sig-500);
   text-transform: uppercase;
-  margin-bottom: 14px;
+  margin-bottom: 12px;
+  padding-bottom: 9px;
+  border-bottom: 1px solid var(--carbon-4);
+  flex-shrink: 0;
+}
+/* Empty states sit quietly at the top instead of floating mid-column */
+.drawer-col .drw-empty {
+  font-size: 10px; letter-spacing: 1px; color: var(--text-muted);
+  padding: 6px 0;
+}
+@media (max-width: 900px) {
+  .drawer-body { grid-template-columns: 1fr 1fr; overflow-y: auto; }
 }
 .drawer-item {
   background: var(--card);
@@ -2300,7 +2321,8 @@ html, body {
 .hb-cb:hover { border-color: rgba(118,179,114,0.6); }
 
 /* Bottom grid */
-.hb-bottom-grid {
+.hb-bottom-grid { grid-template-columns: 1fr !important; }
+._hb_bottom_grid_legacy {
   display: grid;
   grid-template-columns: 1fr 300px;
   gap: 16px;
@@ -2924,22 +2946,9 @@ html, body {
   margin-bottom: 16px;
   align-items: stretch;
 }
-.fin-row-row3 {
-  display: grid;
-  grid-template-columns: 2fr 1fr;
-  gap: 16px;
-  margin-bottom: 16px;
-  align-items: stretch;
-}
-.fin-row3-left-col {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-.fin-row3-left-col .fin-section {
-  margin-bottom: 0;
-  flex: 1;
-}
+.fin-row-row3 { display:block; }
+.fin-row3-left-col { display:grid; grid-template-columns:1fr 1fr; gap:14px; align-items:stretch; }
+.fin-row3-left-col .fin-section { margin-bottom:0; display:flex; flex-direction:column; }
 .fin-row-a-left { margin-bottom: 0 !important; }
 .fin-row-a-right { margin-bottom: 0 !important; }
 .fin-row-a-inner { display: grid; grid-template-columns: auto 1fr; gap: 20px; align-items: start; }
@@ -4771,21 +4780,12 @@ html, body {
           <div class="hb-chart-head">
             <div class="hb-matrix-title" style="font-size:13px">CONSISTENCY_MOMENTUM</div>
             <div class="hb-legend">
-              <span class="hb-leg-dot" style="background:var(--green)"></span><span>CURRENT</span>
-              <span class="hb-leg-dot" style="background:rgba(255,255,255,0.3)"></span><span>PROJECTED</span>
+              <span class="hb-leg-dot" style="background:var(--green)"></span><span>COMPLETION % BY WEEK</span>
             </div>
           </div>
-          <div id="momentumChart" style="width:100%;height:200px"></div>
+          <div id="momentumChart" style="width:100%;height:240px"></div>
         </div>
 
-        <!-- Right: insights + log -->
-        <div class="hb-right-col">
-
-          <div id="hbRankBest"></div>
-          <div id="hbRankAvg"></div>
-          <div id="hbRankWorst"></div>
-
-        </div>
       </div>
 
 
@@ -4896,7 +4896,6 @@ html, body {
 
       <!-- ROW 3: Left Column (0.66) stacked matrices | Right Column (0.33) Add Recurring -->
       <div class="fin-row-row3">
-        <!-- Left column -->
         <div class="fin-row3-left-col">
           <!-- Card 1: Debt Amortization Balance Matrix -->
           <div class="fin-section">
@@ -4926,37 +4925,8 @@ html, body {
           </div>
         </div>
 
-        <!-- Right column: Add Recurring Commitment -->
-        <div class="fin-section" style="margin-bottom:0; display:flex; flex-direction:column; justify-content:space-between;">
-          <div>
-            <div class="fin-section-title" style="margin-bottom:20px;">
-              <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" fill="none" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
-              ADD RECURRING COMMITMENT
-            </div>
-            <div class="form-group">
-              <label class="form-label">SERVICE_NAME</label>
-              <input class="form-input" id="recName" placeholder="E.G. NETFLIX">
-            </div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-              <div class="form-group">
-                <label class="form-label">AMOUNT / MONTH</label>
-                <input class="form-input" id="recAmount" type="number" placeholder="0.00">
-              </div>
-              <div class="form-group">
-                <label class="form-label">CATEGORY</label>
-                <select class="form-select" id="recCat">
-                  <option>DEV_TOOLS</option><option>HEALTH</option><option>DATA</option>
-                  <option>ENTERTAINMENT</option><option>PRODUCTIVITY</option><option>OTHER</option>
-                </select>
-              </div>
-            </div>
-            <div class="form-group">
-              <label class="form-label">RENEWAL_DAY (1–31)</label>
-              <input class="form-input" id="recDay" type="number" min="1" max="31" placeholder="1">
-            </div>
-          </div>
-          <button class="fin-commit-btn" onclick="addRecurring()" style="margin-top:auto;">ADD_TO_MATRIX</button>
-        </div>
+        <!-- duplicate recurring form removed; use ADD_RECURRING modal -->
+
       </div>
 
       <!-- ROW D: Ledger — 5 latest + View All -->
@@ -5142,7 +5112,7 @@ html, body {
         <div class="gym-split-title" style="margin-bottom:6px">OVERVIEW &amp; LOG</div>
         <div class="gym-split-sub" style="margin-bottom:20px">Session history and biometric telemetry feed</div>
         
-        <div class="gym-log-grid" style="display:grid; grid-template-columns: 1fr 400px; gap: 14px; margin-bottom:14px;">
+        <div class="gym-log-grid" style="display:grid; grid-template-columns: 1fr; gap: 14px; margin-bottom:14px;">
           <!-- Left: Strength progression chart -->
           <div class="gym-telemetry" style="padding: 20px;">
             <div class="gym-tel-head">
@@ -5152,7 +5122,7 @@ html, body {
               </div>
               <div class="gym-tel-sub">Estimated 1RM Progression — Weekly Average (All Logged Sessions)</div>
             </div>
-            <div style="position:relative; height: 260px;">
+            <div style="position:relative; height: 320px;">
               <div id="gymStrengthChart" style="width:100%;height:100%"></div>
             </div>
           </div>
@@ -5169,7 +5139,7 @@ html, body {
                 <select class="form-select" id="loggerDaySelect" onchange="renderLoggerPanel()" style="flex:1; font-size:10px; padding:4px 8px; height:28px; border-radius:4px;"></select>
               </div>
             </div>
-            <div id="loggerExercisesContainer" style="flex:1; overflow-y:auto; max-height:220px; padding-right:4px;">
+            <div id="loggerExercisesContainer" style="flex:1; overflow-y:auto; max-height:none; padding-right:4px; display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:10px;">
               <!-- Dynamically rendered inputs per exercise -->
             </div>
             <div id="loggerActionContainer" style="margin-top:14px;">
@@ -5852,10 +5822,17 @@ html, body {
                 Here are the details of the project...
               </div>
             </div>
-            <div style="text-align: left;">
+            <div style="text-align: left; margin-bottom:16px;">
               <div style="font-size: 10px; color:var(--text-muted); letter-spacing:1px; margin-bottom:6px;">TECHNOLOGIES / SKILLS SYNC</div>
               <div id="rsDetailModalTags" style="display:flex; gap:6px; flex-wrap:wrap;"></div>
             </div>
+            <div style="text-align:left;" id="rsDetailLinksWrap">
+              <div style="font-size:10px; color:var(--text-muted); letter-spacing:1px; margin-bottom:6px;">LINKS</div>
+              <div id="rsDetailModalLinks" style="display:flex; gap:8px; flex-wrap:wrap;"></div>
+            </div>
+          </div>
+          <div style="padding:14px 24px; border-top:1px solid var(--card-border); display:flex; gap:10px; justify-content:flex-end;">
+            <button class="fin-modify-btn" onclick="rsEditFromDetail()">EDIT</button>
           </div>
         </div>
       </div>
@@ -5881,14 +5858,10 @@ html, body {
       <input class="task-modal-input" id="tmName" placeholder="e.g. SUBMIT ASSIGNMENT">
     </div>
     <div class="task-modal-field">
-      <label class="task-modal-label">TYPE</label>
-      <select class="task-modal-select" id="tmType">
-        <option value="neural">NEURAL (Study / Research)</option>
-        <option value="code">CODE (Dev / Technical)</option>
-        <option value="physical">PHYSICAL (Gym / Exercise)</option>
-        <option value="system">SYSTEM (Admin / Ops)</option>
-        <option value="personal">PERSONAL</option>
-      </select>
+      <label class="task-modal-label">CATEGORY</label>
+      <input class="task-modal-input" id="tmType" list="tmTypeOptions"
+             placeholder="e.g. STUDY, GYM, ADMIN — type your own" autocomplete="off">
+      <datalist id="tmTypeOptions"></datalist>
     </div>
     <div class="task-modal-field">
       <label class="task-modal-label">DAY</label>
@@ -5910,10 +5883,6 @@ html, body {
         <option value="idle">IDLE</option>
         <option value="critical">CRITICAL</option>
       </select>
-    </div>
-    <div class="task-modal-field">
-      <label class="task-modal-label">PROGRESS % (optional)</label>
-      <input class="task-modal-input" id="tmProgress" type="number" min="0" max="100" placeholder="0–100">
     </div>
     <div class="task-modal-actions">
       <button class="task-modal-save" onclick="saveTaskModal()">COMMIT NODE</button>
@@ -6757,7 +6726,7 @@ function openDrawer(dateStr, day) {
       <div class="drawer-item cls-item">
         <div class="item-label">${e.title}</div>
         <div class="item-meta">${e.time || '—'}${e.notes ? ' · ' + e.notes : ''}</div>
-      </div>`).join('') : '<div class="empty-state">NO CLASSES</div>';
+      </div>`).join('') : '<div class="drw-empty">NO CLASSES</div>';
 
   // Gym split for this day of week (0=Sun js → adjust to Mon=0)
   const jsDow = dateObj.getDay(); // 0=Sun
@@ -6782,7 +6751,7 @@ function openDrawer(dateStr, day) {
         <div class="item-meta">WEEKLY · ${t.type.toUpperCase()}</div>
       </div>`).join('');
   }
-  document.getElementById('drawerTasks').innerHTML = taskHTML || '<div class="empty-state">NO TASKS</div>';
+  document.getElementById('drawerTasks').innerHTML = taskHTML || '<div class="drw-empty">NO TASKS</div>';
 
   // ── EVENTS ──
   document.getElementById('drawerEvents').innerHTML =
@@ -6790,7 +6759,7 @@ function openDrawer(dateStr, day) {
       <div class="drawer-item ev-item">
         <div class="item-label">${e.title}</div>
         <div class="item-meta">${e.time || '—'}${e.notes ? ' · ' + e.notes : ''}</div>
-      </div>`).join('') : '<div class="empty-state">NO EVENTS</div>';
+      </div>`).join('') : '<div class="drw-empty">NO EVENTS</div>';
 
   // ── FINANCES: debts + subscriptions ──
   const debtItems = typeof finDebtItems !== 'undefined' ? finDebtItems : [
@@ -6822,7 +6791,7 @@ function openDrawer(dateStr, day) {
       <div class="item-meta">RENEWAL: ${r.renewal} · ${r.amount}</div>
     </div>`;
   });
-  document.getElementById('drawerFinances').innerHTML = finHTML || '<div class="empty-state">NO FINANCE ITEMS</div>';
+  document.getElementById('drawerFinances').innerHTML = finHTML || '<div class="drw-empty">NO FINANCE ITEMS</div>';
 
   document.getElementById('drawerOverlay').classList.add('open');
   document.getElementById('dayDrawer').classList.add('open');
@@ -8359,6 +8328,13 @@ function initWeekly() {
   buildKanban();
 }
 
+/** Label covering slot (di,hi) — a block's label persists until the next filled hour. */
+function getSlotLabel(di, hi) {
+  const day = ttData[di]; if (!day) return null;
+  for (let x = hi; x >= 0; x--) if (day[x]) return day[x];
+  return null;
+}
+
 function getBlockRange(di, hi) {
   const val = ttData[di][hi];
   if (!val) return { start: hi, end: hi + 1 };
@@ -8387,11 +8363,13 @@ function buildTimetable() {
     
     ttData.forEach((dayObj, di) => {
       const td = document.createElement('td');
-      const label = dayObj[hi] || '';
-
-      // Block merge logic: detect matching block above or below
-      const hasAbove = hi > 0 && dayObj[hi - 1] === label;
-      const hasBelow = hi < 23 && dayObj[hi + 1] === label;
+      // A block's label persists until the next filled hour, so every hour it
+      // covers is part of the same block — not just the start hour.
+      const label = getSlotLabel(di, hi) || '';
+      const above = hi > 0  ? getSlotLabel(di, hi - 1) : null;
+      const below = hi < 23 ? getSlotLabel(di, hi + 1) : null;
+      const hasAbove = !!label && above === label;
+      const hasBelow = !!label && below === label;
 
       let cls = 'arc-tt-cell';
       if (label) {
@@ -8401,12 +8379,17 @@ function buildTimetable() {
       }
       td.className = cls;
 
-      // Only display block label inside the first slot of the merged block
-      if (label && !hasAbove) {
-        const span = document.createElement('div');
-        span.className = 'arc-tt-block';
-        span.textContent = label;
-        td.appendChild(span);
+      // Label goes in the MIDDLE row of the block so multi-hour blocks read as
+      // one centred unit instead of hanging off the top edge.
+      if (label) {
+        let start = hi; while (start - 1 >= 0 && getSlotLabel(di, start - 1) === label) start--;
+        let end = hi;   while (end + 1 < 24 && getSlotLabel(di, end + 1) === label) end++;
+        if (hi === start + Math.floor((end - start) / 2)) {
+          const el = document.createElement('div');
+          el.className = 'arc-tt-block';
+          el.textContent = label;
+          td.appendChild(el);
+        }
       }
       
       td.addEventListener('click', () => {
@@ -8541,7 +8524,7 @@ function buildKanban() {
       card.className = 'arc-task-card';
       const hasProgress = task.progress !== undefined;
       card.innerHTML = `
-        <div class="arc-task-type ${task.type}">${task.type.toUpperCase()}</div>
+        <div class="arc-task-type" style="color:${taskCatColor(task.type)}">${escHtml(String(task.type).toUpperCase())}</div>
         <div class="arc-task-name${task.done ? ' done' : ''}">${task.name}</div>
         ${hasProgress ? `<div class="arc-task-progress"><div class="arc-task-progress-fill" style="width:${task.progress}%"></div></div>` : ''}
         <div class="arc-task-foot">
@@ -8582,7 +8565,7 @@ function openAddTaskModal() {
   document.getElementById('tmType').value = 'code';
   document.getElementById('tmDay').value = '0';
   document.getElementById('tmStatus').value = 'pending';
-  document.getElementById('tmProgress').value = '';
+  fillTaskCategoryOptions();
   document.getElementById('tmDelBtn').style.display = 'none';
   document.getElementById('taskModal').classList.add('open');
 }
@@ -8595,7 +8578,7 @@ function openTaskModal(di, ti) {
   document.getElementById('tmType').value = task.type;
   document.getElementById('tmDay').value = di;
   document.getElementById('tmStatus').value = task.done ? 'completed' : task.status;
-  document.getElementById('tmProgress').value = task.progress !== undefined ? task.progress : '';
+  fillTaskCategoryOptions();
   document.getElementById('tmDelBtn').style.display = 'block';
   document.getElementById('taskModal').classList.add('open');
 }
@@ -8604,14 +8587,41 @@ function closeTaskModal() {
   document.getElementById('taskModal').classList.remove('open');
 }
 
+/** Deterministic colour per category name so user-defined ones stay consistent. */
+function taskCatColor(cat) {
+  const palette = ['#76b372','#94d68f','#a5f79e','#3b6839','#E8B44A','#64a0dc','#c084fc','#f97316'];
+  const k = String(cat || 'GENERAL');
+  let h = 0; for (let i = 0; i < k.length; i++) h = (h * 31 + k.charCodeAt(i)) >>> 0;
+  return palette[h % palette.length];
+}
+
+function taskCategories() {
+  const used = new Set();
+  (kanbanTasks || []).flat().forEach(t => { if (t && t.type) used.add(String(t.type).toUpperCase()); });
+  try { (JSON.parse(localStorage.getItem('gridTaskCats') || '[]')).forEach(c => used.add(c)); } catch (e) {}
+  return [...used].sort();
+}
+function rememberTaskCategory(cat) {
+  if (!cat) return;
+  const all = taskCategories();
+  if (all.indexOf(cat) === -1) all.push(cat);
+  localStorage.setItem('gridTaskCats', JSON.stringify(all));
+}
+function fillTaskCategoryOptions() {
+  const dl = document.getElementById('tmTypeOptions');
+  if (!dl) return;
+  dl.innerHTML = taskCategories().map(c => '<option value="' + escHtml(c) + '">').join('');
+}
+
 function saveTaskModal() {
-  const name     = document.getElementById('tmName').value.trim();
-  const type     = document.getElementById('tmType').value;
-  const di       = parseInt(document.getElementById('tmDay').value);
-  const status   = document.getElementById('tmStatus').value;
-  const progress = document.getElementById('tmProgress').value !== '' ? parseInt(document.getElementById('tmProgress').value) : undefined;
+  const name   = document.getElementById('tmName').value.trim();
+  const raw    = document.getElementById('tmType').value.trim();
+  const type   = (raw || 'GENERAL').toUpperCase();
+  const di     = parseInt(document.getElementById('tmDay').value);
+  const status = document.getElementById('tmStatus').value;
   if (!name) return;
-  const task = { type, name, status, done: status === 'completed', ...(progress !== undefined ? {progress} : {}) };
+  rememberTaskCategory(type);
+  const task = { type, name, status, done: status === 'completed' };
   if (_tmEditDay >= 0 && _tmEditIdx >= 0) {
     // Move to new day if changed
     if (_tmEditDay !== di) {
@@ -10163,9 +10173,9 @@ function renderRsContent(tab) {
         <span class="rs-card-badge ${item.badge}">${item.badgeLabel}</span>
         <span class="rs-card-date">${item.date}</span>
       </div>
-      <div class="rs-card-name">${item.name}</div>
-      <div class="rs-card-desc">${item.desc}</div>
-      <div class="rs-card-tags">${item.tags.map(t=>`<span class="rs-card-tag">${t}</span>`).join('')}</div>
+      <div class="rs-card-name">${escHtml(item.name)}</div>
+      <div class="rs-card-desc">${escHtml(item.desc)}</div>
+      <div class="rs-card-tags">${(item.tags||[]).map(t=>`<span class="rs-card-tag">${escHtml(t)}</span>`).join('')}</div>
     </div>
   `).join('');
 }
@@ -10218,24 +10228,55 @@ function rsPageTab(el, tab) {
   }
 }
 
+let _rsDetailTarget = { tab: null, idx: -1 };
+
 function openRsDetailModal(tab, idx) {
   const items = rsTabData[tab] || [];
   const item = items[idx];
   if (!item) return;
-  
+  _rsDetailTarget = { tab, idx };
+
   document.getElementById('rsDetailModalTitle').textContent = item.name;
   document.getElementById('rsDetailModalCategory').textContent = tab.toUpperCase();
   document.getElementById('rsDetailModalDate').textContent = (item.date || '').toUpperCase();
-  document.getElementById('rsDetailModalSummary').textContent = item.desc;
-  document.getElementById('rsDetailModalFullDesc').textContent = item.fullDesc || item.desc;
-  
+  document.getElementById('rsDetailModalSummary').textContent = item.desc || '';
+  document.getElementById('rsDetailModalFullDesc').textContent = item.fullDesc || item.desc || 'No detailed description yet — use EDIT to add one.';
+
   const tagsContainer = document.getElementById('rsDetailModalTags');
-  tagsContainer.innerHTML = (item.tags || []).map(t => `<span class="rs-card-tag" style="margin:0;">${t}</span>`).join('');
+  const tags = item.tags || [];
+  tagsContainer.innerHTML = tags.length
+    ? tags.map(t => `<span class="rs-card-tag" style="margin:0;">${escHtml(t)}</span>`).join('')
+    : '<span style="font-size:10px;color:var(--text-muted)">None recorded</span>';
+
+  // Links are optional today; the editor gains full attach support in a later phase.
+  const linksEl = document.getElementById('rsDetailModalLinks');
+  if (linksEl) {
+    const links = item.links || [];
+    linksEl.innerHTML = links.length
+      ? links.map(l => {
+          const url = typeof l === 'string' ? l : (l.url || '');
+          const lbl = typeof l === 'string' ? l : (l.label || l.url || 'LINK');
+          return `<a class="rs-card-tag" style="margin:0;text-decoration:none;border-color:var(--green);color:var(--green)" href="${escHtml(url)}" target="_blank" rel="noopener noreferrer">${escHtml(lbl)}</a>`;
+        }).join('')
+      : '<span style="font-size:10px;color:var(--text-muted)">No links attached</span>';
+  }
   
   const overlay = document.getElementById('rsDetailModal');
   overlay.classList.add('open');
   const panel = overlay.querySelector('.drawer');
   if (panel) panel.classList.add('open');   // .drawer is opacity:0 without this
+}
+
+/** Jump from the read-only detail view straight into editing that node. */
+function rsEditFromDetail() {
+  const { tab, idx } = _rsDetailTarget;
+  closeRsDetailModal();
+  if (!tab || idx < 0) return;
+  const tabBtn = document.querySelector('.rs-page-tab[onclick*="profile"]');
+  if (tabBtn) tabBtn.click();
+  const catSel = document.getElementById('rsEditCat');
+  if (catSel) { catSel.value = tab; renderRsProfileList(); }
+  if (typeof editRsItem === 'function') editRsItem(tab, idx);
 }
 
 function closeRsDetailModal() {
@@ -10261,7 +10302,8 @@ function renderRsProfileList() {
   }
   
   listBody.innerHTML = items.map((item, idx) => `
-    <div class="gym-ex-card" style="padding:12px; margin:0; border:1px solid rgba(255,255,255,0.06); text-align: left;">
+    <div class="gym-ex-card" style="padding:12px; margin:0; border:1px solid rgba(255,255,255,0.06); text-align: left; cursor:pointer;"
+         onclick="if(!event.target.closest('.rw-cmd-btn')) openRsDetailModal('${cat}', ${idx})" title="Open full details">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
         <span class="rs-card-date" style="font-size:9px;">${item.date}</span>
         <span class="rs-card-tag" style="font-size:8px; margin:0; padding:2px 6px;">${item.badgeLabel}</span>
@@ -12276,15 +12318,21 @@ function hvRenderAttention() {
     }
   } catch (e) {}
 
-  // upcoming project deadlines
+  // Upcoming project deadlines. Capped and windowed: long-abandoned projects
+  // would otherwise flood the panel and drown the actionable items.
   try {
-    const soon = new Date(); soon.setDate(soon.getDate() + 3);
-    (rwProjects || []).forEach(p => {
-      if (p.status === 'completed' || !p.deadline) return;
-      const dl = new Date(p.deadline);
-      if (dl <= soon) alerts.push({ crit: dl < new Date(), page: 'runway',
-        html: '<span><b>' + escHtml(p.name) + '</b> deadline ' + p.deadline + '</span>' });
-    });
+    const now = new Date();
+    const soon = new Date(); soon.setDate(soon.getDate() + 7);
+    const stale = new Date(); stale.setDate(stale.getDate() - 30);
+    const due = (rwProjects || [])
+      .filter(pr => pr.status !== 'completed' && pr.deadline)
+      .map(pr => ({ pr, dl: new Date(pr.deadline) }))
+      .filter(x => x.dl <= soon && x.dl >= stale)     // ignore ancient deadlines
+      .sort((a, b) => a.dl - b.dl)
+      .slice(0, 2);                                    // at most two
+    due.forEach(({ pr, dl }) => alerts.push({ crit: dl < now, page: 'runway',
+      html: '<span><b>' + escHtml(pr.name) + '</b> ' +
+            (dl < now ? 'overdue' : 'due') + ' ' + pr.deadline + '</span>' }));
   } catch (e) {}
 
   if (!alerts.length) { box.classList.remove('show'); return; }
