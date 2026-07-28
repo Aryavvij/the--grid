@@ -6938,14 +6938,14 @@ function buildMuscleGrid() {
       `<div class="gym-vol-bar" style="height:${Math.round((b/maxBar)*100)}%"></div>`
     ).join('');
     return `
-      <div class="gym-mg-card" onclick="gymShowRegistry('${mg.name}','${mg.id}')">
+      <div class="gym-mg-card" onclick="gymShowRegistryByIndex(${i})">
         <div class="gym-mg-card-head">
-          <div class="gym-mg-name">${mg.name} <span style="font-size:9px;color:var(--text-muted);opacity:0.6;" onclick="editMuscleGroupNode(event, ${i})"><svg viewBox="0 0 24 24" width="10" height="10" stroke="currentColor" fill="none" stroke-width="2" style="vertical-align:-1px"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></span></div>
+          <div class="gym-mg-name">${escHtml(mg.name)} <span style="font-size:9px;color:var(--text-muted);opacity:0.6;" onclick="editMuscleGroupNode(event, ${i})"><svg viewBox="0 0 24 24" width="10" height="10" stroke="currentColor" fill="none" stroke-width="2" style="vertical-align:-1px"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></span></div>
           <div class="gym-mg-growth">${mg.growth} GROWTH</div>
         </div>
-        <div class="gym-mg-muscles">${mg.muscles}</div>
+        <div class="gym-mg-muscles">${escHtml(mg.muscles || '')}</div>
         <div class="gym-mg-chart">${bars}</div>
-        <button class="gym-pr-btn" onclick="event.stopPropagation();gymShowRegistry('${mg.name}','${mg.id}')">
+        <button class="gym-pr-btn" onclick="event.stopPropagation();gymShowRegistryByIndex(${i})">
           EXERCISE PR
           <svg viewBox="0 0 24 24" width="10" height="10" stroke="currentColor" fill="none" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
         </button>
@@ -7047,6 +7047,13 @@ function deleteExerciseFromModal() {
   localStorage.setItem('gymExerciseRegistry', JSON.stringify(reg));
   document.getElementById('gymExerciseModal').classList.remove('open');
   gymShowRegistry(gexEditMg, (JSON.parse(localStorage.getItem('gymMuscleGroups')) || muscleGroups).find(m => m.name === gexEditMg)?.id || '000');
+}
+
+/** Index-based wrapper: avoids interpolating a user-set name into an
+    onclick attribute, where an apostrophe would break the handler. */
+function gymShowRegistryByIndex(i) {
+  const mg = muscleGroups[i];
+  if (mg) gymShowRegistry(mg.name, mg.id);
 }
 
 function gymShowRegistry(name, id) {
@@ -9373,40 +9380,7 @@ function qTab(el, tab) {
   renderQueue(tab);
 }
 
-function logWorkEngine() {
-  // Work Engine UI was removed from the Study window; keep the function inert
-  // rather than throwing if anything still calls it.
-  const projEl = document.getElementById('weProject');
-  const hrsEl  = document.getElementById('weHours');
-  const progEl = document.getElementById('weProgress');
-  if (!projEl || !hrsEl || !progEl) return;
-  const proj = projEl.value;
-  const hrs  = parseFloat(hrsEl.value) || 0;
-  const prog = parseInt(progEl.value) || 0;
-  if (!proj || hrs <= 0) return;
 
-  feedItems.unshift({
-    name: proj.slice(0,20),
-    time: `just now`,
-    body: `Work session logged: ${hrs} hrs invested. Progress updated to ${prog}%.`,
-    color: '#76b372',
-  });
-  renderFeed();
-
-  // Dynamic Skills Stack integration
-  const existing = rsStackData.find(s => s.name.toLowerCase().includes(proj.toLowerCase()) || proj.toLowerCase().includes(s.name.toLowerCase()));
-  if (existing) {
-    existing.hrs += hrs;
-  } else {
-    rsStackData.push({ name: proj.toUpperCase(), hrs });
-  }
-  rsStackData.sort((a,b) => b.hrs - a.hrs);
-  saveRsStackData();
-  renderRsStack();
-
-  document.getElementById('weHours').value = '';
-  document.getElementById('weProgress').value = '';
-}
 
 // ═══════════════════════════════════════════════════
 // FINANCES
@@ -9424,6 +9398,59 @@ let txLog = JSON.parse(localStorage.getItem('gridTxLog') || JSON.stringify([
   { ts: '24.08.12 18:45', entity: 'HARD_DRIVE_EXT_NVME',  sector: 'HARDWARE',   val: -8499.00,  hash: '0x5f2b...a92' },
   { ts: '24.08.10 11:20', entity: 'LLM_API_USAGE_CREDIT', sector: 'OPERATIONS', val: -1240.00,  hash: '0x2d1a...c88' },
 ]));
+
+/**
+ * Commit a transaction from the New Entry terminal. This was wired to the
+ * COMMIT_TO_LEDGER_SEQUENCE button but never implemented, so the button threw
+ * a ReferenceError and silently did nothing.
+ */
+function commitTransaction() {
+  const labelEl  = document.getElementById('txLabel');
+  const amountEl = document.getElementById('txAmount');
+  const sectorEl = document.getElementById('txSector');
+  if (!labelEl || !amountEl || !sectorEl) return;
+
+  const label  = labelEl.value.trim();
+  const amount = parseFloat(amountEl.value);
+  const sector = sectorEl.value;
+  if (!label || isNaN(amount) || amount === 0) {
+    alert('Enter a label and a non-zero amount.');
+    return;
+  }
+
+  // Revenue is a credit; everything else is a debit.
+  const signed = sector === 'REVENUE' ? Math.abs(amount) : -Math.abs(amount);
+  const now = new Date();
+  const ts = String(now.getFullYear()).slice(2) + '.' +
+             String(now.getMonth() + 1).padStart(2, '0') + '.' +
+             String(now.getDate()).padStart(2, '0') + ' ' +
+             String(now.getHours()).padStart(2, '0') + ':' +
+             String(now.getMinutes()).padStart(2, '0');
+
+  txLog.unshift({ ts, entity: label.toUpperCase(), sector, val: signed });
+
+  // Roll the spend into its budget sector so the donut and matrix stay truthful.
+  if (signed < 0) {
+    const row = budgetData.find(b => String(b.sector).toUpperCase() === String(sector).toUpperCase());
+    if (row) row.actual = (+row.actual || 0) + Math.abs(signed);
+  }
+
+  saveFinanceData();
+  renderTxLog();
+  renderBudgetTable();
+  initDonutChart();
+
+  gridSync('/api/finance/transactions', {
+    amount: Math.abs(amount),
+    description: label.toUpperCase(),
+    date: now.toISOString().split('T')[0],
+    type: sector === 'REVENUE' ? 'income' : 'expense',
+  });
+
+  labelEl.value = '';
+  amountEl.value = '';
+  try { hydrateRealStats(); } catch (e) {}
+}
 
 function saveFinanceData() {
   localStorage.setItem('gridBudget', JSON.stringify(budgetData));
@@ -9592,29 +9619,7 @@ function openAddRecurringModal() {
   });
 }
 
-async function addRecurring() {
-  const name = document.getElementById('recName').value.trim();
-  const amt  = document.getElementById('recAmount').value;
-  const cat  = document.getElementById('recCat').value;
-  const day  = parseInt(document.getElementById('recDay').value) || 1;
-  if (!name || !amt) return;
-  const amtNum = parseFloat(amt);
-  finRecurItems.push({ name: name.toUpperCase(), amount: `₹${amtNum.toLocaleString()}`, cat, day });
-  saveFinRecurItems();
-  renderRecurringList();
-  document.getElementById('recName').value = '';
-  document.getElementById('recAmount').value = '';
-  document.getElementById('recDay').value = '';
-  // Persist to API as a recurring transaction
-  gridSync('/api/finance/transactions', {
-    amount: amtNum,
-    description: name.toUpperCase(),
-    date: new Date().toISOString().split('T')[0],
-    type: 'expense',
-    recurring: true,
-    recurringFreq: 'monthly',
-  });
-}
+
 
 function renderDebtList() {
   const el = document.getElementById('finDebtList');
@@ -10072,27 +10077,7 @@ function renderRsContent(tab) {
   `).join('');
 }
 
-function rsCommit() {
-  // The inline Log Skill Node form was removed; skills are added via ADD_SKILL.
-  const nodeEl = document.getElementById('rsNodeId');
-  const effEl  = document.getElementById('rsEffort');
-  if (!nodeEl || !effEl) return;
-  const node = nodeEl.value.trim();
-  const hrs  = parseInt(effEl.value) || 0;
-  if (!node || hrs <= 0) return;
-  const existing = rsStackData.find(s => s.name.toLowerCase().includes(node.toLowerCase()));
-  if (existing) {
-    existing.hrs += hrs;
-  } else {
-    rsStackData.push({ name: node.toUpperCase(), hrs });
-    rsStackData.sort((a,b) => b.hrs - a.hrs);
-  }
-  renderRsStack();
-  document.getElementById('rsNodeId').value = '';
-  document.getElementById('rsEffort').value = '0';
-  const st = document.getElementById('rsCompilerStatus');
-  if (st) st.textContent = `Node [${node.toUpperCase()}] committed — ${hrs}h logged. Matrix updated. Schema re-indexed.`;
-}
+
 
 function rsCompile() {
   const btn = document.querySelector('.rs-compile-btn');
@@ -10176,117 +10161,60 @@ function closeRsDetailModal() {
   overlay.classList.remove('open');
 }
 
-function renderRsProfileList() {
-  const cat = document.getElementById('rsEditCat').value;
-  const listBody = document.getElementById('rsProfileListBody');
-  if (!listBody) return;
-  
-  const items = rsTabData[cat] || [];
-  if (items.length === 0) {
-    listBody.innerHTML = `
-      <div style="text-align:center; padding:30px; color:var(--text-muted); font-size:10px; border:1px dashed rgba(255,255,255,0.06); border-radius:6px;">
-        No items logged in this category.
-      </div>
-    `;
-    return;
-  }
-  
-  listBody.innerHTML = items.map((item, idx) => `
-    <div class="gym-ex-card" style="padding:12px; margin:0; border:1px solid rgba(255,255,255,0.06); text-align: left; cursor:pointer;"
-         onclick="if(!event.target.closest('.rw-cmd-btn')) openRsDetailModal('${cat}', ${idx})" title="Open full details">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-        <span class="rs-card-date" style="font-size:9px;">${item.date}</span>
-        <span class="rs-card-tag" style="font-size:8px; margin:0; padding:2px 6px;">${item.badgeLabel}</span>
-      </div>
-      <div class="gym-ex-title" style="font-size:12px; margin-bottom:4px;">${item.name}</div>
-      <div style="font-size:10px; color:var(--text-dim); margin-bottom:6px;">${item.desc}</div>
-      <div style="display:flex; justify-content:space-between; align-items:center;">
-        <div style="display:flex; gap:4px; flex-wrap:wrap;">
-          ${item.tags.map(t => `<span class="rs-card-tag" style="font-size:7px; margin:0; padding:1px 4px;">${t}</span>`).join('')}
-        </div>
-        <div class="rw-cmds">
-          <div class="rw-cmd-btn" onclick="editRsItem('${cat}', ${idx})"><svg viewBox="0 0 24 24" width="10" height="10" stroke="currentColor" fill="none" stroke-width="2" style="vertical-align:-1px"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></div>
-          <div class="rw-cmd-btn del" onclick="deleteRsItem('${cat}', ${idx})"><svg viewBox="0 0 24 24" width="11" height="11" stroke="currentColor" fill="none" stroke-width="2" style="vertical-align:-1px"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg></div>
-        </div>
-      </div>
-    </div>
-  `).join('');
-}
 
-function commitRsItem() {
-  const cat = document.getElementById('rsEditCat').value;
-  const idVal = document.getElementById('rsEditId').value;
-  const name = document.getElementById('rsEditName').value.trim();
-  const date = document.getElementById('rsEditDate').value.trim() || 'PRESENT';
-  const desc = document.getElementById('rsEditDesc').value.trim();
-  const fullDesc = document.getElementById('rsEditFullDesc').value.trim();
-  const tagsStr = document.getElementById('rsEditTags').value;
-  
-  if (!name || !desc) {
-    alert('Please enter a Title and a One-Line Summary!');
-    return;
-  }
-  
-  const tags = tagsStr.split(',').map(t => t.trim().toUpperCase()).filter(t => t !== '');
-  const badge = cat === 'projects' ? 'completed' : cat === 'internships' ? 'internship' : cat === 'positions' ? 'position' : cat === 'courses' ? 'course' : cat === 'research' ? 'research' : 'completed';
-  const badgeLabel = cat.toUpperCase().slice(0, -1);
-  
-  const item = { badge, badgeLabel, date, name, desc, fullDesc, tags };
-  
-  if (idVal !== '') {
-    const idx = parseInt(idVal);
-    rsTabData[cat][idx] = item;
-  } else {
-    rsTabData[cat].push(item);
-  }
-  
-  localStorage.setItem('rsTabData', JSON.stringify(rsTabData));
-  _syncResumeToAPI();
-  renderRsProfileList();
-  cancelRsEdit();
-}
 
+
+
+/**
+ * Edit a portfolio node. The Profile-editor page it used to populate was
+ * removed, so this now drives the universal modal directly — which is also how
+ * the EDIT action in a node's detail drawer reaches it.
+ */
 function editRsItem(cat, idx) {
-  const item = rsTabData[cat][idx];
-  document.getElementById('rsEditId').value = idx;
-  document.getElementById('rsEditName').value = item.name;
-  document.getElementById('rsEditDate').value = item.date;
-  document.getElementById('rsEditDesc').value = item.desc;
-  document.getElementById('rsEditFullDesc').value = item.fullDesc || '';
-  document.getElementById('rsEditTags').value = item.tags.join(', ');
-  
-  document.getElementById('rsFormTitle').innerHTML = `
-    <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" fill="none" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-    MODIFY SKILL NODE [INDEX ${idx}]
-  `;
-  document.getElementById('rsEditSubmitBtn').textContent = 'UPDATE NODE';
-  document.getElementById('rsEditCancelBtn').style.display = 'block';
+  const item = (rsTabData[cat] || [])[idx];
+  if (!item) return;
+  showUniversalModal({
+    title: 'EDIT NODE',
+    fields: [
+      { id: 'name',     label: 'Title',                     type: 'text', value: item.name || '' },
+      { id: 'date',     label: 'Date / range',              type: 'text', value: item.date || '' },
+      { id: 'desc',     label: 'One-line summary',          type: 'text', value: item.desc || '' },
+      { id: 'fullDesc', label: 'Full description',          type: 'text', value: item.fullDesc || '' },
+      { id: 'tags',     label: 'Tags (comma separated)',    type: 'text', value: (item.tags || []).join(', ') },
+      { id: 'links',    label: 'Links (comma separated)',   type: 'text',
+        value: (item.links || []).map(l => (typeof l === 'string' ? l : l.url)).filter(Boolean).join(', ') },
+    ],
+    onSave: v => {
+      if (!v.name) return;
+      Object.assign(item, {
+        name: v.name, date: v.date || '', desc: v.desc || '',
+        fullDesc: v.fullDesc || v.desc || '',
+        tags: (v.tags || '').split(',').map(t => t.trim()).filter(Boolean),
+        links: (v.links || '').split(',').map(t => t.trim()).filter(Boolean),
+      });
+      persistRsData();
+      if (typeof renderRsContent === 'function') renderRsContent(rsActiveTab);
+      if (typeof renderRsStats === 'function') renderRsStats();
+    },
+    onDelete: () => {
+      rsTabData[cat].splice(idx, 1);
+      persistRsData();
+      if (typeof renderRsContent === 'function') renderRsContent(rsActiveTab);
+      if (typeof renderRsStats === 'function') renderRsStats();
+    },
+  });
 }
 
 function deleteRsItem(cat, idx) {
-  if (confirm('Delete this resume item from database?')) {
-    rsTabData[cat].splice(idx, 1);
-    localStorage.setItem('rsTabData', JSON.stringify(rsTabData));
-    _syncResumeToAPI();
-    renderRsProfileList();
-  }
+  if (!confirm('Delete this node from the registry?')) return;
+  rsTabData[cat].splice(idx, 1);
+  persistRsData();
+  if (typeof renderRsContent === 'function') renderRsContent(rsActiveTab);
+  if (typeof renderRsStats === 'function') renderRsStats();
+  if (typeof renderMindgraphIfActive === 'function') renderMindgraphIfActive();
 }
 
-function cancelRsEdit() {
-  document.getElementById('rsEditId').value = '';
-  document.getElementById('rsEditName').value = '';
-  document.getElementById('rsEditDate').value = '';
-  document.getElementById('rsEditDesc').value = '';
-  document.getElementById('rsEditFullDesc').value = '';
-  document.getElementById('rsEditTags').value = '';
-  
-  document.getElementById('rsFormTitle').innerHTML = `
-    <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" fill="none" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
-    COMMIT RESUME SKILL NODE
-  `;
-  document.getElementById('rsEditSubmitBtn').textContent = 'COMMIT NODE';
-  document.getElementById('rsEditCancelBtn').style.display = 'none';
-}
+
 
 function renderRsPdfSelectors() {
   const container = document.getElementById('rsPdfSelectors');
@@ -12587,7 +12515,6 @@ function openAddNodeModal() {
       });
       persistRsData();
       if (typeof renderRsContent === 'function') renderRsContent(rsActiveTab);
-      if (typeof renderRsProfileList === 'function') renderRsProfileList();
       if (typeof renderRsStats === 'function') renderRsStats();
     },
   });
