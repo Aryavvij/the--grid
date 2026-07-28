@@ -3990,6 +3990,18 @@ html, body {
   .gk-panel, .dc-panel { width: 96vw; }
 }
 
+/* ── One-page PDF: compact rhythm so a full profile fits a single sheet ── */
+.rs-pdf-item { margin-bottom: 9px; page-break-inside: avoid; }
+.rs-pdf-item-hdr { display:flex; justify-content:space-between; font-weight:700; font-size:11px; }
+.rs-pdf-item-summary { font-size:10px; line-height:1.35; margin-top:2px; }
+.rs-pdf-item-tags { font-size:9px; opacity:.75; margin-top:2px; }
+#rsPdfPreviewSheet h2 { font-size:11px; letter-spacing:1.5px; margin:12px 0 6px;
+  border-bottom:1px solid rgba(0,0,0,.25); padding-bottom:3px; }
+@media print {
+  @page { size: A4; margin: 12mm; }
+  #rsPdfPreviewSheet { font-size:10px; }
+}
+
 </style>
 </head>
 <body>
@@ -4451,10 +4463,9 @@ html, body {
     </div>
 
     <!-- Utility drawer — quarterly tools, off the daily path -->
-    <div class="nav-divider"></div>
-    <div class="nav-item nav-util" data-page="resume" onclick="navigate('resume')">
+    <div class="nav-item" data-page="resume" onclick="navigate('resume')">
       <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-      Resume
+      Portfolio
     </div>
   </nav>
 
@@ -5583,7 +5594,7 @@ html, body {
       <!-- Header -->
       <div class="page-header" style="margin-bottom: 20px;">
         <div>
-          <div class="page-title">THE PROFILE</div>
+          <div class="page-title">THE PORTFOLIO</div>
           <div class="page-subtitle">
             <span class="dot" style="background: var(--purple);"></span>
             Academic Metrics, Professional Portfolio and Career Milestones
@@ -5593,10 +5604,10 @@ html, body {
 
       <!-- Subpages tabs -->
       <div class="rw-subnav" style="margin-bottom: 20px;">
-        <div class="rw-subnav-title">PROFILE CONTROLS</div>
+        <div class="rw-subnav-title">PORTFOLIO</div>
         <div class="rw-subnav-tabs">
           <div class="rw-tab active rs-page-tab" onclick="rsPageTab(this,'overview')">OVERVIEW</div>
-          <div class="rw-tab rs-page-tab" onclick="rsPageTab(this,'profile')">PROFILE EDITOR</div>
+          <div class="rw-tab rs-page-tab" onclick="rsPageTab(this,'profile')">PROFILE</div>
           <div class="rw-tab rs-page-tab" onclick="rsPageTab(this,'pdf')">PDF GENERATOR</div>
         </div>
       </div>
@@ -5631,26 +5642,8 @@ html, body {
             </div>
           </div>
 
-          <!-- Middle Panels -->
-          <div class="rs-panels">
-            <!-- Log Skill Node -->
-            <div class="rs-panel">
-              <div class="rs-panel-hdr">
-                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
-                <span class="rs-panel-hdr-title">LOG SKILL NODE</span>
-              </div>
-              <div class="rs-field-group">
-                <label>NODE_IDENTIFIER</label>
-                <input type="text" id="rsNodeId" placeholder="e.g. Distributed Systems">
-              </div>
-              <div class="rs-field-group">
-                <label>EFFORT_LOG (HOURS)</label>
-                <input type="number" id="rsEffort" value="0" min="0">
-              </div>
-              <button class="rs-commit-btn" onclick="rsCommit()">COMMIT_TO_MATRIX</button>
-            </div>
-
-            <!-- Tech Stack Distribution -->
+          <!-- Skill distribution, full width now that the logging form is gone -->
+          <div class="rs-panels" style="grid-template-columns:1fr;">
             <div class="rs-panel">
               <div class="rs-panel-hdr" style="display:flex; justify-content:space-between; align-items:center;">
                 <span class="rs-panel-hdr-title">TECHNICAL STACK DISTRIBUTION</span>
@@ -5661,6 +5654,18 @@ html, body {
               </div>
               <div class="rs-stack-row" id="rsStackBars"></div>
             </div>
+          </div>
+
+          <!-- Mind-graph: every node and how it connects -->
+          <div class="rs-panel" style="margin-bottom:16px;">
+            <div class="rs-panel-hdr" style="display:flex; justify-content:space-between; align-items:center;">
+              <span class="rs-panel-hdr-title">WORK GRAPH</span>
+              <span style="display:flex;align-items:center;gap:8px;">
+                <button class="fin-modify-btn" style="padding:2px 8px;font-size:9px;" onclick="openAddNodeModal()">ADD NODE</button>
+                <span class="rs-panel-hdr-right">CLICK A NODE FOR DETAILS</span>
+              </span>
+            </div>
+            <div id="rsMindGraph" style="width:100%;height:380px;"></div>
           </div>
 
           <!-- Tabs -->
@@ -5678,11 +5683,11 @@ html, body {
 
           <!-- PDF Compiler -->
           <div class="rs-compiler">
-            <div class="rs-compiler-title">PDF LAYOUT COMPILER</div>
-            <div class="rs-compiler-text" id="rsCompilerStatus">Executing resume synthesis using the "Engineering_Registry" schema. All nodes verified. Ready for deployment to PDF format.</div>
+            <div class="rs-compiler-title">PDF EXPORT</div>
+            <div class="rs-compiler-text" id="rsCompilerStatus">Generates a clean one-page PDF from your selected nodes.</div>
             <button class="rs-compile-btn" onclick="rsCompile()">
               <svg viewBox="0 0 24 24"><polyline points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-              COMPILE RUNWAY RESUME STRUCTURE
+              GENERATE ONE-PAGE PDF
             </button>
           </div>
 
@@ -6449,6 +6454,11 @@ function showUniversalModal(options) {
   // Title
   let html = `<div class="modal-title">${options.title}</div>`;
 
+  // Read-only HTML body (used by digests/reports that have no form fields)
+  if (options.html) {
+    html += `<div style="max-height:60vh;overflow-y:auto;">${options.html}</div>`;
+  }
+
   // Fields
   if (options.fields && options.fields.length > 0) {
     options.fields.forEach(f => {
@@ -6493,8 +6503,8 @@ function showUniversalModal(options) {
 
   // Right side: CANCEL and SAVE
   html += `<div style="display:flex; gap:10px;">
-    <button class="btn-cancel" id="ucBtnCancel">CANCEL</button>
-    <button class="btn-save" id="ucBtnSave">SAVE</button>
+    <button class="btn-cancel" id="ucBtnCancel">${options.hideSave ? 'CLOSE' : 'CANCEL'}</button>
+    ${options.hideSave ? '' : '<button class="btn-save" id="ucBtnSave">SAVE</button>'}
   </div>`;
   
   html += `</div>`;
@@ -6507,6 +6517,7 @@ function showUniversalModal(options) {
   // Bind Buttons
   document.getElementById('ucBtnCancel').addEventListener('click', closeUniversalModal);
   
+  const _saveBtn = document.getElementById('ucBtnSave');
   if (options.onDelete) {
     document.getElementById('ucBtnDelete').addEventListener('click', () => {
       if (confirm(`Are you sure you want to perform this deletion?`)) {
@@ -6516,7 +6527,7 @@ function showUniversalModal(options) {
     });
   }
 
-  document.getElementById('ucBtnSave').addEventListener('click', () => {
+  if (_saveBtn) _saveBtn.addEventListener('click', () => {
     // Gather field values
     const data = {};
     if (options.fields) {
@@ -6612,6 +6623,7 @@ function navigate(page) {
   if (page === 'work')     initWork();
   if (page === 'weekly')   initWeekly();
   if (page === 'workout')  { try { recomputeGymProgression(); } catch (e) { console.warn('gym progression:', e); } }
+  if (page === 'resume')   { try { renderMindGraph(); } catch (e) { console.warn('mind graph:', e); } }
 
   // Re-hydrate stats and resize charts on every navigation. Module data loads
   // asynchronously and charts size from their container, which has no width
@@ -10152,8 +10164,12 @@ function renderRsContent(tab) {
 }
 
 function rsCommit() {
-  const node = document.getElementById('rsNodeId').value.trim();
-  const hrs  = parseInt(document.getElementById('rsEffort').value) || 0;
+  // The inline Log Skill Node form was removed; skills are added via ADD_SKILL.
+  const nodeEl = document.getElementById('rsNodeId');
+  const effEl  = document.getElementById('rsEffort');
+  if (!nodeEl || !effEl) return;
+  const node = nodeEl.value.trim();
+  const hrs  = parseInt(effEl.value) || 0;
   if (!node || hrs <= 0) return;
   const existing = rsStackData.find(s => s.name.toLowerCase().includes(node.toLowerCase()));
   if (existing) {
@@ -10191,6 +10207,7 @@ function rsPageTab(el, tab) {
   
   if (tab === 'overview') {
     renderRsContent(rsActiveTab);
+    try { renderMindGraph(); } catch (e) { console.warn('mind graph:', e); }
   } else if (tab === 'profile') {
     renderRsProfileList();
   } else if (tab === 'pdf') {
@@ -10410,18 +10427,24 @@ function generateResumePdf() {
     });
     
     if (selected.length > 0) {
-      const sectionHeader = `<h2>${cat.toUpperCase()}</h2>`;
-      const sectionItems = selected.map(item => `
+      // Brief one-page format: title + date, a single summary line, and skills
+      // inline. Full descriptions are deliberately omitted so everything fits
+      // on one page and stays scannable.
+      const sectionHeader = `<h2>${escHtml(cat.toUpperCase())}</h2>`;
+      const sectionItems = selected.map(item => {
+        const tags = (item.tags || []).slice(0, 6).join(' • ');
+        const links = (item.links || []).map(l => (typeof l === 'string' ? l : l.url)).filter(Boolean);
+        return `
         <div class="rs-pdf-item">
           <div class="rs-pdf-item-hdr">
-            <span>${item.name}</span>
-            <span class="rs-pdf-item-date">${item.date}</span>
+            <span>${escHtml(item.name)}</span>
+            <span class="rs-pdf-item-date">${escHtml(item.date || '')}</span>
           </div>
-          <div class="rs-pdf-item-summary">${item.desc}</div>
-          <div class="rs-pdf-item-desc">${item.fullDesc || item.desc}</div>
-          <div class="rs-pdf-item-tags">Skills: ${item.tags.join(' • ')}</div>
-        </div>
-      `).join('');
+          <div class="rs-pdf-item-summary">${escHtml(item.desc || '')}</div>
+          ${tags ? `<div class="rs-pdf-item-tags">${escHtml(tags)}</div>` : ''}
+          ${links.length ? `<div class="rs-pdf-item-tags">${links.map(l => escHtml(l)).join(' · ')}</div>` : ''}
+        </div>`;
+      }).join('');
       content.push(sectionHeader + sectionItems);
     }
   });
@@ -11774,6 +11797,7 @@ function gkBuild() {
   }));
 
   items.push({ kind: 'action', label: 'Open Daily Console', run: () => dcOpen() });
+  items.push({ kind: 'action', label: 'This week (digest)', run: () => openWeeklyDigest() });
   items.push({ kind: 'action', label: 'Start focus timer', run: () => {
     navigate('work');
     const b = document.getElementById('nlInitBtn'); if (b) b.click();
@@ -12626,6 +12650,266 @@ function stRenderChart(rows) {
     yAxis: { type: 'value', name: 'MIN', nameTextStyle: { fontSize: 9 } },
     series: [{ type: 'bar', data: days.map(d => byDay[d]) }],
   });
+}
+
+
+/* ══ PORTFOLIO: WORK GRAPH ═════════════════════════════════════════════════
+   A force-directed map of everything you have done. Category hubs sit at the
+   centre, each node hangs off its hub, and shared tags/skills pull related
+   work together — so the graph shows how the pieces actually connect rather
+   than listing them.                                                        */
+
+const RS_CATS = ['projects', 'internships', 'positions', 'courses', 'research', 'achievements'];
+
+function rsAllNodes() {
+  const out = [];
+  RS_CATS.forEach(cat => (rsTabData[cat] || []).forEach((item, idx) => out.push({ cat, idx, item })));
+  return out;
+}
+
+function renderMindGraph() {
+  const el = document.getElementById('rsMindGraph');
+  if (!el || typeof echarts === 'undefined') return;
+  const chart = ethosChart(el);
+  if (!chart) return;
+  chart.clear();
+
+  const all = rsAllNodes();
+  if (!all.length) {
+    chart.setOption({ title: { text: 'NO NODES YET', subtext: 'Add a project, paper or achievement to build the graph',
+      left: 'center', top: 'center', textStyle: { fontSize: 12, color: '#5c6963' },
+      subtextStyle: { fontSize: 9, color: '#3c4641' } } });
+    return;
+  }
+
+  const CAT_COLOR = {
+    projects: '#76b372', internships: '#94d68f', positions: '#a5f79e',
+    courses: '#3b6839', research: '#E8B44A', achievements: '#64a0dc',
+  };
+
+  const nodes = [], links = [], categories = [];
+  RS_CATS.forEach((c, i) => categories.push({ name: c }));
+
+  // category hubs
+  RS_CATS.forEach(cat => {
+    const count = (rsTabData[cat] || []).length;
+    if (!count) return;
+    nodes.push({
+      id: 'cat:' + cat, name: cat.toUpperCase(), category: RS_CATS.indexOf(cat),
+      symbolSize: 34, value: count,
+      itemStyle: { color: CAT_COLOR[cat] || '#76b372', borderColor: '#0f0f0f', borderWidth: 2 },
+      label: { show: true, fontSize: 9, color: '#f0f0f0' }, _hub: true,
+    });
+  });
+
+  // work nodes + tag index
+  const tagIndex = {};
+  all.forEach(({ cat, idx, item }) => {
+    const id = cat + ':' + idx;
+    nodes.push({
+      id, name: item.name, category: RS_CATS.indexOf(cat),
+      symbolSize: 15 + Math.min((item.tags || []).length, 5) * 2,
+      itemStyle: { color: CAT_COLOR[cat] || '#76b372', opacity: 0.9 },
+      label: { show: true, fontSize: 8, color: '#9ba8a2' },
+      _cat: cat, _idx: idx,
+      _hasLink: !!(item.links && item.links.length),
+    });
+    links.push({ source: 'cat:' + cat, target: id, lineStyle: { color: '#262626', width: 1 } });
+    (item.tags || []).forEach(t => {
+      const k = String(t).toUpperCase();
+      (tagIndex[k] = tagIndex[k] || []).push(id);
+    });
+  });
+
+  // shared-tag edges pull related work together
+  Object.keys(tagIndex).forEach(tag => {
+    const ids = tagIndex[tag];
+    if (ids.length < 2) return;
+    for (let i = 0; i < ids.length - 1; i++) {
+      links.push({ source: ids[i], target: ids[i + 1],
+        lineStyle: { color: 'rgba(118,179,114,0.28)', width: 1, curveness: 0.15, type: 'dashed' } });
+    }
+  });
+
+  chart.setOption({
+    tooltip: {
+      formatter: p => {
+        if (p.dataType !== 'node') return '';
+        if (p.data._hub) return p.data.name + ' · ' + p.data.value + ' nodes';
+        const it = rsTabData[p.data._cat][p.data._idx];
+        return '<b>' + escHtml(it.name) + '</b><br/>' + escHtml(it.date || '') +
+               ((it.tags || []).length ? '<br/>' + escHtml(it.tags.join(', ')) : '') +
+               (p.data._hasLink ? '<br/><span style="color:#a5f79e">has links</span>' : '');
+      },
+    },
+    legend: [{ data: categories.map(c => c.name), textStyle: { color: '#5c6963', fontSize: 9 },
+               icon: 'circle', itemWidth: 7, itemHeight: 7, bottom: 0 }],
+    series: [{
+      type: 'graph', layout: 'force', roam: true, draggable: true,
+      categories, nodes, links,
+      force: { repulsion: 190, edgeLength: [50, 110], gravity: 0.08 },
+      emphasis: { focus: 'adjacency', label: { show: true } },
+      lineStyle: { color: 'source', curveness: 0.1 },
+      label: { position: 'right', formatter: p => p.data.name.length > 22 ? p.data.name.slice(0, 21) + '…' : p.data.name },
+    }],
+  });
+
+  chart.off('click');
+  chart.on('click', p => {
+    if (p.dataType === 'node' && p.data && p.data._cat) openRsDetailModal(p.data._cat, p.data._idx);
+  });
+}
+
+/* ── Node CRUD (add from the graph panel) ── */
+function openAddNodeModal() {
+  showUniversalModal({
+    title: 'ADD NODE',
+    fields: [
+      { id: 'cat', label: 'Category', type: 'select', value: 'projects',
+        options: RS_CATS.map(c => ({ value: c, label: c.toUpperCase() })) },
+      { id: 'name', label: 'Title', type: 'text', placeholder: 'e.g. Distributed Log Engine' },
+      { id: 'date', label: 'Date / range', type: 'text', placeholder: 'e.g. 2026 or PRESENT' },
+      { id: 'desc', label: 'One-line summary', type: 'text', placeholder: 'Short description' },
+      { id: 'fullDesc', label: 'Full description', type: 'text', placeholder: 'Detail, outcomes, tech' },
+      { id: 'tags', label: 'Tags (comma separated)', type: 'text', placeholder: 'PYTHON, KAFKA' },
+      { id: 'links', label: 'Links (comma separated URLs)', type: 'text', placeholder: 'https://github.com/...' },
+    ],
+    onSave: v => {
+      if (!v.name) return;
+      const cat = v.cat || 'projects';
+      rsTabData[cat] = rsTabData[cat] || [];
+      rsTabData[cat].push({
+        badge: 'active-proj', badgeLabel: cat.toUpperCase(),
+        date: v.date || '', name: v.name, desc: v.desc || '',
+        fullDesc: v.fullDesc || v.desc || '',
+        tags: (v.tags || '').split(',').map(t => t.trim()).filter(Boolean),
+        links: (v.links || '').split(',').map(t => t.trim()).filter(Boolean),
+      });
+      persistRsData();
+      renderMindGraph();
+      if (typeof renderRsContent === 'function') renderRsContent(rsActiveTab);
+      if (typeof renderRsProfileList === 'function') renderRsProfileList();
+      if (typeof renderRsStats === 'function') renderRsStats();
+    },
+  });
+}
+
+function persistRsData() {
+  localStorage.setItem('rsTabData', JSON.stringify(rsTabData));
+  if (typeof _syncResumeToAPI === 'function') _syncResumeToAPI();
+}
+
+/* ══ P8: PLAN vs ACTUAL ════════════════════════════════════════════════════
+   The timetable is intent; study sessions and focus logs are reality. Nothing
+   in the app compared them until now.                                       */
+function planVsActual(days) {
+  const tt = (typeof ttData !== 'undefined' && Array.isArray(ttData)) ? ttData : [];
+  // planned hours per label across the week
+  const planned = {};
+  tt.forEach((day, di) => {
+    for (let h = 0; h < 24; h++) {
+      const label = (typeof getSlotLabel === 'function') ? getSlotLabel(di, h) : (day[h] || null);
+      if (!label) continue;
+      const key = String(label).toLowerCase().replace(/_/g, ' ');
+      planned[key] = (planned[key] || 0) + 1;
+    }
+  });
+
+  // actual minutes per category from study logs (+ focus logs when tagged)
+  const cut = new Date(); cut.setDate(cut.getDate() - (days || 7));
+  const cutStr = cut.toISOString().slice(0, 10);
+  const actual = {};
+  (typeof studyLogs !== 'undefined' ? studyLogs : []).forEach(l => {
+    if ((l.date || '') < cutStr) return;
+    const k = String(l.category || 'general').toLowerCase();
+    actual[k] = (actual[k] || 0) + (+l.minutes || 0) / 60;
+  });
+
+  const keys = [...new Set([...Object.keys(planned), ...Object.keys(actual)])]
+    .filter(k => !['sleep', 'break', 'idle', 'maint', 'recovery'].includes(k));
+  return keys.map(k => ({ label: k, planned: +(planned[k] || 0).toFixed(1), actual: +(actual[k] || 0).toFixed(1) }))
+             .sort((a, b) => (b.planned + b.actual) - (a.planned + a.actual))
+             .slice(0, 8);
+}
+
+/** Weekly digest — one screen of what actually happened. */
+function buildWeeklyDigest() {
+  const out = { habits: null, focus: null, gym: null, spend: null, tasks: null, planVsActual: [] };
+  const d = new Date().getDate();
+
+  try {
+    const hs = habits || [];
+    if (hs.length) {
+      let hit = 0, poss = 0;
+      hs.forEach(h => { const st = new Set(h.checked || []);
+        for (let i = Math.max(1, d - 6); i <= d; i++) { poss++; if (st.has(i)) hit++; } });
+      out.habits = { pct: poss ? Math.round(hit / poss * 100) : 0, hit, poss };
+    }
+  } catch (e) {}
+
+  try {
+    const cut = new Date(); cut.setDate(cut.getDate() - 7);
+    const cutStr = cut.toISOString().slice(0, 10);
+    const rows = (typeof studyLogs !== 'undefined' ? studyLogs : []).filter(l => (l.date || '') >= cutStr);
+    const mins = rows.reduce((s, l) => s + (+l.minutes || 0), 0);
+    out.focus = { hours: +(mins / 60).toFixed(1), sessions: rows.length };
+  } catch (e) {}
+
+  try {
+    const logs = JSON.parse(localStorage.getItem('gymLogs') || '[]');
+    const cut = Date.now() - 7 * 864e5;
+    out.gym = { sessions: logs.filter(l => new Date(l.date || l.workoutDate || 0).getTime() >= cut).length };
+  } catch (e) {}
+
+  try {
+    const bd = budgetData || [];
+    out.spend = { actual: bd.reduce((s, b) => s + (+b.actual || 0), 0),
+                  planned: bd.reduce((s, b) => s + (+b.planned || 0), 0) };
+  } catch (e) {}
+
+  try {
+    const all = (kanbanTasks || []).flat().filter(Boolean);
+    out.tasks = { done: all.filter(t => t.done || t.status === 'completed').length, total: all.length };
+  } catch (e) {}
+
+  out.planVsActual = planVsActual(7);
+  return out;
+}
+
+function openWeeklyDigest() {
+  const d = buildWeeklyDigest();
+  const cur = (typeof getCurrencySymbol === 'function') ? getCurrencySymbol() : '₹';
+  const row = (l, v, s) =>
+    '<div style="display:flex;justify-content:space-between;align-items:baseline;padding:9px 0;border-bottom:1px solid var(--carbon-3);">' +
+    '<span style="font-size:10px;letter-spacing:1.5px;color:var(--text-muted)">' + l + '</span>' +
+    '<span style="font-family:var(--font);font-size:15px;color:var(--text)">' + v +
+    (s ? ' <span style="font-size:9px;color:var(--text-muted)">' + s + '</span>' : '') + '</span></div>';
+
+  let html = '';
+  html += row('HABITS', d.habits ? d.habits.pct + '%' : '—', d.habits ? d.habits.hit + '/' + d.habits.poss : 'no habits');
+  html += row('STUDY', d.focus ? d.focus.hours + 'h' : '—', d.focus ? d.focus.sessions + ' sessions' : '');
+  html += row('GYM', d.gym ? d.gym.sessions : '—', 'sessions');
+  html += row('SPEND', d.spend && d.spend.planned ? cur + d.spend.actual.toLocaleString('en-IN') : '—',
+              d.spend && d.spend.planned ? 'of ' + cur + d.spend.planned.toLocaleString('en-IN') : '');
+  html += row('TASKS', d.tasks && d.tasks.total ? d.tasks.done + '/' + d.tasks.total : '—', 'completed');
+
+  if (d.planVsActual.length) {
+    html += '<div style="margin-top:16px;font-size:10px;letter-spacing:2px;color:var(--sig-500);margin-bottom:8px;">PLAN vs ACTUAL</div>';
+    d.planVsActual.forEach(p => {
+      const max = Math.max(p.planned, p.actual, 1);
+      html += '<div style="margin-bottom:9px;">' +
+        '<div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-dim);margin-bottom:4px;">' +
+          '<span>' + escHtml(p.label) + '</span>' +
+          '<span>' + p.actual + 'h / ' + p.planned + 'h planned</span></div>' +
+        '<div style="height:5px;background:var(--carbon-3);border-radius:3px;overflow:hidden;position:relative;">' +
+          '<div style="position:absolute;inset:0;width:' + (p.planned / max * 100) + '%;background:var(--carbon-4)"></div>' +
+          '<div style="position:absolute;inset:0;width:' + (p.actual / max * 100) + '%;background:' +
+            (p.actual >= p.planned ? 'var(--sig-500)' : 'var(--amber,#E8B44A)') + '"></div>' +
+        '</div></div>';
+    });
+  }
+
+  showUniversalModal({ title: 'THIS WEEK', html, hideSave: true });
 }
 
 </script>
