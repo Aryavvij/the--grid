@@ -4888,10 +4888,7 @@ html, body {
           <div class="fin-donut-wrap">
             <div class="fin-donut-chart-area">
               <div id="spendDonut" style="width:160px;height:160px"></div>
-              <div class="fin-donut-center">
-                <div class="fin-donut-center-label">TOTAL EXP</div>
-                <div class="fin-donut-center-val" id="finDonutVal">—</div>
-              </div>
+              
             </div>
             <div class="fin-legend">
               <div class="fin-legend-item"><span class="fin-legend-dot" style="background:#9b59b6"></span>ACADEMIC</div>
@@ -9779,9 +9776,6 @@ function initDonutChart() {
   const el = document.getElementById('spendDonut');
   const totalActual = budgetData.reduce((sum, item) => sum + item.actual, 0);
 
-  const centerValEl = document.getElementById('finDonutVal');
-  if (centerValEl) centerValEl.textContent = getCurrencySymbol() + totalActual.toLocaleString('en-IN', { maximumFractionDigits: 0 });
-
   const spentStatEl = document.getElementById('fStatSpent');
   if (spentStatEl) {
     spentStatEl.textContent = '\u20B9' + totalActual.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -11909,52 +11903,26 @@ function hvDrawClock() {
   const minFrac  = (m + sec / 60) / 60;
   const secFrac  = sec / 60;
 
-  const polar = (r, frac) => {
-    const a = (frac * 360 - 90) * Math.PI / 180;
-    return [C + Math.cos(a) * r, C + Math.sin(a) * r];
-  };
-  const [hx, hy] = polar(46, hourFrac);        // hour hand
-  const [mx, my] = polar(64, minFrac);         // minute hand
-  const [sx, sy] = polar(88, secFrac);         // sweeping second marker
-  const [tx, ty] = polar(88, secFrac);
-
-  // minute ticks around the face for a sense of movement
-  let ticks = '';
-  for (let i = 0; i < 60; i++) {
-    const major = i % 5 === 0;
-    const [x1, y1] = polar(major ? 92 : 94, i / 60);
-    const [x2, y2] = polar(97, i / 60);
-    ticks += '<line x1="' + x1.toFixed(1) + '" y1="' + y1.toFixed(1) +
-             '" x2="' + x2.toFixed(1) + '" y2="' + y2.toFixed(1) +
-             '" stroke="' + (major ? '#76b372' : '#2a352f') + '" stroke-width="' +
-             (major ? 1.4 : 0.8) + '" opacity="' + (major ? 0.65 : 0.5) + '"/>';
-  }
+  // Single hand, sweeping with the seconds.
+  const ang = (secFrac * 360 - 90) * Math.PI / 180;
+  const hx = C + Math.cos(ang) * 58, hy = C + Math.sin(ang) * 58;
 
   const hh = String(h).padStart(2, '0'), mm = String(m).padStart(2, '0'), ss = String(sec).padStart(2, '0');
   const dstr = now.toLocaleDateString(undefined, { weekday: 'short', day: '2-digit', month: 'short' }).toUpperCase();
 
   svg.innerHTML =
-    ticks +
     track(88, 2) + track(74, 2) + track(62, 1.5) +
     arc(88, hourFrac, 2.5, '#76b372', 0.95) +
-    arc(74, minFrac,  2,   '#94d68f', 0.75) +
-    arc(62, secFrac,  1.5, '#a5f79e', 0.55) +
-    // hands: thick hour, thinner minute, and a bright second marker that
-    // visibly sweeps once per tick
+    arc(74, minFrac,  2,   '#94d68f', 0.7) +
+    arc(62, secFrac,  1.5, '#a5f79e', 0.45) +
     '<line x1="100" y1="100" x2="' + hx.toFixed(1) + '" y2="' + hy.toFixed(1) +
-      '" stroke="#f0f0f0" stroke-width="3" stroke-linecap="round" opacity=".9"/>' +
-    '<line x1="100" y1="100" x2="' + mx.toFixed(1) + '" y2="' + my.toFixed(1) +
-      '" stroke="#94d68f" stroke-width="2" stroke-linecap="round" opacity=".85"/>' +
-    '<line x1="100" y1="100" x2="' + sx.toFixed(1) + '" y2="' + sy.toFixed(1) +
-      '" stroke="#a5f79e" stroke-width="1" stroke-linecap="round" opacity=".55"/>' +
-    '<circle cx="' + tx.toFixed(1) + '" cy="' + ty.toFixed(1) + '" r="3.4" fill="#a5f79e"/>' +
-    '<circle cx="' + tx.toFixed(1) + '" cy="' + ty.toFixed(1) + '" r="7" fill="#a5f79e" opacity=".18"/>' +
-    '<circle cx="100" cy="100" r="3" fill="#f0f0f0"/>' +
-    '<text x="100" y="132" text-anchor="middle" fill="#f0f0f0" font-family="Space Mono, monospace" ' +
-      'font-size="15" letter-spacing="1">' + hh + ':' + mm +
-      '<tspan font-size="10" fill="#a5f79e">:' + ss + '</tspan></text>' +
-    '<text x="100" y="146" text-anchor="middle" fill="#5c6963" font-family="Space Mono, monospace" ' +
-      'font-size="7.5" letter-spacing="2">' + dstr + '</text>';
+      '" stroke="#76b372" stroke-width="1" opacity=".35"/>' +
+    '<circle cx="100" cy="100" r="2.5" fill="#a5f79e"/>' +
+    '<text x="100" y="96" text-anchor="middle" fill="#f0f0f0" font-family="Space Mono, monospace" ' +
+      'font-size="21" letter-spacing="1">' + hh + ':' + mm +
+      '<tspan font-size="11" fill="#5c6963">:' + ss + '</tspan></text>' +
+    '<text x="100" y="112" text-anchor="middle" fill="#5c6963" font-family="Space Mono, monospace" ' +
+      'font-size="8" letter-spacing="2">' + dstr + '</text>';
 }
 let hvClockTimer = null;
 function hvStartClock() {
