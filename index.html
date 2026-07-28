@@ -8287,10 +8287,8 @@ let ttData = (function () {
 })();
 
 function saveTimetable() {
-  // Device-local, same as weekly tasks and study logs: there is no backend
-  // model for the timetable yet, and /api/profile only accepts a fixed field
-  // list, so posting it there would be silently dropped.
   localStorage.setItem('gridTimetable', JSON.stringify(ttData));
+  pushTimetable();                 // cross-device sync (queued when offline)
 }
 
 // Weekly kanban tasks — persisted in localStorage
@@ -8300,6 +8298,7 @@ let kanbanTasks = JSON.parse(localStorage.getItem('gridKanbanTasks') || JSON.str
 
 function saveKanbanTasks() {
   localStorage.setItem('gridKanbanTasks', JSON.stringify(kanbanTasks));
+  pushTasks();
 }
 
 const WEEK_DAYS = ['MON 07','TUE 08','WED 09','THU 10','FRI 11','SAT 12','SUN 13'];
@@ -11864,6 +11863,16 @@ document.addEventListener('DOMContentLoaded', () => {
   const inp = document.getElementById('gkInput');
   if (inp) inp.addEventListener('input', e => gkRender(e.target.value));
   GridQueue.flush();
+  // Server is the source of truth for planning data; refresh the current view
+  // once it arrives so a second device shows the same state.
+  pullPlanning().then(ok => {
+    if (!ok) return;
+    try { buildTimetable(); } catch (e) {}
+    try { buildKanban(); } catch (e) {}
+    try { stRenderAll(); } catch (e) {}
+    try { renderConsole(); } catch (e) {}
+    try { hydrateRealStats(); } catch (e) {}
+  });
 });
 
 /* ══ HOME v3 ═══════════════════════════════════════════════════════════════
@@ -12346,7 +12355,7 @@ function stStopAndLog() {
   });
   saveStudyLogs();
   rememberStudyCategory(cat);
-  gridSync('/api/focus/sessions', { minutes: Math.max(1, Math.round(_stElapsed / 60)), category: cat, note });
+  pushStudySession(studyLogs[0]);
 
   _stElapsed = 0; _stStart = null;
   document.getElementById('stNote').value = '';
@@ -12373,7 +12382,8 @@ function stManualEntry() {
       const cat = (v.category || 'general').trim().toLowerCase();
       studyLogs.unshift({ id: 'ST_' + Date.now(), date: v.date, time: v.time,
                           minutes: mins, category: cat, note: v.note || '' });
-      saveStudyLogs(); rememberStudyCategory(cat); stRenderAll();
+      saveStudyLogs(); pushStudySession(studyLogs[0]);
+      rememberStudyCategory(cat); stRenderAll();
     },
   });
 }
@@ -13004,6 +13014,106 @@ function initMindgraph() {
   // without this the canvas can stay blank until the tab regains focus.
   mgDraw();
   requestAnimationFrame(() => { mgFit(); mgDraw(); });
+}
+
+
+/* ══ CROSS-DEVICE SYNC: timetable · weekly tasks · study sessions ═══════════
+   These three used to be localStorage-only. They now have real backend models,
+   so they sync like every other module: localStorage stays the instant local
+   cache and offline fallback, the server is the source of truth on load.     */
+
+/** ttData grid -> flat blocks the API stores. */
+function ttToBlocks() {
+  const blocks = [];
+  (ttData || []).forEach((day, di) => {
+    if (!day) return;
+    const hours = Object.keys(day).map(Number).sort((a, b) => a - b);
+    hours.forEach(h => {
+      const label = day[h];
+      if (!label) return;
+      // a block runs until the next filled hour (same rule the grid renders by)
+      let end = h + 1;
+      while (end < 24 && day[end] === undefined) end++;
+      blocks.push({ dayIndex: di, startHour: h, endHour: Math.min(end, 24), label: String(label).slice(0, 60) });
+    });
+  });
+  return blocks;
+}
+
+/** Flat blocks -> ttData grid. */
+function blocksToTt(blocks) {
+  const grid = Array.from({ length: 7 }, () => ({}));
+  (blocks || []).forEach(b => {
+    if (b.dayIndex < 0 || b.dayIndex > 6) return;
+    grid[b.dayIndex][b.startHour] = b.label;
+  });
+  return grid;
+}
+
+async function pullPlanning() {
+  if (GridMode.isDemo()) return;                 // sandbox/demo runs local only
+  try {
+    const [tt, tk, st] = await Promise.all([
+      gridFetch('/api/planning/timetable'),
+      gridFetch('/api/planning/tasks'),
+      gridFetch('/api/planning/study'),
+    ]);
+
+    if (tt && Array.isArray(tt.blocks) && tt.blocks.length) {
+      ttData = blocksToTt(tt.blocks);
+      localStorage.setItem('gridTimetable', JSON.stringify(ttData));
+    }
+
+    if (tk && Array.isArray(tk.tasks)) {
+      const cols = Array.from({ length: 7 }, () => []);
+      tk.tasks.forEach(t => {
+        if (t.dayIndex >= 0 && t.dayIndex < 7) {
+          cols[t.dayIndex].push({ type: t.category || 'general', name: t.name,
+                                  status: t.status || 'pending', done: !!t.done,
+                                  ...(t.deadline ? { deadline: t.deadline } : {}) });
+        }
+      });
+      if (tk.tasks.length) {
+        kanbanTasks = cols;
+        localStorage.setItem('gridKanbanTasks', JSON.stringify(kanbanTasks));
+      }
+    }
+
+    if (st && Array.isArray(st.sessions) && st.sessions.length) {
+      studyLogs = st.sessions.map(s => ({
+        id: s.id, date: s.date, time: s.startTime || '',
+        minutes: s.minutes, category: s.category, note: s.note || '',
+      }));
+      saveStudyLogs();
+    }
+    return true;
+  } catch (e) {
+    console.info('[planning] server unavailable, using local copy:', e && e.message);
+    return false;
+  }
+}
+
+/* Push helpers — fire through gridSync so a failed write is queued and replayed. */
+function pushTimetable() { gridSync('/api/planning/timetable', { blocks: ttToBlocks() }, 'PUT'); }
+
+function pushTasks() {
+  const tasks = [];
+  (kanbanTasks || []).forEach((col, di) => (col || []).forEach((t, i) => {
+    if (!t || !t.name) return;
+    tasks.push({ dayIndex: di, name: String(t.name).slice(0, 200),
+                 category: String(t.type || 'general').toLowerCase().slice(0, 40),
+                 status: t.status || 'pending', done: !!t.done,
+                 deadline: t.deadline || null, sortOrder: i });
+  }));
+  gridSync('/api/planning/tasks', { tasks }, 'PUT');
+}
+
+function pushStudySession(entry) {
+  gridSync('/api/planning/study', {
+    date: entry.date, startTime: entry.time || null,
+    minutes: entry.minutes, category: entry.category || 'general',
+    note: entry.note || null,
+  });
 }
 
 </script>

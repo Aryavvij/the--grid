@@ -34,6 +34,9 @@ model User {
   habitLogs        HabitLog[]
   metricDefs       MetricDef[]
   metricLogs       MetricLog[]
+  timetableBlocks  TimetableBlock[]
+  weeklyTasks      WeeklyTask[]
+  studySessions    StudySession[]
   gymSplits        GymSplit[]
   gymLogs          GymLog[]
   budgetCategories BudgetCategory[]
@@ -290,4 +293,60 @@ model MetricLog {
   @@unique([defId, loggedDate]) // idempotent upsert key — safe offline replay
   @@index([userId, loggedDate]) // the only index the grid needs
   @@map("metric_logs")
+}
+
+// ─── Weekly planning & study ──────────────────────────────────────────────────
+// Modelled as queryable rows rather than a blob so the server can answer
+// questions like "how many hours were planned vs actually studied per category".
+
+model TimetableBlock {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  dayIndex  Int      @map("day_index") // 0 = Monday .. 6 = Sunday
+  startHour Int      @map("start_hour") // inclusive, 0–23
+  endHour   Int      @map("end_hour") // exclusive, 1–24
+  label     String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, dayIndex])
+  @@map("timetable_blocks")
+}
+
+model WeeklyTask {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  dayIndex  Int      @map("day_index") // 0 = Monday .. 6 = Sunday
+  name      String
+  category  String   @default("general") // user-defined, lowercase
+  status    String   @default("pending") // pending | completed | critical | idle
+  done      Boolean  @default(false)
+  deadline  String? // YYYY-MM-DD
+  sortOrder Int      @default(0) @map("sort_order")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, dayIndex])
+  @@map("weekly_tasks")
+}
+
+model StudySession {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  date      String // YYYY-MM-DD in the user's timezone
+  startTime String?  @map("start_time") // HH:MM
+  minutes   Int
+  category  String   @default("general") // lowercase, user-defined
+  note      String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, date])
+  @@index([userId, category])
+  @@map("study_sessions")
 }
