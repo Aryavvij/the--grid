@@ -2012,7 +2012,7 @@ html, body {
   line-height: 1.4;
 }
 .arc-task-name.done { text-decoration: line-through; color: var(--text-muted); }
-.arc-task-foot { display: flex; align-items: center; justify-content: space-between; }
+.arc-task-foot { margin-top:10px; display: flex; align-items: center; justify-content: space-between; }
 .arc-status-badge {
   font-size: 8px;
   font-weight: 700;
@@ -2032,7 +2032,7 @@ html, body {
   transition: color 0.18s;
 }
 .arc-task-clone:hover { color: var(--green); }
-.arc-task-progress {
+.arc-task-progress { margin-bottom:4px;
   height: 3px;
   background: rgba(255,255,255,0.06);
   border-radius: 2px;
@@ -2892,7 +2892,7 @@ html, body {
 /* Stat row */
 .fin-stat-row {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 14px;
   margin-bottom: 20px;
 }
@@ -2987,15 +2987,9 @@ html, body {
   height: 180px;
   flex-shrink: 0;
 }
-.fin-donut-center {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  pointer-events: none;
-}
+.fin-donut-center { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  text-align:center; pointer-events:none; width:max-content; }
 .fin-donut-center-label {
   font-size: 8px;
   letter-spacing: 1.5px;
@@ -3850,9 +3844,9 @@ html, body {
 .hv-chead { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
 
 /* ── ZONE 1 · NOW ── */
-.hv-now { display:grid; grid-template-columns:auto 1.1fr 1fr; gap:20px; align-items:center; }
+.hv-now { display:grid; grid-template-columns:auto 1.1fr 1fr; gap:24px; align-items:center; }
 @media (max-width:1000px){ .hv-now { grid-template-columns:1fr; } }
-.hv-clock { width:150px; height:150px; flex-shrink:0; }
+.hv-clock { width:210px; height:210px; flex-shrink:0; }
 .hv-slots { display:flex; flex-direction:column; gap:12px; }
 .hv-slot-l { font-size:9px; letter-spacing:2px; color:var(--sig-500); margin-bottom:3px; }
 .hv-slot-v { font-size:17px; color:var(--text); line-height:1.2; }
@@ -4509,7 +4503,7 @@ html, body {
     <!-- Utility drawer — quarterly tools, off the daily path -->
     <div class="nav-item" data-page="resume" onclick="navigate('resume')">
       <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-      Portfolio
+      Resume
     </div>
     <div class="nav-item" data-page="mindgraph" onclick="navigate('mindgraph')">
       <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><circle cx="5" cy="6" r="2"/><circle cx="19" cy="6" r="2"/><circle cx="5" cy="18" r="2"/><circle cx="19" cy="18" r="2"/><line x1="9.5" y1="10.5" x2="6.5" y2="7.5"/><line x1="14.5" y1="10.5" x2="17.5" y2="7.5"/><line x1="9.5" y1="13.5" x2="6.5" y2="16.5"/><line x1="14.5" y1="13.5" x2="17.5" y2="16.5"/></svg>
@@ -4871,11 +4865,7 @@ html, body {
           <div class="fin-stat-val" id="fStatAssets">—</div>
           <div class="fin-stat-edit"><svg viewBox="0 0 24 24" width="10" height="10" stroke="currentColor" fill="none" stroke-width="2" style="vertical-align:-1px"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></div>
         </div>
-        <div class="fin-stat-card" onclick="editStat('debt')">
-          <div class="fin-stat-label">DEBT RATIO</div>
-          <div class="fin-stat-val red" id="fStatDebt">—</div>
-          <div class="fin-stat-edit"><svg viewBox="0 0 24 24" width="10" height="10" stroke="currentColor" fill="none" stroke-width="2" style="vertical-align:-1px"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></div>
-        </div>
+
         <div class="fin-stat-card" onclick="editStat('budget')">
           <div class="fin-stat-label">MONTHLY BUDGETED</div>
           <div class="fin-stat-val" id="fStatBudget">—</div>
@@ -5401,7 +5391,7 @@ html, body {
         </div>
 
         <!-- Middle row -->
-        <div class="rw-mid-grid">
+        <div class="rw-mid-grid" style="grid-template-columns:1fr;">
 
           <!-- Left: trajectory map -->
           <div class="rw-section">
@@ -5522,11 +5512,12 @@ html, body {
            moved here from Overview so execution lives in one place. -->
       <div id="rw-study" class="rw-subpage" style="display:none">
 
-        <div style="display:grid; grid-template-columns: 380px 1fr; gap:16px; margin-bottom:16px;">
+        <div style="display:grid; grid-template-columns: 1fr; gap:16px; margin-bottom:16px;">
 
           <!-- Session clock -->
-          <div class="rw-section" style="margin-bottom:0; display:flex; flex-direction:column; align-items:center;">
-            <div class="rw-section-title" style="align-self:flex-start; margin-bottom:14px;">STUDY SESSION</div>
+          <div class="rw-section" style="margin-bottom:0;">
+            <div class="rw-section-title" style="margin-bottom:14px;">STUDY SESSION</div>
+            <div style="display:grid; grid-template-columns: 260px 1fr 220px; gap:20px; align-items:center;">
             <div id="stClock" style="font-family:var(--font); font-size:46px; font-variant-numeric:tabular-nums;
                  color:var(--sig-900); letter-spacing:2px; line-height:1; margin:10px 0 4px;">00:00:00</div>
             <div id="stState" style="font-size:9px; letter-spacing:2px; color:var(--text-muted); margin-bottom:16px;">IDLE</div>
@@ -5541,11 +5532,14 @@ html, body {
               <input class="form-input" id="stNote" placeholder="What are you working on?">
             </div>
 
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; width:100%;">
-              <button class="fin-commit-btn" id="stToggle" onclick="stToggle()" style="margin:0;">START</button>
-              <button class="fin-modify-btn" onclick="stStopAndLog()" style="padding:10px;">STOP &amp; LOG</button>
+            <div>
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+                <button class="fin-commit-btn" id="stToggle" onclick="stToggle()" style="margin:0;">START</button>
+                <button class="fin-modify-btn" onclick="stStopAndLog()" style="padding:10px;">STOP &amp; LOG</button>
+              </div>
+              <button class="fin-modify-btn" onclick="stManualEntry()" style="width:100%; margin-top:8px; padding:8px;">ADD PAST SESSION</button>
             </div>
-            <button class="fin-modify-btn" onclick="stManualEntry()" style="width:100%; margin-top:8px; padding:8px;">ADD PAST SESSION</button>
+            </div>
           </div>
 
           <!-- Log diary -->
@@ -5564,76 +5558,13 @@ html, body {
               <div><div class="hb-stat-label">TOP CATEGORY</div><div class="rw-stat-val" id="stTop" style="font-size:15px">—</div></div>
             </div>
             <div id="stChart" style="width:100%;height:150px;margin-bottom:12px;"></div>
-            <div id="stDiary" style="display:flex; flex-direction:column; gap:8px; max-height:260px; overflow-y:auto; padding-right:4px;"></div>
+            <div id="stDiary" style="display:flex; flex-direction:column; gap:8px;"></div>
+            <button class="fin-modify-btn" id="stMore" onclick="stShowMore()"
+                    style="width:100%; margin-top:10px; padding:9px; display:none;">SHOW EARLIER SESSIONS</button>
           </div>
         </div>
 
-        <div class="rw-bot-grid">
-
-          <!-- Work engine -->
-          <div class="rw-section">
-            <div class="rw-section-title" style="margin-bottom:18px">
-              <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" fill="none" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-              WORK ENGINE
-            </div>
-            <div class="form-group">
-              <label class="form-label">TARGET PROJECT</label>
-              <select class="form-select" id="weProject">
-                <option>SYNCHRONIZE_DB_CLUSTER_09</option>
-                <option>REFINE_LLM_WEIGHTS</option>
-                <option>ARCHIVE_Q3_DOCS</option>
-              </select>
-            </div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-              <div class="form-group">
-                <label class="form-label">TIME INVESTED</label>
-                <div class="rw-input-unit">
-                  <input class="form-input" id="weHours" type="number" placeholder="0.0" step="0.5" style="padding-right:40px" />
-                  <span class="rw-unit-label">HRS</span>
-                </div>
               </div>
-              <div class="form-group">
-                <label class="form-label">NEW PROGRESS</label>
-                <div class="rw-input-unit">
-                  <input class="form-input" id="weProgress" type="number" placeholder="50" min="0" max="100" style="padding-right:30px" />
-                  <span class="rw-unit-label">%</span>
-                </div>
-              </div>
-            </div>
-            <button class="fin-commit-btn" onclick="logWorkEngine()" style="margin-top:8px">LOG_WORK_SESSION</button>
-          </div>
-
-          <!-- Active queue -->
-          <div class="rw-section">
-            <div class="rw-section-head" style="margin-bottom:16px">
-              <div class="rw-section-title" style="display:flex;align-items:center;gap:8px">
-                <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" fill="none" stroke-width="2"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
-                ACTIVE_QUEUE &amp; COMMAND_INPUT
-                <button class="fin-modify-btn" style="margin-left:8px;padding:2px 8px;font-size:9px" onclick="openAddQueueTaskModal()">ADD_TASK</button>
-              </div>
-              <div class="rw-queue-tabs">
-                <div class="rw-qtab" onclick="qTab(this,'day')">DAY</div>
-                <div class="rw-qtab active" onclick="qTab(this,'cycle')">CYCLE</div>
-                <div class="rw-qtab" onclick="qTab(this,'annual')">ANNUAL</div>
-              </div>
-            </div>
-            <table class="rw-queue-table">
-              <thead>
-                <tr>
-                  <th>ID_HEX</th>
-                  <th>TASK_STRING</th>
-                  <th>DEADLINE</th>
-                  <th>PRIORITY</th>
-                  <th>STATUS</th>
-                  <th>COMMANDS</th>
-                </tr>
-              </thead>
-              <tbody id="queueBody"></tbody>
-            </table>
-          </div>
-
-        </div><!-- /rw-bot-grid -->
-      </div>
     </div><!-- /page-runway -->
 
 
@@ -5665,7 +5596,7 @@ html, body {
       <!-- Header -->
       <div class="page-header" style="margin-bottom: 20px;">
         <div>
-          <div class="page-title">THE PORTFOLIO</div>
+          <div class="page-title">THE RESUME</div>
           <div class="page-subtitle">
             <span class="dot" style="background: var(--purple);"></span>
             Academic Metrics, Professional Portfolio and Career Milestones
@@ -5675,10 +5606,9 @@ html, body {
 
       <!-- Subpages tabs -->
       <div class="rw-subnav" style="margin-bottom: 20px;">
-        <div class="rw-subnav-title">PORTFOLIO</div>
+        <div class="rw-subnav-title">RESUME</div>
         <div class="rw-subnav-tabs">
           <div class="rw-tab active rs-page-tab" onclick="rsPageTab(this,'overview')">OVERVIEW</div>
-          <div class="rw-tab rs-page-tab" onclick="rsPageTab(this,'profile')">PROFILE</div>
           <div class="rw-tab rs-page-tab" onclick="rsPageTab(this,'pdf')">PDF GENERATOR</div>
         </div>
       </div>
@@ -5743,92 +5673,11 @@ html, body {
           <div class="rs-cards" id="rsContentArea"></div>
 
           <!-- PDF Compiler -->
-          <div class="rs-compiler">
-            <div class="rs-compiler-title">PDF EXPORT</div>
-            <div class="rs-compiler-text" id="rsCompilerStatus">Generates a clean one-page PDF from your selected nodes.</div>
-            <button class="rs-compile-btn" onclick="rsCompile()">
-              <svg viewBox="0 0 24 24"><polyline points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-              GENERATE ONE-PAGE PDF
-            </button>
-          </div>
-
-          <!-- Footer — real registry counts, no fake build hashes -->
-          <div class="rs-footer-bar">
-            <span id="rsFooterCount">—</span>
-            <span id="rsFooterUpdated"></span>
-          </div>
+          
 
         </div><!-- /rs-wrap -->
       </div><!-- /rs-overview -->
 
-      <!-- Subpage 2: Profile Editor -->
-      <div id="rs-profile" class="rs-subpage" style="display:none">
-        <div style="display:grid; grid-template-columns: 380px 1fr; gap: 20px;">
-          <!-- Left Form -->
-          <div class="rw-section" style="margin-bottom:0">
-            <div class="rw-section-title" id="rsFormTitle">
-              <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" fill="none" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
-              COMMIT RESUME SKILL NODE
-            </div>
-            <input type="hidden" id="rsEditId" value="" />
-            
-            <div class="form-group">
-              <label class="form-label">SELECT CATEGORY</label>
-              <select class="form-select" id="rsEditCat" onchange="renderRsProfileList()">
-                <option value="projects">PROJECTS</option>
-                <option value="internships">INTERNSHIPS</option>
-                <option value="positions">POSITIONS</option>
-                <option value="courses">COURSES & EDUCATION</option>
-                <option value="research">RESEARCH PIPELINE</option>
-                <option value="achievements">ACHIEVEMENTS</option>
-              </select>
-            </div>
-            
-            <div class="form-group">
-              <label class="form-label">TITLE / NAME</label>
-              <input class="form-input" id="rsEditName" placeholder="E.G. CLUSTER_DATABASE_v3" />
-            </div>
-            
-            <div class="form-group">
-              <label class="form-label">SUBTITLE / DATE RANGE</label>
-              <input class="form-input" id="rsEditDate" placeholder="E.G. PRESENT or Q4_2025" />
-            </div>
-            
-            <div class="form-group">
-              <label class="form-label">ONE-LINE SUMMARY</label>
-              <input class="form-input" id="rsEditDesc" placeholder="Brief summary for overview cards..." />
-            </div>
-            
-            <div class="form-group">
-              <label class="form-label">FULL DESCRIPTION</label>
-              <textarea class="form-input" id="rsEditFullDesc" rows="4" placeholder="Detailed achievements, technologies, and responsibilities..."></textarea>
-            </div>
-            
-            <div class="form-group">
-              <label class="form-label">TAGS / TECH STACK (COMMA-SEPARATED)</label>
-              <input class="form-input" id="rsEditTags" placeholder="E.G. REACT, GO, DOCKER" />
-            </div>
-            
-            <div style="display:flex; gap:10px; margin-top:10px;">
-              <button class="fin-commit-btn" id="rsEditSubmitBtn" onclick="commitRsItem()" style="flex:1; margin:0;">COMMIT NODE</button>
-              <button class="fin-modify-btn" id="rsEditCancelBtn" onclick="cancelRsEdit()" style="display:none; padding:8px 12px;">CANCEL</button>
-            </div>
-          </div>
-          
-          <!-- Right List -->
-          <div class="rw-section" style="margin-bottom:0">
-            <div class="rw-section-title" id="rsProfileListTitle">
-              <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" fill="none" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-              ACTIVE REGISTRY DATA
-            </div>
-            <div id="rsProfileListBody" style="display:flex; flex-direction:column; gap:12px; max-height: 520px; overflow-y:auto; padding-right:6px;">
-              <!-- Injected by JS -->
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Subpage 3: PDF Generator -->
       <div id="rs-pdf" class="rs-subpage" style="display:none">
         <!-- Checklist panel -->
         <div class="rw-section" style="margin-bottom:16px;">
@@ -9176,7 +9025,9 @@ function renderQueue(tab) {
     queued:  ['▶','<svg viewBox="0 0 24 24" width="11" height="11" stroke="currentColor" fill="none" stroke-width="2" style="vertical-align:-1px"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>'],
     stalled: ['↺','<svg viewBox="0 0 24 24" width="11" height="11" stroke="currentColor" fill="none" stroke-width="2" style="vertical-align:-1px"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>'],
   };
-  document.getElementById('queueBody').innerHTML = items.map((q, idx) => {
+  const _qb = document.getElementById('queueBody');
+  if (!_qb) return;
+  _qb.innerHTML = items.map((q, idx) => {
     const icons = statusIcons[q.status] || ['▶','<svg viewBox="0 0 24 24" width="11" height="11" stroke="currentColor" fill="none" stroke-width="2" style="vertical-align:-1px"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>'];
     return `<tr>
       <td class="q-id">${q.id}</td>
@@ -9532,9 +9383,15 @@ function qTab(el, tab) {
 }
 
 function logWorkEngine() {
-  const proj = document.getElementById('weProject').value;
-  const hrs  = parseFloat(document.getElementById('weHours').value) || 0;
-  const prog = parseInt(document.getElementById('weProgress').value) || 0;
+  // Work Engine UI was removed from the Study window; keep the function inert
+  // rather than throwing if anything still calls it.
+  const projEl = document.getElementById('weProject');
+  const hrsEl  = document.getElementById('weHours');
+  const progEl = document.getElementById('weProgress');
+  if (!projEl || !hrsEl || !progEl) return;
+  const proj = projEl.value;
+  const hrs  = parseFloat(hrsEl.value) || 0;
+  const prog = parseInt(progEl.value) || 0;
   if (!proj || hrs <= 0) return;
 
   feedItems.unshift({
@@ -9600,11 +9457,11 @@ function saveFinDebtItems() {
 let finShowAllTx = false;
 
 function saveFinTelemetry() {
+  const txt = id => { const el = document.getElementById(id); return el ? el.textContent : undefined; };
   const telemetry = {
-    assets: document.getElementById('fStatAssets').textContent,
-    debt: document.getElementById('fStatDebt').textContent,
-    budget: document.getElementById('fStatBudget').textContent,
-    spent: document.getElementById('fStatSpent').textContent,
+    assets: txt('fStatAssets'),
+    budget: txt('fStatBudget'),
+    spent:  txt('fStatSpent'),
   };
   localStorage.setItem('gridFinTelemetry', JSON.stringify(telemetry));
 }
@@ -9614,10 +9471,10 @@ function loadFinTelemetry() {
   if (telemetryStr) {
     try {
       const telemetry = JSON.parse(telemetryStr);
-      if (telemetry.assets) document.getElementById('fStatAssets').textContent = telemetry.assets;
-      if (telemetry.debt) document.getElementById('fStatDebt').textContent = telemetry.debt;
-      if (telemetry.budget) document.getElementById('fStatBudget').textContent = telemetry.budget;
-      if (telemetry.spent) document.getElementById('fStatSpent').textContent = telemetry.spent;
+      const set = (id, v) => { const el = document.getElementById(id); if (el && v) el.textContent = v; };
+      set('fStatAssets', telemetry.assets);
+      set('fStatBudget', telemetry.budget);
+      set('fStatSpent',  telemetry.spent);
     } catch(e) {
       console.error(e);
     }
@@ -9979,11 +9836,11 @@ function exportCSV() {
 let _finStatKey = null;
 function editStat(key) {
   _finStatKey = key;
-  const map = { assets:'fStatAssets', debt:'fStatDebt', budget:'fStatBudget', spent:'fStatSpent' };
+  const map = { assets:'fStatAssets', budget:'fStatBudget', spent:'fStatSpent' };
   const el = document.getElementById(map[key]);
   const cur = el ? el.textContent : '';
   
-  const titleMap = { assets: 'TOTAL LIQUID ASSETS', debt: 'OUTSTANDING LIABILITIES', budget: 'TARGET MONTHLY BUDGET', spent: 'COMMITTED EXPENDITURES' };
+  const titleMap = { assets: 'TOTAL LIQUID ASSETS', budget: 'TARGET MONTHLY BUDGET', spent: 'COMMITTED EXPENDITURES' };
   document.getElementById('finStatTitle').textContent = `UPDATE TELEMETRY: ${titleMap[key] || 'VALUE'}`;
   document.getElementById('finStatValue').value = cur;
   document.getElementById('finStatModal').classList.add('open');
@@ -9991,7 +9848,7 @@ function editStat(key) {
 
 function saveFinStatModal() {
   if (!_finStatKey) return;
-  const map = { assets:'fStatAssets', debt:'fStatDebt', budget:'fStatBudget', spent:'fStatSpent' };
+  const map = { assets:'fStatAssets', budget:'fStatBudget', spent:'fStatSpent' };
   const el = document.getElementById(map[_finStatKey]);
   let val = document.getElementById('finStatValue').value.trim();
   if (el && val) {
@@ -10263,13 +10120,10 @@ function rsPageTab(el, tab) {
   el.classList.add('active');
   
   document.getElementById('rs-overview').style.display = tab === 'overview' ? 'block' : 'none';
-  document.getElementById('rs-profile').style.display  = tab === 'profile'  ? 'block' : 'none';
   document.getElementById('rs-pdf').style.display      = tab === 'pdf'      ? 'block' : 'none';
   
   if (tab === 'overview') {
     renderRsContent(rsActiveTab);
-  } else if (tab === 'profile') {
-    renderRsProfileList();
   } else if (tab === 'pdf') {
     renderRsPdfSelectors();
     generateResumePdf();
@@ -10320,10 +10174,7 @@ function rsEditFromDetail() {
   const { tab, idx } = _rsDetailTarget;
   closeRsDetailModal();
   if (!tab || idx < 0) return;
-  const tabBtn = document.querySelector('.rs-page-tab[onclick*="profile"]');
-  if (tabBtn) tabBtn.click();
-  const catSel = document.getElementById('rsEditCat');
-  if (catSel) { catSel.value = tab; renderRsProfileList(); }
+  // The Profile editor page was removed; edit through the universal modal.
   if (typeof editRsItem === 'function') editRsItem(tab, idx);
 }
 
@@ -12567,6 +12418,7 @@ document.addEventListener('DOMContentLoaded', () => setTimeout(renderConsole, 12
    category and an optional note. Stored in gridStudyLogs and synced through
    the offline-safe write path.                                              */
 let studyLogs = JSON.parse(localStorage.getItem('gridStudyLogs') || '[]');
+let _stShown = 5;   // diary shows the latest 5, expandable
 let _stRunning = false, _stStart = null, _stElapsed = 0, _stTimer = null, _stRangeDays = 7;
 
 function saveStudyLogs() {
@@ -12655,7 +12507,10 @@ function rememberStudyCategory(cat) {
   localStorage.setItem('gridStudyCats', JSON.stringify(all));
 }
 
+function stShowMore() { _stShown += 10; stRenderAll(); }
+
 function stRange(el, days) {
+  _stShown = 5;   // reset pagination when the window changes
   document.querySelectorAll('#rw-study .rw-toggle').forEach(t => t.classList.remove('active'));
   if (el) el.classList.add('active');
   _stRangeDays = days;
@@ -12685,10 +12540,16 @@ function stRenderAll() {
   const dl = document.getElementById('stCatOptions');
   if (dl) dl.innerHTML = studyCategories().map(c => '<option value="' + escHtml(c) + '">').join('');
 
-  // diary
+  // diary — latest few first, expandable
   const diary = document.getElementById('stDiary');
+  const moreBtn = document.getElementById('stMore');
+  if (moreBtn) {
+    const hidden = Math.max(0, rows.length - _stShown);
+    moreBtn.style.display = hidden ? 'block' : 'none';
+    moreBtn.textContent = 'SHOW ' + Math.min(hidden, 10) + ' EARLIER SESSION' + (hidden === 1 ? '' : 'S');
+  }
   if (diary) {
-    diary.innerHTML = rows.length ? rows.slice(0, 40).map(l =>
+    diary.innerHTML = rows.length ? rows.slice(0, _stShown).map(l =>
       '<div class="gym-ex-card" style="padding:10px 12px;margin:0;border:1px solid rgba(255,255,255,0.06);display:flex;justify-content:space-between;align-items:center;gap:10px;">' +
         '<div style="min-width:0;">' +
           '<div style="font-size:11px;color:var(--text);">' + escHtml(l.note || l.category || 'Session') + '</div>' +
