@@ -3981,7 +3981,7 @@ html, body {
   .page-title { font-size: 26px !important; }
   .win-tab { padding: 9px 12px; font-size: 9px; }
   .cn-wrap { padding: 14px 12px 26px; }
-  #rw-status > div { grid-template-columns: 1fr !important; }
+  #rw-study > div { grid-template-columns: 1fr !important; }
 }
 
 @media (max-width: 480px) {
@@ -5305,7 +5305,7 @@ html, body {
         <div class="rw-subnav-tabs">
           <div class="rw-tab active" onclick="rwTab(this,'overview')">OVERVIEW</div>
           <div class="rw-tab" onclick="rwTab(this,'work')">WORK</div>
-          <div class="rw-tab" onclick="rwTab(this,'status')">STATUS</div>
+          <div class="rw-tab" onclick="rwTab(this,'study')">STUDY</div>
         </div>
         <div class="rw-search">
           <svg viewBox="0 0 24 24" width="13" height="13" stroke="currentColor" fill="none" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
@@ -5367,90 +5367,10 @@ html, body {
           </div>
 
           <!-- Right: initiative feed -->
-          <div class="rw-section rw-feed-section">
-            <div class="rw-section-head">
-              <div class="rw-section-title">
-                <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" fill="none" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-                INITIATIVE FEED
-              </div>
-              <div class="rw-feed-live">
-                <div class="rw-live-dot"></div>
-                <span>LIVE_FEED</span>
-              </div>
-            </div>
-            <div class="rw-feed" id="rwFeed">
-              <!-- injected by JS -->
-            </div>
-          </div>
 
         </div><!-- /rw-mid-grid -->
 
         <!-- Bottom row -->
-        <div class="rw-bot-grid">
-
-          <!-- Work engine -->
-          <div class="rw-section">
-            <div class="rw-section-title" style="margin-bottom:18px">
-              <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" fill="none" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-              WORK ENGINE
-            </div>
-            <div class="form-group">
-              <label class="form-label">TARGET PROJECT</label>
-              <select class="form-select" id="weProject">
-                <option>SYNCHRONIZE_DB_CLUSTER_09</option>
-                <option>REFINE_LLM_WEIGHTS</option>
-                <option>ARCHIVE_Q3_DOCS</option>
-              </select>
-            </div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-              <div class="form-group">
-                <label class="form-label">TIME INVESTED</label>
-                <div class="rw-input-unit">
-                  <input class="form-input" id="weHours" type="number" placeholder="0.0" step="0.5" style="padding-right:40px" />
-                  <span class="rw-unit-label">HRS</span>
-                </div>
-              </div>
-              <div class="form-group">
-                <label class="form-label">NEW PROGRESS</label>
-                <div class="rw-input-unit">
-                  <input class="form-input" id="weProgress" type="number" placeholder="50" min="0" max="100" style="padding-right:30px" />
-                  <span class="rw-unit-label">%</span>
-                </div>
-              </div>
-            </div>
-            <button class="fin-commit-btn" onclick="logWorkEngine()" style="margin-top:8px">LOG_WORK_SESSION</button>
-          </div>
-
-          <!-- Active queue -->
-          <div class="rw-section">
-            <div class="rw-section-head" style="margin-bottom:16px">
-              <div class="rw-section-title" style="display:flex;align-items:center;gap:8px">
-                <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" fill="none" stroke-width="2"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
-                ACTIVE_QUEUE &amp; COMMAND_INPUT
-                <button class="fin-modify-btn" style="margin-left:8px;padding:2px 8px;font-size:9px" onclick="openAddQueueTaskModal()">ADD_TASK</button>
-              </div>
-              <div class="rw-queue-tabs">
-                <div class="rw-qtab" onclick="qTab(this,'day')">DAY</div>
-                <div class="rw-qtab active" onclick="qTab(this,'cycle')">CYCLE</div>
-                <div class="rw-qtab" onclick="qTab(this,'annual')">ANNUAL</div>
-              </div>
-            </div>
-            <table class="rw-queue-table">
-              <thead>
-                <tr>
-                  <th>ID_HEX</th>
-                  <th>TASK_STRING</th>
-                  <th>DEADLINE</th>
-                  <th>PRIORITY</th>
-                  <th>STATUS</th>
-                  <th>COMMANDS</th>
-                </tr>
-              </thead>
-              <tbody id="queueBody"></tbody>
-            </table>
-          </div>
-
-        </div><!-- /rw-bot-grid -->
       </div><!-- /rw-overview -->
 
       <!-- Subpage 2: Work (CRUD form + list) -->
@@ -5539,40 +5459,121 @@ html, body {
       </div>
 
       <!-- Subpage 3: Status (kanban dashboards columns) -->
-      <div id="rw-status" class="rw-subpage" style="display:none">
-        <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:16px; align-items:start;">
-          <!-- RUNNING -->
-          <div class="rw-section">
-            <div class="rw-section-title" style="color:var(--green); border-bottom:1px solid rgba(118,179,114,0.2); padding-bottom:8px; margin-bottom:12px;">
-              <span class="dot" style="background:var(--green)"></span> RUNNING NODES
+      <!-- STUDY: session clock + log diary, plus the work engine and queue
+           moved here from Overview so execution lives in one place. -->
+      <div id="rw-study" class="rw-subpage" style="display:none">
+
+        <div style="display:grid; grid-template-columns: 380px 1fr; gap:16px; margin-bottom:16px;">
+
+          <!-- Session clock -->
+          <div class="rw-section" style="margin-bottom:0; display:flex; flex-direction:column; align-items:center;">
+            <div class="rw-section-title" style="align-self:flex-start; margin-bottom:14px;">STUDY SESSION</div>
+            <div id="stClock" style="font-family:var(--font); font-size:46px; font-variant-numeric:tabular-nums;
+                 color:var(--sig-900); letter-spacing:2px; line-height:1; margin:10px 0 4px;">00:00:00</div>
+            <div id="stState" style="font-size:9px; letter-spacing:2px; color:var(--text-muted); margin-bottom:16px;">IDLE</div>
+
+            <div class="form-group" style="width:100%;">
+              <label class="form-label">CATEGORY</label>
+              <input class="form-input" id="stCat" list="stCatOptions" placeholder="e.g. algos, physics, revision" autocomplete="off">
+              <datalist id="stCatOptions"></datalist>
             </div>
-            <div id="statusColRunning" style="display:flex; flex-direction:column; gap:10px;"></div>
-          </div>
-          
-          <!-- QUEUED -->
-          <div class="rw-section">
-            <div class="rw-section-title" style="color:var(--text-muted); border-bottom:1px solid rgba(255,255,255,0.06); padding-bottom:8px; margin-bottom:12px;">
-              <span class="dot" style="background:var(--text-muted)"></span> QUEUED NODES
+            <div class="form-group" style="width:100%;">
+              <label class="form-label">NOTE (OPTIONAL)</label>
+              <input class="form-input" id="stNote" placeholder="What are you working on?">
             </div>
-            <div id="statusColQueued" style="display:flex; flex-direction:column; gap:10px;"></div>
+
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; width:100%;">
+              <button class="fin-commit-btn" id="stToggle" onclick="stToggle()" style="margin:0;">START</button>
+              <button class="fin-modify-btn" onclick="stStopAndLog()" style="padding:10px;">STOP &amp; LOG</button>
+            </div>
+            <button class="fin-modify-btn" onclick="stManualEntry()" style="width:100%; margin-top:8px; padding:8px;">ADD PAST SESSION</button>
           </div>
 
-          <!-- STALLED -->
-          <div class="rw-section">
-            <div class="rw-section-title" style="color:var(--orange); border-bottom:1px solid rgba(249,115,22,0.2); padding-bottom:8px; margin-bottom:12px;">
-              <span class="dot" style="background:var(--orange)"></span> STALLED NODES
+          <!-- Log diary -->
+          <div class="rw-section" style="margin-bottom:0;">
+            <div class="rw-section-head" style="margin-bottom:14px;">
+              <div class="rw-section-title">STUDY LOG DIARY</div>
+              <div class="rw-toggle-group">
+                <div class="rw-toggle active" onclick="stRange(this,7)">7D</div>
+                <div class="rw-toggle" onclick="stRange(this,30)">30D</div>
+                <div class="rw-toggle" onclick="stRange(this,0)">ALL</div>
+              </div>
             </div>
-            <div id="statusColStalled" style="display:flex; flex-direction:column; gap:10px;"></div>
-          </div>
-
-          <!-- COMPLETED -->
-          <div class="rw-section">
-            <div class="rw-section-title" style="color:var(--blue); border-bottom:1px solid rgba(100,160,220,0.2); padding-bottom:8px; margin-bottom:12px;">
-              <span class="dot" style="background:var(--blue)"></span> COMPLETED NODES
+            <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:14px;">
+              <div><div class="hb-stat-label">TOTAL</div><div class="rw-stat-val" id="stTotal">—</div></div>
+              <div><div class="hb-stat-label">SESSIONS</div><div class="rw-stat-val" id="stCount">—</div></div>
+              <div><div class="hb-stat-label">TOP CATEGORY</div><div class="rw-stat-val" id="stTop" style="font-size:15px">—</div></div>
             </div>
-            <div id="statusColCompleted" style="display:flex; flex-direction:column; gap:10px;"></div>
+            <div id="stChart" style="width:100%;height:150px;margin-bottom:12px;"></div>
+            <div id="stDiary" style="display:flex; flex-direction:column; gap:8px; max-height:260px; overflow-y:auto; padding-right:4px;"></div>
           </div>
         </div>
+
+        <div class="rw-bot-grid">
+
+          <!-- Work engine -->
+          <div class="rw-section">
+            <div class="rw-section-title" style="margin-bottom:18px">
+              <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" fill="none" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+              WORK ENGINE
+            </div>
+            <div class="form-group">
+              <label class="form-label">TARGET PROJECT</label>
+              <select class="form-select" id="weProject">
+                <option>SYNCHRONIZE_DB_CLUSTER_09</option>
+                <option>REFINE_LLM_WEIGHTS</option>
+                <option>ARCHIVE_Q3_DOCS</option>
+              </select>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+              <div class="form-group">
+                <label class="form-label">TIME INVESTED</label>
+                <div class="rw-input-unit">
+                  <input class="form-input" id="weHours" type="number" placeholder="0.0" step="0.5" style="padding-right:40px" />
+                  <span class="rw-unit-label">HRS</span>
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="form-label">NEW PROGRESS</label>
+                <div class="rw-input-unit">
+                  <input class="form-input" id="weProgress" type="number" placeholder="50" min="0" max="100" style="padding-right:30px" />
+                  <span class="rw-unit-label">%</span>
+                </div>
+              </div>
+            </div>
+            <button class="fin-commit-btn" onclick="logWorkEngine()" style="margin-top:8px">LOG_WORK_SESSION</button>
+          </div>
+
+          <!-- Active queue -->
+          <div class="rw-section">
+            <div class="rw-section-head" style="margin-bottom:16px">
+              <div class="rw-section-title" style="display:flex;align-items:center;gap:8px">
+                <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" fill="none" stroke-width="2"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+                ACTIVE_QUEUE &amp; COMMAND_INPUT
+                <button class="fin-modify-btn" style="margin-left:8px;padding:2px 8px;font-size:9px" onclick="openAddQueueTaskModal()">ADD_TASK</button>
+              </div>
+              <div class="rw-queue-tabs">
+                <div class="rw-qtab" onclick="qTab(this,'day')">DAY</div>
+                <div class="rw-qtab active" onclick="qTab(this,'cycle')">CYCLE</div>
+                <div class="rw-qtab" onclick="qTab(this,'annual')">ANNUAL</div>
+              </div>
+            </div>
+            <table class="rw-queue-table">
+              <thead>
+                <tr>
+                  <th>ID_HEX</th>
+                  <th>TASK_STRING</th>
+                  <th>DEADLINE</th>
+                  <th>PRIORITY</th>
+                  <th>STATUS</th>
+                  <th>COMMANDS</th>
+                </tr>
+              </thead>
+              <tbody id="queueBody"></tbody>
+            </table>
+          </div>
+
+        </div><!-- /rw-bot-grid -->
       </div>
     </div><!-- /page-runway -->
 
@@ -5860,7 +5861,7 @@ html, body {
     <div class="task-modal-field">
       <label class="task-modal-label">CATEGORY</label>
       <input class="task-modal-input" id="tmType" list="tmTypeOptions"
-             placeholder="e.g. STUDY, GYM, ADMIN — type your own" autocomplete="off">
+             placeholder="e.g. study, gym, admin — type your own" autocomplete="off">
       <datalist id="tmTypeOptions"></datalist>
     </div>
     <div class="task-modal-field">
@@ -6610,6 +6611,7 @@ function navigate(page) {
   if (page === 'habits')   initHabits();
   if (page === 'work')     initWork();
   if (page === 'weekly')   initWeekly();
+  if (page === 'workout')  { try { recomputeGymProgression(); } catch (e) { console.warn('gym progression:', e); } }
 
   // Re-hydrate stats and resize charts on every navigation. Module data loads
   // asynchronously and charts size from their container, which has no width
@@ -7501,19 +7503,11 @@ function initGymQuarterlyChart(muscleName) {
   const chart = ethosChart(el);
   if (!chart) return;
 
-  // Real logged sets for this muscle, bucketed per ISO week. No synthetic curve.
-  const logs = (typeof gymLogs !== 'undefined' && Array.isArray(gymLogs)) ? gymLogs : [];
+  // Cumulative estimated 1RM across every exercise in this muscle group,
+  // derived from logged sessions.
+  const series = gymMuscleSeries(String(muscleName).toUpperCase());
   const buckets = {};
-  logs.forEach(l => {
-    const muscles = (l.muscles || l.muscleGroups || []);
-    const match = Array.isArray(muscles)
-      ? muscles.some(m => String(m).toUpperCase() === String(muscleName).toUpperCase())
-      : String(muscles).toUpperCase().includes(String(muscleName).toUpperCase());
-    if (!match) return;
-    const d = new Date(l.date || l.loggedDate || Date.now());
-    const key = d.toISOString().slice(0, 10);
-    buckets[key] = (buckets[key] || 0) + (Number(l.sets) || Number(l.totalSets) || 1);
-  });
+  series.forEach(pt => { buckets[pt.date] = pt.value; });
 
   const keys = Object.keys(buckets).sort();
   if (!keys.length) {
@@ -7523,10 +7517,10 @@ function initGymQuarterlyChart(muscleName) {
   }
 
   chart.setOption({
-    tooltip: { trigger: 'axis', valueFormatter: v => v + ' sets' },
+    tooltip: { trigger: 'axis', valueFormatter: v => v + ' kg (cumulative 1RM)' },
     xAxis: { type: 'category', data: keys.map(k => k.slice(5)) },
-    yAxis: { type: 'value', name: 'SETS', nameTextStyle: { fontSize: 9 } },
-    series: [{ type: 'bar', data: keys.map(k => buckets[k]) }]
+    yAxis: { type: 'value', name: 'KG', nameTextStyle: { fontSize: 9 } },
+    series: [{ type: 'line', data: keys.map(k => buckets[k]), areaStyle: { color: 'rgba(118,179,114,0.18)' } }]
   });
 }
 
@@ -7654,6 +7648,72 @@ function renderLoggerPanel() {
   }).join('');
 }
 
+
+/* ══ GYM PROGRESSION ═══════════════════════════════════════════════════════
+   Exercise and muscle-group graphs are DERIVED from logged sessions rather
+   than stored bars that only moved on a PR. Every commit recomputes them, so
+   a session that is not a personal best still shows up as progression.      */
+
+/** Best estimated 1RM per session date for one exercise. */
+function gymExerciseSeries(exName) {
+  let logs = [];
+  try { logs = JSON.parse(localStorage.getItem('gymLogs') || '[]'); } catch (e) { return []; }
+  const target = String(exName || '').toUpperCase();
+  const byDate = {};
+  logs.forEach(l => {
+    const date = l.date || l.workoutDate;
+    (l.exercises || []).forEach(ex => {
+      if (String(ex.name || '').toUpperCase() !== target) return;
+      const best = (ex.sets || []).reduce((m, st) => Math.max(m, +st.orm || 0), +ex.sessionMax1RM || 0);
+      if (best > 0) byDate[date] = Math.max(byDate[date] || 0, best);
+    });
+  });
+  return Object.keys(byDate).sort().map(d => ({ date: d, value: Math.round(byDate[d]) }));
+}
+
+/** Muscle group = cumulative of every exercise registered under it. */
+function gymMuscleSeries(groupName) {
+  const grp = exerciseRegistry[groupName];
+  if (!grp) return [];
+  const byDate = {};
+  (grp.exercises || []).forEach(ex => {
+    gymExerciseSeries(ex.name).forEach(pt => {
+      byDate[pt.date] = (byDate[pt.date] || 0) + pt.value;   // sum across exercises
+    });
+  });
+  return Object.keys(byDate).sort().map(d => ({ date: d, value: Math.round(byDate[d]) }));
+}
+
+/** Refresh stored `bars` + growth % from real logs so the cards stay truthful. */
+function recomputeGymProgression() {
+  const last10 = arr => arr.slice(-10).map(p => p.value);
+  const growth = arr => {
+    if (arr.length < 2) return arr.length ? 'NEW' : '—';
+    const first = arr[0].value, last = arr[arr.length - 1].value;
+    if (!first) return 'NEW';
+    const pct = ((last - first) / first) * 100;
+    return (pct >= 0 ? '+' : '') + pct.toFixed(1) + '%';
+  };
+
+  Object.keys(exerciseRegistry).forEach(mg => {
+    (exerciseRegistry[mg].exercises || []).forEach(ex => {
+      const series = gymExerciseSeries(ex.name);
+      if (series.length) {
+        ex.bars = last10(series);
+        ex.delta = growth(series) + ' VS FIRST';
+      }
+    });
+    const mSeries = gymMuscleSeries(mg);
+    const mObj = muscleGroups.find(m => m.name === mg);
+    if (mObj && mSeries.length) {
+      mObj.bars = last10(mSeries);
+      mObj.growth = growth(mSeries);
+    }
+  });
+  try { localStorage.setItem('gymExerciseRegistry', JSON.stringify(exerciseRegistry)); } catch (e) {}
+  try { localStorage.setItem('gymMuscleGroups', JSON.stringify(muscleGroups)); } catch (e) {}
+}
+
 function commitWorkoutLog() {
   const select = document.getElementById('loggerDaySelect');
   if (!select) return;
@@ -7747,6 +7807,10 @@ function commitWorkoutLog() {
     localStorage.setItem('gymLogs', JSON.stringify(logs));
     localStorage.setItem('gymExerciseRegistry', JSON.stringify(reg));
     localStorage.setItem('gymMuscleGroups', JSON.stringify(muscleGroups));
+
+    // Derive every exercise + muscle-group graph from the full log history, so
+    // progression tracks all sessions rather than only personal bests.
+    recomputeGymProgression();
 
     initGymData();
     initGymChart();
@@ -8524,7 +8588,7 @@ function buildKanban() {
       card.className = 'arc-task-card';
       const hasProgress = task.progress !== undefined;
       card.innerHTML = `
-        <div class="arc-task-type" style="color:${taskCatColor(task.type)}">${escHtml(String(task.type).toUpperCase())}</div>
+        <div class="arc-task-type" style="color:${taskCatColor(task.type)}">${escHtml(String(task.type).toLowerCase())}</div>
         <div class="arc-task-name${task.done ? ' done' : ''}">${task.name}</div>
         ${hasProgress ? `<div class="arc-task-progress"><div class="arc-task-progress-fill" style="width:${task.progress}%"></div></div>` : ''}
         <div class="arc-task-foot">
@@ -8596,13 +8660,15 @@ function taskCatColor(cat) {
 }
 
 function taskCategories() {
+  // Categories are lowercase everywhere — normalise legacy values on read.
   const used = new Set();
-  (kanbanTasks || []).flat().forEach(t => { if (t && t.type) used.add(String(t.type).toUpperCase()); });
-  try { (JSON.parse(localStorage.getItem('gridTaskCats') || '[]')).forEach(c => used.add(c)); } catch (e) {}
+  (kanbanTasks || []).flat().forEach(t => { if (t && t.type) used.add(String(t.type).toLowerCase()); });
+  try { (JSON.parse(localStorage.getItem('gridTaskCats') || '[]')).forEach(c => used.add(String(c).toLowerCase())); } catch (e) {}
   return [...used].sort();
 }
 function rememberTaskCategory(cat) {
   if (!cat) return;
+  cat = String(cat).toLowerCase();
   const all = taskCategories();
   if (all.indexOf(cat) === -1) all.push(cat);
   localStorage.setItem('gridTaskCats', JSON.stringify(all));
@@ -8616,7 +8682,7 @@ function fillTaskCategoryOptions() {
 function saveTaskModal() {
   const name   = document.getElementById('tmName').value.trim();
   const raw    = document.getElementById('tmType').value.trim();
-  const type   = (raw || 'GENERAL').toUpperCase();
+  const type   = (raw || 'general').toLowerCase();
   const di     = parseInt(document.getElementById('tmDay').value);
   const status = document.getElementById('tmStatus').value;
   if (!name) return;
@@ -9000,7 +9066,6 @@ function saveQueueItems() {
 let activeQueueTab = 'cycle';
 
 async function initRunway() {
-  renderFeed();
   renderQueue(activeQueueTab);
   initRwDonut();
 
@@ -9028,54 +9093,8 @@ async function initRunway() {
   // Sunburst drill-down is wired inside initRwDonut() via chart.on('click')
 }
 
-function renderFeed() {
-  // Build live feed from real user data
-  const liveFeed = [];
-  const now = Date.now();
-  const relTime = ts => {
-    const diff = Math.floor((now - new Date(ts).getTime()) / 60000);
-    if (diff < 1) return 'just now';
-    if (diff < 60) return `${diff}m ago`;
-    if (diff < 1440) return `${Math.floor(diff/60)}h ago`;
-    return `${Math.floor(diff/1440)}d ago`;
-  };
+// Initiative Feed removed — renderFeed() deleted with it.
 
-  try {
-    const gymLogs = JSON.parse(localStorage.getItem('gymLogs') || '[]');
-    gymLogs.slice(-3).reverse().forEach(l => {
-      liveFeed.push({ name: l.splitName || 'WORKOUT', time: relTime(l.date), body: `Session logged — ${l.exercises?.length || 0} exercises recorded.`, color: '#76b372' });
-    });
-  } catch(e) {}
-  try {
-    const txs = JSON.parse(localStorage.getItem('gridTxLog') || '[]');
-    txs.slice(0, 2).forEach(t => {
-      liveFeed.push({ name: t.entity || 'TRANSACTION', time: t.ts || 'Recently', body: `${t.val < 0 ? 'Expense' : 'Income'} logged — ${t.sector}.`, color: '#f97316' });
-    });
-  } catch(e) {}
-  try {
-    const habs = JSON.parse(localStorage.getItem('gridHabits') || '[]');
-    const top = habs.filter(h => h.pct >= 80)[0];
-    if (top) liveFeed.push({ name: top.name, time: 'Today', body: `Habit running at ${top.pct}% consistency this month.`, color: '#3b82f6' });
-  } catch(e) {}
-
-  const el = document.getElementById('rwFeed');
-  if (!el) return;
-  if (liveFeed.length === 0) {
-    el.innerHTML = `<div style="text-align:center;padding:20px;font-size:10px;color:var(--text-muted);">NO ACTIVITY YET — START LOGGING TO SEE FEED</div>`;
-    return;
-  }
-  el.innerHTML = liveFeed.map(f => `
-    <div class="rw-feed-item">
-      <div class="rw-feed-accent" style="background:${f.color}"></div>
-      <div class="rw-feed-content">
-        <div class="rw-feed-header">
-          <div class="rw-feed-name">${f.name}</div>
-          <div class="rw-feed-time">${f.time}</div>
-        </div>
-        <div class="rw-feed-body">${f.body}</div>
-      </div>
-    </div>`).join('');
-}
 
 function renderQueue(tab) {
   const items = queueItems[tab] || [];
@@ -9259,8 +9278,8 @@ function initRwDonut() {
   // Clicking a project drills into the status board
   chart.off('click');
   chart.on('click', () => {
-    const statusTab = document.querySelector('.rw-tab[onclick*="status"]');
-    if (statusTab) statusTab.click();
+    const workTab = document.querySelector('.rw-tab[onclick*="work"]');
+    if (workTab) workTab.click();
   });
 }
 
@@ -9399,56 +9418,8 @@ function cancelRwProjectEdit() {
   document.getElementById('rwProjCancelBtn').style.display = 'none';
 }
 
-function renderRwStatusColumns() {
-  const colRunning = document.getElementById('statusColRunning');
-  const colQueued = document.getElementById('statusColQueued');
-  const colStalled = document.getElementById('statusColStalled');
-  const colCompleted = document.getElementById('statusColCompleted');
-  
-  if (!colRunning) return;
-  
-  colRunning.innerHTML = '';
-  colQueued.innerHTML = '';
-  colStalled.innerHTML = '';
-  colCompleted.innerHTML = '';
-  
-  rwProjects.forEach((p, idx) => {
-    const cardHtml = `
-      <div class="gym-ex-card" style="padding:12px; margin:0; border:1px solid rgba(255,255,255,0.06); cursor:pointer;" onclick="editRwProjectAndGo(${idx})">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-          <span class="rs-card-tag" style="font-size:7px; margin:0; padding:2px 6px;">${p.cat}</span>
-          <span class="rw-priority-badge ${p.priority}" style="font-size:7px; padding:1px 4px;">${p.priority.toUpperCase()}</span>
-        </div>
-        <div class="gym-ex-title" style="font-size:11px; margin-bottom:8px;">${p.name}</div>
-        <div class="rw-agg-bar" style="width:100%; height:4px; margin-bottom:4px;"><div class="rw-agg-fill" style="width:${p.progress}%"></div></div>
-        <div style="display:flex; justify-content:space-between; font-size:8px; color:var(--text-muted);">
-          <span>PROGRESS: ${p.progress}%</span>
-          <span>DL: ${p.deadline}</span>
-        </div>
-      </div>
-    `;
-    if (p.status === 'running') colRunning.innerHTML += cardHtml;
-    else if (p.status === 'queued') colQueued.innerHTML += cardHtml;
-    else if (p.status === 'stalled') colStalled.innerHTML += cardHtml;
-    else if (p.status === 'completed') colCompleted.innerHTML += cardHtml;
-  });
-  
-  const columns = [
-    { el: colRunning, label: 'No running projects' },
-    { el: colQueued, label: 'No queued projects' },
-    { el: colStalled, label: 'No stalled projects' },
-    { el: colCompleted, label: 'No completed projects' }
-  ];
-  columns.forEach(c => {
-    if (c.el.innerHTML === '') {
-      c.el.innerHTML = `
-        <div style="text-align:center; padding:20px; color:var(--text-muted); font-size:9px; border:1px dashed rgba(255,255,255,0.06); border-radius:6px;">
-          ${c.label}
-        </div>
-      `;
-    }
-  });
-}
+// Status board replaced by the Study window — renderRwStatusColumns() deleted.
+
 
 function editRwProjectAndGo(idx) {
   const workTab = document.querySelector('.rw-tab[onclick*="work"]');
@@ -9464,14 +9435,14 @@ function rwTab(el, tab) {
   
   document.getElementById('rw-overview').style.display = tab === 'overview' ? 'block' : 'none';
   document.getElementById('rw-work').style.display     = tab === 'work'     ? 'block' : 'none';
-  document.getElementById('rw-status').style.display   = tab === 'status'   ? 'block' : 'none';
+  document.getElementById('rw-study').style.display    = tab === 'study'    ? 'block' : 'none';
   
   if (tab === 'overview') {
     initRwDonut();
   } else if (tab === 'work') {
     renderRwProjectsTable();
-  } else if (tab === 'status') {
-    renderRwStatusColumns();
+  } else if (tab === 'study') {
+    stRenderAll();
   }
 }
 
@@ -12489,6 +12460,173 @@ function renderConsole() {
 }
 
 document.addEventListener('DOMContentLoaded', () => setTimeout(renderConsole, 120));
+
+
+/* ══ STUDY SESSIONS ════════════════════════════════════════════════════════
+   Digital session clock + log diary. Sessions carry start time, duration,
+   category and an optional note. Stored in gridStudyLogs and synced through
+   the offline-safe write path.                                              */
+let studyLogs = JSON.parse(localStorage.getItem('gridStudyLogs') || '[]');
+let _stRunning = false, _stStart = null, _stElapsed = 0, _stTimer = null, _stRangeDays = 7;
+
+function saveStudyLogs() {
+  localStorage.setItem('gridStudyLogs', JSON.stringify(studyLogs));
+}
+function stFmt(sec) {
+  const h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), s = sec % 60;
+  return [h, m, s].map(v => String(v).padStart(2, '0')).join(':');
+}
+function stPaint() {
+  const el = document.getElementById('stClock');
+  if (el) el.textContent = stFmt(_stElapsed);
+}
+
+function stToggle() {
+  const btn = document.getElementById('stToggle'), state = document.getElementById('stState');
+  if (_stRunning) {
+    clearInterval(_stTimer); _stRunning = false;
+    if (btn) btn.textContent = 'RESUME';
+    if (state) state.textContent = 'PAUSED';
+    return;
+  }
+  _stRunning = true;
+  if (!_stStart) _stStart = new Date();
+  if (btn) btn.textContent = 'PAUSE';
+  if (state) state.textContent = 'RUNNING';
+  _stTimer = setInterval(() => { _stElapsed++; stPaint(); }, 1000);
+}
+
+function stStopAndLog() {
+  if (!_stElapsed) { alert('No time on the clock yet.'); return; }
+  clearInterval(_stTimer); _stRunning = false;
+  const cat  = (document.getElementById('stCat').value || 'general').trim().toLowerCase();
+  const note = document.getElementById('stNote').value.trim();
+  const start = _stStart || new Date();
+  studyLogs.unshift({
+    id: 'ST_' + Date.now(),
+    date: new Date(start.getTime() - start.getTimezoneOffset() * 60000).toISOString().slice(0, 10),
+    time: String(start.getHours()).padStart(2, '0') + ':' + String(start.getMinutes()).padStart(2, '0'),
+    minutes: Math.max(1, Math.round(_stElapsed / 60)),
+    category: cat, note,
+  });
+  saveStudyLogs();
+  rememberStudyCategory(cat);
+  gridSync('/api/focus/sessions', { minutes: Math.max(1, Math.round(_stElapsed / 60)), category: cat, note });
+
+  _stElapsed = 0; _stStart = null;
+  document.getElementById('stNote').value = '';
+  const btn = document.getElementById('stToggle'), state = document.getElementById('stState');
+  if (btn) btn.textContent = 'START';
+  if (state) state.textContent = 'LOGGED';
+  stPaint(); stRenderAll();
+  try { hydrateRealStats(); } catch (e) {}
+}
+
+function stManualEntry() {
+  showUniversalModal({
+    title: 'ADD PAST SESSION',
+    fields: [
+      { id: 'date', label: 'Date', type: 'date', value: new Date().toISOString().slice(0, 10) },
+      { id: 'time', label: 'Start time', type: 'time', value: '18:00' },
+      { id: 'minutes', label: 'Duration (minutes)', type: 'number', placeholder: '60' },
+      { id: 'category', label: 'Category', type: 'text', placeholder: 'e.g. algos' },
+      { id: 'note', label: 'Note (optional)', type: 'text', placeholder: '' },
+    ],
+    onSave: (v) => {
+      const mins = parseInt(v.minutes, 10);
+      if (!mins || mins <= 0) return;
+      const cat = (v.category || 'general').trim().toLowerCase();
+      studyLogs.unshift({ id: 'ST_' + Date.now(), date: v.date, time: v.time,
+                          minutes: mins, category: cat, note: v.note || '' });
+      saveStudyLogs(); rememberStudyCategory(cat); stRenderAll();
+    },
+  });
+}
+
+function studyCategories() {
+  const set = new Set(studyLogs.map(l => String(l.category || '').toLowerCase()).filter(Boolean));
+  try { JSON.parse(localStorage.getItem('gridStudyCats') || '[]').forEach(c => set.add(String(c).toLowerCase())); } catch (e) {}
+  return [...set].sort();
+}
+function rememberStudyCategory(cat) {
+  if (!cat) return;
+  const all = studyCategories();
+  if (all.indexOf(cat) === -1) all.push(cat);
+  localStorage.setItem('gridStudyCats', JSON.stringify(all));
+}
+
+function stRange(el, days) {
+  document.querySelectorAll('#rw-study .rw-toggle').forEach(t => t.classList.remove('active'));
+  if (el) el.classList.add('active');
+  _stRangeDays = days;
+  stRenderAll();
+}
+
+function stInRange() {
+  if (!_stRangeDays) return studyLogs.slice();
+  const cut = new Date(); cut.setDate(cut.getDate() - _stRangeDays);
+  const cutStr = cut.toISOString().slice(0, 10);
+  return studyLogs.filter(l => (l.date || '') >= cutStr);
+}
+
+function stRenderAll() {
+  const rows = stInRange();
+  const total = rows.reduce((s, l) => s + (+l.minutes || 0), 0);
+  const set = (id, v) => { const e = document.getElementById(id); if (e) e.textContent = v; };
+  set('stTotal', rows.length ? Math.floor(total / 60) + 'h ' + (total % 60) + 'm' : '—');
+  set('stCount', rows.length ? String(rows.length).padStart(2, '0') : '—');
+
+  const byCat = {};
+  rows.forEach(l => { const c = l.category || 'general'; byCat[c] = (byCat[c] || 0) + (+l.minutes || 0); });
+  const top = Object.entries(byCat).sort((a, b) => b[1] - a[1])[0];
+  set('stTop', top ? top[0] : '—');
+
+  // datalist
+  const dl = document.getElementById('stCatOptions');
+  if (dl) dl.innerHTML = studyCategories().map(c => '<option value="' + escHtml(c) + '">').join('');
+
+  // diary
+  const diary = document.getElementById('stDiary');
+  if (diary) {
+    diary.innerHTML = rows.length ? rows.slice(0, 40).map(l =>
+      '<div class="gym-ex-card" style="padding:10px 12px;margin:0;border:1px solid rgba(255,255,255,0.06);display:flex;justify-content:space-between;align-items:center;gap:10px;">' +
+        '<div style="min-width:0;">' +
+          '<div style="font-size:11px;color:var(--text);">' + escHtml(l.note || l.category || 'Session') + '</div>' +
+          '<div style="font-size:9px;letter-spacing:1px;color:var(--text-muted);margin-top:3px;">' +
+            escHtml(l.date) + ' · ' + escHtml(l.time || '') + ' · ' +
+            '<span style="color:' + taskCatColor(l.category) + '">' + escHtml(l.category || 'general') + '</span></div>' +
+        '</div>' +
+        '<div style="font-family:var(--font);font-variant-numeric:tabular-nums;color:var(--sig-500);font-size:13px;white-space:nowrap;">' +
+          Math.floor(l.minutes / 60) + 'h' + String(l.minutes % 60).padStart(2, '0') + '</div>' +
+      '</div>').join('')
+      : '<div style="font-size:10px;letter-spacing:1px;color:var(--text-muted);padding:8px 0;">No sessions logged yet.</div>';
+  }
+
+  stRenderChart(rows);
+}
+
+function stRenderChart(rows) {
+  const el = document.getElementById('stChart');
+  if (!el || typeof echarts === 'undefined') return;
+  const chart = ethosChart(el); if (!chart) return;
+  chart.clear();
+  if (!rows.length) {
+    chart.setOption({ title: { text: 'NO SESSIONS', subtext: 'Start the clock to build the trend',
+      left: 'center', top: 'center', textStyle: { fontSize: 11, color: '#5c6963' },
+      subtextStyle: { fontSize: 9, color: '#3c4641' } } });
+    return;
+  }
+  // minutes per day, oldest -> newest
+  const byDay = {};
+  rows.forEach(l => { byDay[l.date] = (byDay[l.date] || 0) + (+l.minutes || 0); });
+  const days = Object.keys(byDay).sort();
+  chart.setOption({
+    tooltip: { trigger: 'axis', valueFormatter: v => v + ' min' },
+    xAxis: { type: 'category', data: days.map(d => d.slice(5)) },
+    yAxis: { type: 'value', name: 'MIN', nameTextStyle: { fontSize: 9 } },
+    series: [{ type: 'bar', data: days.map(d => byDay[d]) }],
+  });
+}
 
 </script>
 <!-- ── P4: Command palette (⌘K) ─────────────────────────────── -->
