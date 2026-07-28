@@ -4002,6 +4002,50 @@ html, body {
   #rsPdfPreviewSheet { font-size:10px; }
 }
 
+/* ══ MINDGRAPH ═════════════════════════════════════════════════════════════
+   Canvas knowledge-galaxy of every node in the Grid. Carbon void, ethos green
+   dominant, pink + neon accents. No libraries — seeded layout, 2D projection. */
+#page-mindgraph { padding: 0 !important; }
+/* min-height guards against environments where 100vh resolves to 0 (embedded
+   preview panes, some mobile chromes) — the canvas must never collapse. */
+.mg-root { position:relative; width:100%; height:calc(100vh - var(--topbar-h));
+  min-height:560px; overflow:hidden; background:var(--carbon-0); }
+#mgCanvas { position:absolute; inset:0; width:100%; height:100%; cursor:grab; display:block; }
+#mgCanvas.grabbing { cursor:grabbing; }
+.mg-head { position:absolute; top:16px; left:20px; z-index:4; pointer-events:none; }
+.mg-head h2 { font-family:'Bebas Neue',var(--font); font-weight:400; letter-spacing:4px; font-size:22px; color:var(--text); }
+.mg-head p { font-family:var(--font); font-size:9px; color:var(--text-muted); letter-spacing:1.5px; margin-top:3px; }
+.mg-stat { position:absolute; top:16px; right:20px; z-index:4; text-align:right;
+  font-family:var(--font); font-size:9px; color:var(--text-muted); letter-spacing:1.5px; pointer-events:none; }
+.mg-stat b { color:var(--sig-900); font-variant-numeric:tabular-nums; }
+.mg-legend { position:absolute; bottom:16px; left:20px; z-index:4; display:flex; gap:5px; flex-wrap:wrap; max-width:70%; }
+.mg-chip { font-family:var(--font); font-size:8.5px; letter-spacing:1px; color:var(--text-dim); display:flex;
+  align-items:center; gap:6px; text-transform:uppercase; background:rgba(15,15,15,.78); border:1px solid var(--carbon-4);
+  border-radius:13px; padding:5px 10px; cursor:pointer; transition:.15s; }
+.mg-chip:hover { border-color:var(--sig-500); }
+.mg-chip.off { opacity:.3; }
+.mg-chip i { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
+.mg-tip { position:absolute; z-index:5; pointer-events:none; display:none; background:rgba(12,12,12,.95);
+  border:1px solid var(--carbon-4); border-radius:9px; padding:9px 12px; max-width:250px; font-size:11px;
+  color:var(--text); line-height:1.45; }
+.mg-tip b { font-size:11.5px; font-weight:700; display:block; margin-bottom:3px; }
+.mg-tip .mg-c { font-family:var(--font); font-size:8px; letter-spacing:1.5px; text-transform:uppercase; margin-bottom:4px; display:block; }
+.mg-dos { position:absolute; top:0; right:0; bottom:0; width:320px; background:var(--carbon-1);
+  border-left:1px solid var(--carbon-4); z-index:6; transform:translateX(100%); transition:transform .28s var(--ease-glide);
+  padding:18px; overflow-y:auto; }
+.mg-dos.open { transform:translateX(0); }
+.mg-dos-head { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px; gap:10px; }
+.mg-dos-name { font-size:16px; font-weight:700; color:var(--text); line-height:1.25; }
+.mg-dos-close { font-size:20px; color:var(--text-muted); line-height:1; cursor:pointer; background:none; border:none; }
+.mg-dos-chip { display:inline-block; font-family:var(--font); font-size:8.5px; letter-spacing:1.5px;
+  text-transform:uppercase; padding:4px 10px; border-radius:11px; margin-bottom:14px; }
+.mg-facts { display:flex; flex-direction:column; gap:9px; margin-bottom:16px; }
+.mg-fact { font-size:11px; color:var(--text-dim); line-height:1.5; padding-left:11px; border-left:2px solid var(--carbon-4); }
+.mg-goto { width:100%; padding:10px; border-radius:7px; cursor:pointer; border:1px solid var(--sig-500);
+  background:var(--green-dim); color:var(--sig-500); font-family:var(--font); font-size:10px; letter-spacing:1.5px; }
+.mg-goto:hover { background:var(--sig-500); color:#08110b; }
+@media (max-width:820px){ .mg-root { height:calc(100vh - var(--topbar-h) - 64px); min-height:460px; } .mg-dos { width:100%; } }
+
 </style>
 </head>
 <body>
@@ -4463,6 +4507,10 @@ html, body {
     </div>
 
     <!-- Utility drawer — quarterly tools, off the daily path -->
+    <div class="nav-item" data-page="mindgraph" onclick="navigate('mindgraph')">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><circle cx="5" cy="6" r="2"/><circle cx="19" cy="6" r="2"/><circle cx="5" cy="18" r="2"/><circle cx="19" cy="18" r="2"/><line x1="9.5" y1="10.5" x2="6.5" y2="7.5"/><line x1="14.5" y1="10.5" x2="17.5" y2="7.5"/><line x1="9.5" y1="13.5" x2="6.5" y2="16.5"/><line x1="14.5" y1="13.5" x2="17.5" y2="16.5"/></svg>
+      Mindgraph
+    </div>
     <div class="nav-item" data-page="resume" onclick="navigate('resume')">
       <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
       Portfolio
@@ -5588,6 +5636,29 @@ html, body {
       </div>
     </div><!-- /page-runway -->
 
+
+    <!-- ── MINDGRAPH ──────────────────────────────────── -->
+    <div class="page" id="page-mindgraph">
+      <div class="mg-root">
+        <canvas id="mgCanvas" role="img" aria-label="Knowledge graph of all Grid data"></canvas>
+        <div class="mg-head">
+          <h2>MINDGRAPH</h2>
+          <p>DRAG TO ROTATE · SCROLL TO ZOOM · CLICK A NODE · DOUBLE-CLICK TO RESET</p>
+        </div>
+        <div class="mg-stat">NODES <b id="mgN">0</b> · EDGES <b id="mgE">0</b></div>
+        <div class="mg-tip" id="mgTip"></div>
+        <div class="mg-legend" id="mgLegend"></div>
+        <div class="mg-dos" id="mgDos">
+          <div class="mg-dos-head">
+            <div class="mg-dos-name" id="mgDosName">—</div>
+            <button class="mg-dos-close" id="mgDosClose" aria-label="Close">&times;</button>
+          </div>
+          <span class="mg-dos-chip" id="mgDosChip">—</span>
+          <div class="mg-facts" id="mgDosFacts"></div>
+          <button class="mg-goto" id="mgDosGoto">OPEN MODULE</button>
+        </div>
+      </div>
+    </div>
     <!-- ── RESUME ─────────────────────────────────────── -->
     <div class="page" id="page-resume">
 
@@ -5656,17 +5727,7 @@ html, body {
             </div>
           </div>
 
-          <!-- Mind-graph: every node and how it connects -->
-          <div class="rs-panel" style="margin-bottom:16px;">
-            <div class="rs-panel-hdr" style="display:flex; justify-content:space-between; align-items:center;">
-              <span class="rs-panel-hdr-title">WORK GRAPH</span>
-              <span style="display:flex;align-items:center;gap:8px;">
-                <button class="fin-modify-btn" style="padding:2px 8px;font-size:9px;" onclick="openAddNodeModal()">ADD NODE</button>
-                <span class="rs-panel-hdr-right">CLICK A NODE FOR DETAILS</span>
-              </span>
-            </div>
-            <div id="rsMindGraph" style="width:100%;height:380px;"></div>
-          </div>
+          
 
           <!-- Tabs -->
           <div class="rs-tabs">
@@ -6623,7 +6684,7 @@ function navigate(page) {
   if (page === 'work')     initWork();
   if (page === 'weekly')   initWeekly();
   if (page === 'workout')  { try { recomputeGymProgression(); } catch (e) { console.warn('gym progression:', e); } }
-  if (page === 'resume')   { try { renderMindGraph(); } catch (e) { console.warn('mind graph:', e); } }
+  if (page === 'mindgraph'){ try { initMindgraph(); } catch (e) { console.warn('mindgraph:', e); } }
 
   // Re-hydrate stats and resize charts on every navigation. Module data loads
   // asynchronously and charts size from their container, which has no width
@@ -10207,7 +10268,6 @@ function rsPageTab(el, tab) {
   
   if (tab === 'overview') {
     renderRsContent(rsActiveTab);
-    try { renderMindGraph(); } catch (e) { console.warn('mind graph:', e); }
   } else if (tab === 'profile') {
     renderRsProfileList();
   } else if (tab === 'pdf') {
@@ -10414,7 +10474,14 @@ function renderRsPdfSelectors() {
 function generateResumePdf() {
   const sheet = document.getElementById('rsPdfPreviewSheet');
   if (!sheet) return;
+  const _status = document.getElementById('rsCompilerStatus');
   
+  // ONE-PAGE BUDGET. An A4 page fits roughly this much at the compact rhythm,
+  // so selections beyond it are trimmed rather than silently spilling to page 2.
+  const PDF_MAX_ITEMS = 14;
+  const PDF_SUMMARY_CHARS = 110;
+  let _pdfUsed = 0, _pdfDropped = 0;
+
   const content = [];
   Object.keys(rsTabData).forEach(cat => {
     const items = rsTabData[cat] || [];
@@ -10422,6 +10489,8 @@ function generateResumePdf() {
     items.forEach((item, idx) => {
       const checkbox = document.getElementById(`check_${cat}_${idx}`);
       if (checkbox && checkbox.checked) {
+        if (_pdfUsed >= PDF_MAX_ITEMS) { _pdfDropped++; return; }
+        _pdfUsed++;
         selected.push(item);
       }
     });
@@ -10433,14 +10502,14 @@ function generateResumePdf() {
       const sectionHeader = `<h2>${escHtml(cat.toUpperCase())}</h2>`;
       const sectionItems = selected.map(item => {
         const tags = (item.tags || []).slice(0, 6).join(' • ');
-        const links = (item.links || []).map(l => (typeof l === 'string' ? l : l.url)).filter(Boolean);
+        const links = (item.links || []).map(l => (typeof l === 'string' ? l : l.url)).filter(Boolean).slice(0, 2);
         return `
         <div class="rs-pdf-item">
           <div class="rs-pdf-item-hdr">
             <span>${escHtml(item.name)}</span>
             <span class="rs-pdf-item-date">${escHtml(item.date || '')}</span>
           </div>
-          <div class="rs-pdf-item-summary">${escHtml(item.desc || '')}</div>
+          <div class="rs-pdf-item-summary">${escHtml(String(item.desc || '').slice(0, PDF_SUMMARY_CHARS))}${String(item.desc || '').length > PDF_SUMMARY_CHARS ? '…' : ''}</div>
           ${tags ? `<div class="rs-pdf-item-tags">${escHtml(tags)}</div>` : ''}
           ${links.length ? `<div class="rs-pdf-item-tags">${links.map(l => escHtml(l)).join(' · ')}</div>` : ''}
         </div>`;
@@ -10460,6 +10529,13 @@ function generateResumePdf() {
     _rsCity  && _rsCity,
     _rsOcc   && _rsOcc,
   ].filter(Boolean).join(' • ');
+
+  if (_status) {
+    _status.textContent = _pdfDropped
+      ? _pdfUsed + ' of ' + (_pdfUsed + _pdfDropped) + ' selected nodes included — ' + _pdfDropped +
+        ' trimmed to keep this to one page. Deselect some to choose which.'
+      : _pdfUsed + ' node' + (_pdfUsed === 1 ? '' : 's') + ' — fits one page.';
+  }
 
   sheet.innerHTML = `
     <h1>${_rsName}</h1>
@@ -11789,7 +11865,7 @@ let gkItems = [], gkSel = 0;
 function gkBuild() {
   const pages = [
     ['home','Home / Console'], ['calendar','Calendar'], ['weekly','Weekly'],
-    ['habits','Habits'], ['finances','Finances'], ['workout','Gym'],
+    ['habits','Habits'], ['finances','Finances'], ['workout','Gym'], ['mindgraph','Mindgraph'],
     ['work','Focus'], ['runway','Runway'], ['resume','Resume'],
   ];
   const items = pages.map(pair => ({
@@ -12667,98 +12743,8 @@ function rsAllNodes() {
   return out;
 }
 
-function renderMindGraph() {
-  const el = document.getElementById('rsMindGraph');
-  if (!el || typeof echarts === 'undefined') return;
-  const chart = ethosChart(el);
-  if (!chart) return;
-  chart.clear();
+// Portfolio mind-graph replaced by the dedicated Mindgraph page.
 
-  const all = rsAllNodes();
-  if (!all.length) {
-    chart.setOption({ title: { text: 'NO NODES YET', subtext: 'Add a project, paper or achievement to build the graph',
-      left: 'center', top: 'center', textStyle: { fontSize: 12, color: '#5c6963' },
-      subtextStyle: { fontSize: 9, color: '#3c4641' } } });
-    return;
-  }
-
-  const CAT_COLOR = {
-    projects: '#76b372', internships: '#94d68f', positions: '#a5f79e',
-    courses: '#3b6839', research: '#E8B44A', achievements: '#64a0dc',
-  };
-
-  const nodes = [], links = [], categories = [];
-  RS_CATS.forEach((c, i) => categories.push({ name: c }));
-
-  // category hubs
-  RS_CATS.forEach(cat => {
-    const count = (rsTabData[cat] || []).length;
-    if (!count) return;
-    nodes.push({
-      id: 'cat:' + cat, name: cat.toUpperCase(), category: RS_CATS.indexOf(cat),
-      symbolSize: 34, value: count,
-      itemStyle: { color: CAT_COLOR[cat] || '#76b372', borderColor: '#0f0f0f', borderWidth: 2 },
-      label: { show: true, fontSize: 9, color: '#f0f0f0' }, _hub: true,
-    });
-  });
-
-  // work nodes + tag index
-  const tagIndex = {};
-  all.forEach(({ cat, idx, item }) => {
-    const id = cat + ':' + idx;
-    nodes.push({
-      id, name: item.name, category: RS_CATS.indexOf(cat),
-      symbolSize: 15 + Math.min((item.tags || []).length, 5) * 2,
-      itemStyle: { color: CAT_COLOR[cat] || '#76b372', opacity: 0.9 },
-      label: { show: true, fontSize: 8, color: '#9ba8a2' },
-      _cat: cat, _idx: idx,
-      _hasLink: !!(item.links && item.links.length),
-    });
-    links.push({ source: 'cat:' + cat, target: id, lineStyle: { color: '#262626', width: 1 } });
-    (item.tags || []).forEach(t => {
-      const k = String(t).toUpperCase();
-      (tagIndex[k] = tagIndex[k] || []).push(id);
-    });
-  });
-
-  // shared-tag edges pull related work together
-  Object.keys(tagIndex).forEach(tag => {
-    const ids = tagIndex[tag];
-    if (ids.length < 2) return;
-    for (let i = 0; i < ids.length - 1; i++) {
-      links.push({ source: ids[i], target: ids[i + 1],
-        lineStyle: { color: 'rgba(118,179,114,0.28)', width: 1, curveness: 0.15, type: 'dashed' } });
-    }
-  });
-
-  chart.setOption({
-    tooltip: {
-      formatter: p => {
-        if (p.dataType !== 'node') return '';
-        if (p.data._hub) return p.data.name + ' · ' + p.data.value + ' nodes';
-        const it = rsTabData[p.data._cat][p.data._idx];
-        return '<b>' + escHtml(it.name) + '</b><br/>' + escHtml(it.date || '') +
-               ((it.tags || []).length ? '<br/>' + escHtml(it.tags.join(', ')) : '') +
-               (p.data._hasLink ? '<br/><span style="color:#a5f79e">has links</span>' : '');
-      },
-    },
-    legend: [{ data: categories.map(c => c.name), textStyle: { color: '#5c6963', fontSize: 9 },
-               icon: 'circle', itemWidth: 7, itemHeight: 7, bottom: 0 }],
-    series: [{
-      type: 'graph', layout: 'force', roam: true, draggable: true,
-      categories, nodes, links,
-      force: { repulsion: 190, edgeLength: [50, 110], gravity: 0.08 },
-      emphasis: { focus: 'adjacency', label: { show: true } },
-      lineStyle: { color: 'source', curveness: 0.1 },
-      label: { position: 'right', formatter: p => p.data.name.length > 22 ? p.data.name.slice(0, 21) + '…' : p.data.name },
-    }],
-  });
-
-  chart.off('click');
-  chart.on('click', p => {
-    if (p.dataType === 'node' && p.data && p.data._cat) openRsDetailModal(p.data._cat, p.data._idx);
-  });
-}
 
 /* ── Node CRUD (add from the graph panel) ── */
 function openAddNodeModal() {
@@ -12786,7 +12772,6 @@ function openAddNodeModal() {
         links: (v.links || '').split(',').map(t => t.trim()).filter(Boolean),
       });
       persistRsData();
-      renderMindGraph();
       if (typeof renderRsContent === 'function') renderRsContent(rsActiveTab);
       if (typeof renderRsProfileList === 'function') renderRsProfileList();
       if (typeof renderRsStats === 'function') renderRsStats();
@@ -12910,6 +12895,375 @@ function openWeeklyDigest() {
   }
 
   showUniversalModal({ title: 'THIS WEEK', html, hideSave: true });
+}
+
+
+/* ══ MINDGRAPH ═════════════════════════════════════════════════════════════
+   The Grid's memory store, rendered as a knowledge galaxy. Hub nodes are the
+   sidebar modules; every habit, transaction, project, session, event, task and
+   portfolio entry hangs off its module and links across when they share
+   meaning. No libraries — a seeded layout projected onto one 2D canvas, so it
+   is deterministic and cheap at a few thousand nodes.                        */
+
+const MG_COLORS = {
+  core:      '#a5f79e',   // neon green — THE GRID itself
+  habits:    '#76b372',   // ethos green
+  finances:  '#ff4d8f',   // pink
+  gym:       '#3ddc84',
+  work:      '#00e676',   // neon
+  weekly:    '#22d3ee',   // neon cyan
+  calendar:  '#c084fc',   // neon violet
+  portfolio: '#94d68f',
+  orphan:    '#2a352f',   // dim carbon — faint memory
+};
+const MG_LABELS = {
+  core: 'The Grid', habits: 'Habits', finances: 'Finances', gym: 'Gym',
+  work: 'Work & Study', weekly: 'Weekly', calendar: 'Calendar',
+  portfolio: 'Portfolio', orphan: 'Faint',
+};
+const MG_PAGE = {
+  habits: 'habits', finances: 'finances', gym: 'workout', work: 'runway',
+  weekly: 'weekly', calendar: 'calendar', portfolio: 'resume',
+};
+
+/* ── Collect every module's data into named nodes ─────────────────────────
+   Facts are kept to one short line each so the dossier stays scannable.   */
+function mgCollect() {
+  const named = {};
+  const add = (label, cat, facts) => {
+    if (!label) return;
+    const key = String(label).slice(0, 42);
+    if (named[key]) return;                       // first writer wins
+    named[key] = { cat, facts: (facts || []).filter(Boolean).slice(0, 3) };
+  };
+  const cur = (typeof getCurrencySymbol === 'function') ? getCurrencySymbol() : '₹';
+  const dom = new Date().getDate();
+
+  // HABITS — each habit with its streak and completion
+  try {
+    (habits || []).forEach(h => {
+      const set = new Set(h.checked || []);
+      let run = 0; for (let d = dom; d >= 1; d--) { if (set.has(d)) run++; else break; }
+      add(h.name, 'habits', [
+        (h.pct || 0) + '% this month',
+        run ? run + ' day streak' : 'no active streak',
+        set.has(dom) ? 'logged today' : 'not logged today',
+      ]);
+    });
+  } catch (e) {}
+
+  // FINANCES — budget sectors, recurring commitments, debts
+  try {
+    (budgetData || []).forEach(b => add(b.sector, 'finances', [
+      'planned ' + cur + (+b.planned || 0).toLocaleString('en-IN'),
+      'spent ' + cur + (+b.actual || 0).toLocaleString('en-IN'),
+      (+b.actual > +b.planned) ? 'over budget' : 'within budget',
+    ]));
+    (typeof finRecurItems !== 'undefined' ? finRecurItems : []).forEach(r =>
+      add(r.name, 'finances', ['recurring ' + (r.amount || ''), r.cat || '', 'renews day ' + (r.day || '?')]));
+  } catch (e) {}
+
+  // GYM — muscle groups and registered exercises
+  try {
+    (muscleGroups || []).forEach(m => add(m.name, 'gym', [m.growth ? 'growth ' + m.growth : '', m.muscles || '']));
+    Object.keys(exerciseRegistry || {}).forEach(mg =>
+      (exerciseRegistry[mg].exercises || []).forEach(ex =>
+        add(ex.name, 'gym', [ex.orm ? 'est 1RM ' + ex.orm + 'kg' : '', ex.pr ? 'PR ' + ex.pr + 'kg' : '', mg])));
+  } catch (e) {}
+
+  // WORK — projects and study categories
+  try {
+    (rwProjects || []).forEach(p => add(p.name, 'work', [
+      (p.progress || 0) + '% complete', p.status || '', p.deadline ? 'due ' + p.deadline : '']));
+    const byCat = {};
+    (typeof studyLogs !== 'undefined' ? studyLogs : []).forEach(l => {
+      const k = l.category || 'general';
+      byCat[k] = (byCat[k] || 0) + (+l.minutes || 0);
+    });
+    Object.keys(byCat).forEach(k =>
+      add(k, 'work', [Math.round(byCat[k] / 60 * 10) / 10 + 'h studied', 'study category']));
+  } catch (e) {}
+
+  // WEEKLY — timetable blocks and tasks
+  try {
+    const blocks = new Set();
+    (typeof ttData !== 'undefined' ? ttData : []).forEach(day =>
+      Object.values(day || {}).forEach(v => v && blocks.add(v)));
+    [...blocks].forEach(b => add(b.replace(/_/g, ' '), 'weekly', ['timetable block']));
+    (kanbanTasks || []).flat().forEach(t => t && add(t.name, 'weekly', [
+      t.type || '', t.done ? 'completed' : (t.status || 'pending')]));
+  } catch (e) {}
+
+  // CALENDAR — upcoming entries
+  try {
+    const map = (typeof entries !== 'undefined' && entries) ? entries : {};
+    const today = new Date().toISOString().slice(0, 10);
+    Object.keys(map).filter(k => k >= today).sort().slice(0, 20).forEach(k =>
+      (map[k] || []).forEach(e => add(e.title, 'calendar', [k, e.time || 'all day'])));
+  } catch (e) {}
+
+  // PORTFOLIO — every registry node
+  try {
+    Object.keys(rsTabData || {}).forEach(cat =>
+      (rsTabData[cat] || []).forEach(it => add(it.name, 'portfolio', [
+        cat, it.date || '', (it.tags || []).slice(0, 3).join(' · ')])));
+  } catch (e) {}
+
+  return named;
+}
+
+/* ── Layout ── */
+let MG_NODES = [], MG_EDGES = [], MG_BUILT = false, MG_HUBS = {};
+function mgRand(seed) {
+  return function () {
+    seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+    let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+
+function mgBuild(force) {
+  if (MG_BUILT && !force) return;
+  MG_BUILT = true;
+  MG_NODES = []; MG_EDGES = []; MG_HUBS = {};
+  const rnd = mgRand(2026);
+  const sphere = maxR => {
+    const az = rnd() * 6.283185, el = Math.acos(2 * rnd() - 1), rad = maxR * Math.cbrt(rnd());
+    return { x: Math.sin(el) * Math.cos(az) * rad, y: Math.cos(el) * rad, z: Math.sin(el) * Math.sin(az) * rad };
+  };
+
+  // centre
+  MG_NODES.push({ label: 'THE GRID', cat: 'core', x: 0, y: 0, z: 0, r: 11, named: true,
+                  facts: ['every module, one memory'], });
+
+  // module hubs on an inner shell
+  const cats = Object.keys(MG_PAGE);
+  cats.forEach((cat, i) => {
+    const ang = (i / cats.length) * Math.PI * 2;
+    const tilt = (i % 2 ? 0.28 : -0.28);
+    MG_NODES.push({ label: MG_LABELS[cat].toUpperCase(), cat, hub: true, named: true,
+      x: Math.cos(ang) * 0.42, y: tilt, z: Math.sin(ang) * 0.42, r: 6.5, facts: ['module hub'] });
+    MG_HUBS[cat] = MG_NODES.length - 1;
+    MG_EDGES.push([0, MG_HUBS[cat]]);
+  });
+
+  // real data nodes
+  const named = mgCollect();
+  const byCat = {};
+  Object.entries(named).forEach(([label, def]) => {
+    const p = sphere(0.92);
+    MG_NODES.push({ label, cat: def.cat, x: p.x, y: p.y, z: p.z,
+      r: 2.8 + rnd() * 1.3, named: true, facts: def.facts });
+    const idx = MG_NODES.length - 1;
+    (byCat[def.cat] = byCat[def.cat] || []).push(idx);
+    if (MG_HUBS[def.cat] !== undefined) MG_EDGES.push([MG_HUBS[def.cat], idx]);
+  });
+
+  // chain nodes within a module so clusters read as groups
+  Object.values(byCat).forEach(list => {
+    for (let i = 0; i < list.length - 1; i++) if (rnd() < 0.55) MG_EDGES.push([list[i], list[i + 1]]);
+  });
+
+  // faint background texture scaled to how much real data exists
+  const real = MG_NODES.length;
+  const bg = Math.min(900, Math.max(160, real * 12));
+  for (let i = 0; i < bg; i++) {
+    const p = sphere(0.98);
+    MG_NODES.push({ label: null, cat: 'orphan', x: p.x, y: p.y, z: p.z, r: 0.6 + rnd() * 0.5, named: false });
+  }
+
+  const nEl = document.getElementById('mgN'), eEl = document.getElementById('mgE');
+  if (nEl) nEl.textContent = real.toLocaleString();
+  if (eEl) eEl.textContent = MG_EDGES.length.toLocaleString();
+  mgBuildLegend();
+}
+
+function mgBuildLegend() {
+  const wrap = document.getElementById('mgLegend');
+  if (!wrap) return;
+  wrap.innerHTML = '';
+  Object.keys(MG_COLORS).forEach(cat => {
+    if (cat === 'orphan') return;
+    const chip = document.createElement('div');
+    chip.className = 'mg-chip';
+    chip.innerHTML = '<i style="background:' + MG_COLORS[cat] + '"></i>' + MG_LABELS[cat];
+    chip.onclick = () => { mgOff[cat] = !mgOff[cat]; chip.classList.toggle('off', mgOff[cat]); };
+    wrap.appendChild(chip);
+  });
+}
+
+/* ── Render ── */
+const mgOff = {};
+let mgRotY = 0.4, mgRotX = -0.15, mgZoom = 1, mgDrag = false,
+    mgLastX = 0, mgLastY = 0, mgMX = -1, mgMY = -1, mgHover = null, mgRAF = null;
+const MG_DPR = Math.min(window.devicePixelRatio || 1, 2);
+const MG_REDUCED = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+function mgHex(h) { h = h.replace('#', ''); return { r: parseInt(h.substr(0,2),16), g: parseInt(h.substr(2,2),16), b: parseInt(h.substr(4,2),16) }; }
+function mgRgba(c, a) { return 'rgba(' + (c.r|0) + ',' + (c.g|0) + ',' + (c.b|0) + ',' + a + ')'; }
+function mgMix(a, b, t) { return { r: a.r+(b.r-a.r)*t, g: a.g+(b.g-a.g)*t, b: a.b+(b.b-a.b)*t }; }
+
+function mgFit() {
+  const c = document.getElementById('mgCanvas');
+  if (!c) return;
+  c.width = c.clientWidth * MG_DPR;
+  c.height = c.clientHeight * MG_DPR;
+  mgBuild();
+}
+
+function mgProject(n, W, H) {
+  const cy = Math.cos(mgRotY), sy = Math.sin(mgRotY), cx = Math.cos(mgRotX), sx = Math.sin(mgRotX);
+  const x1 = n.x*cy - n.z*sy, z1 = n.x*sy + n.z*cy;
+  const y2 = n.y*cx - z1*sx,  z2 = n.y*sx + z1*cx;
+  const d = (z2 + 2.2) / 4.4;
+  const sc = Math.min(W, H) * 0.42 * mgZoom;
+  const persp = 0.88 + 0.24 * ((z2 + 1.3) / 2.6);
+  return { px: W/2 + x1*sc*persp, py: H/2 + y2*sc*persp, d: Math.max(0.05, Math.min(1, d)), z: z2 };
+}
+
+function mgDraw() {
+  const c = document.getElementById('mgCanvas');
+  if (!c || !MG_BUILT) return;
+  const ctx = c.getContext('2d'), W = c.width, H = c.height;
+  ctx.clearRect(0, 0, W, H);
+  if (!mgDrag && !MG_REDUCED) mgRotY += 0.0008;
+
+  const pp = MG_NODES.map(n => mgProject(n, W, H));
+
+  ctx.globalCompositeOperation = 'lighter';
+  for (const e of MG_EDGES) {
+    const na = MG_NODES[e[0]], nb = MG_NODES[e[1]];
+    if (mgOff[na.cat] || mgOff[nb.cat]) continue;
+    const a = pp[e[0]], b = pp[e[1]];
+    const al = 0.05 + 0.20 * Math.min(a.d, b.d);
+    ctx.strokeStyle = mgRgba(mgHex(MG_COLORS[na.cat] || '#76b372'), al);
+    ctx.lineWidth = MG_DPR * (0.4 + 0.5 * Math.min(a.d, b.d));
+    ctx.beginPath(); ctx.moveTo(a.px, a.py); ctx.lineTo(b.px, b.py); ctx.stroke();
+  }
+
+  mgHover = null;
+  const hitR = (MG_REDUCED ? 0 : 14) + 14 * MG_DPR;
+  const order = MG_NODES.map((n, i) => i).sort((i, j) => pp[i].z - pp[j].z);
+  for (const i of order) {
+    const n = MG_NODES[i], p = pp[i];
+    if (mgOff[n.cat]) continue;
+    const col = mgHex(n.named ? (MG_COLORS[n.cat] || '#f0f0f0') : MG_COLORS.orphan);
+    if (mgMX >= 0 && n.named) {
+      const dd = Math.hypot(p.px - mgMX*MG_DPR, p.py - mgMY*MG_DPR);
+      if (dd < hitR && (!mgHover || p.z > mgHover.p.z)) mgHover = { n, p, i };
+    }
+    const R = (n.r + (n.cat === 'core' ? 3 : 0)) * MG_DPR * (0.5 + 0.6*p.d) * mgZoom;
+    if (n.named || R > 2.2) {
+      const g = ctx.createRadialGradient(p.px, p.py, 0, p.px, p.py, R*3);
+      g.addColorStop(0, mgRgba(col, 0.42 + 0.34*p.d));
+      g.addColorStop(0.5, mgRgba(col, 0.10));
+      g.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(p.px, p.py, R*3, 0, 7); ctx.fill();
+    }
+    ctx.fillStyle = mgRgba(mgMix(col, {r:255,g:255,b:255}, n.named ? 0.35 : 0.05), 0.6 + 0.4*p.d);
+    ctx.beginPath(); ctx.arc(p.px, p.py, R, 0, 7); ctx.fill();
+  }
+  ctx.globalCompositeOperation = 'source-over';
+
+  // labels: hubs always, others when zoomed or hovered
+  const showAll = mgZoom > 1.4;
+  for (const i of order) {
+    const n = MG_NODES[i], p = pp[i];
+    if (!n.label || mgOff[n.cat] || p.d < 0.4) continue;
+    const isHub = n.hub || n.cat === 'core';
+    if (!isHub && !showAll && !(mgHover && mgHover.i === i)) continue;
+    ctx.font = (isHub ? 11 : 9) * MG_DPR + "px 'Space Mono', monospace";
+    ctx.fillStyle = 'rgba(240,240,240,' + (0.4 + 0.6*p.d) + ')';
+    ctx.textAlign = 'center';
+    ctx.fillText(n.label, p.px, p.py - ((n.r + 5) * MG_DPR * (0.6 + 0.5*p.d) * mgZoom));
+  }
+
+  const tip = document.getElementById('mgTip');
+  if (tip) {
+    if (mgHover && mgHover.n.label) {
+      tip.style.display = 'block';
+      tip.innerHTML = '<span class="mg-c" style="color:' + (MG_COLORS[mgHover.n.cat]||'#76b372') + '">' +
+        escHtml(MG_LABELS[mgHover.n.cat] || '') + '</span><b>' + escHtml(mgHover.n.label) + '</b>' +
+        escHtml((mgHover.n.facts && mgHover.n.facts[0]) || '');
+      const cw = c.clientWidth;
+      tip.style.left = Math.min(cw - 266, (mgHover.p.px / MG_DPR) + 14) + 'px';
+      tip.style.top = ((mgHover.p.py / MG_DPR) + 10) + 'px';
+    } else tip.style.display = 'none';
+  }
+}
+
+/* ── Dossier ── */
+let _mgDosCat = null;
+function mgOpenDos(n) {
+  const dos = document.getElementById('mgDos');
+  if (!dos) return;
+  dos.classList.add('open');
+  _mgDosCat = n.cat;
+  document.getElementById('mgDosName').textContent = n.label;
+  const chip = document.getElementById('mgDosChip');
+  chip.textContent = MG_LABELS[n.cat] || n.cat;
+  const col = mgHex(MG_COLORS[n.cat] || '#76b372');
+  chip.style.background = mgRgba(col, 0.16);
+  chip.style.color = MG_COLORS[n.cat] || '#76b372';
+  const facts = document.getElementById('mgDosFacts');
+  facts.innerHTML = ((n.facts && n.facts.length) ? n.facts : ['no further detail'])
+    .map(f => '<div class="mg-fact">' + escHtml(f) + '</div>').join('');
+  const goto = document.getElementById('mgDosGoto');
+  goto.style.display = MG_PAGE[n.cat] ? 'block' : 'none';
+  goto.textContent = MG_PAGE[n.cat] ? 'OPEN ' + (MG_LABELS[n.cat] || '').toUpperCase() : '';
+}
+function mgCloseDos() { const d = document.getElementById('mgDos'); if (d) d.classList.remove('open'); }
+
+/* ── Boot / lifecycle ── */
+function mgBindOnce() {
+  if (mgBindOnce._done) return;
+  const c = document.getElementById('mgCanvas');
+  if (!c) return;
+  mgBindOnce._done = true;
+
+  c.addEventListener('mousedown', e => { mgDrag = true; mgLastX = e.clientX; mgLastY = e.clientY; c.classList.add('grabbing'); });
+  addEventListener('mouseup', () => { mgDrag = false; c.classList.remove('grabbing'); });
+  c.addEventListener('mousemove', e => {
+    const r = c.getBoundingClientRect(); mgMX = e.clientX - r.left; mgMY = e.clientY - r.top;
+    if (mgDrag) {
+      mgRotY += (e.clientX - mgLastX) * 0.006;
+      mgRotX = Math.max(-1.2, Math.min(1.2, mgRotX + (e.clientY - mgLastY) * 0.006));
+      mgLastX = e.clientX; mgLastY = e.clientY;
+    }
+  });
+  c.addEventListener('mouseleave', () => { mgMX = -1; mgMY = -1; });
+  c.addEventListener('wheel', e => { e.preventDefault();
+    mgZoom = Math.max(0.4, Math.min(4, mgZoom * (1 - e.deltaY * 0.0028))); }, { passive: false });
+  c.addEventListener('click', () => { if (mgHover && mgHover.n.label) mgOpenDos(mgHover.n); });
+  c.addEventListener('dblclick', () => { mgRotY = 0.4; mgRotX = -0.15; mgZoom = 1; });
+
+  document.getElementById('mgDosClose').onclick = mgCloseDos;
+  document.getElementById('mgDosGoto').onclick = () => {
+    const page = MG_PAGE[_mgDosCat];
+    mgCloseDos();
+    if (page) navigate(page);
+  };
+  addEventListener('resize', () => { clearTimeout(mgFit._t); mgFit._t = setTimeout(mgFit, 150); });
+}
+
+function mgLoop() {
+  const page = document.getElementById('page-mindgraph');
+  if (page && page.classList.contains('active') && !document.hidden) mgDraw();
+  mgRAF = requestAnimationFrame(mgLoop);
+}
+
+/** Called on navigation — rebuilds from current data so the graph is never stale. */
+function initMindgraph() {
+  mgBindOnce();
+  MG_BUILT = false;          // data may have changed since last visit
+  mgFit();
+  mgBuild(true);
+  if (!mgRAF) mgRAF = requestAnimationFrame(mgLoop);
+  // Paint one frame immediately. rAF is throttled while a tab is hidden, so
+  // without this the canvas can stay blank until the tab regains focus.
+  mgDraw();
+  requestAnimationFrame(() => { mgFit(); mgDraw(); });
 }
 
 </script>
