@@ -1,9 +1,64 @@
+const crypto  = require('crypto');
 const express = require('express');
 const db      = require('../lib/db');
 const { requireAuth } = require('../middleware/auth');
+const { validate, z } = require('../middleware/validate');
 
 const router = express.Router();
 router.use(requireAuth);
+
+// ─── Subscription feed management ─────────────────────────────────────────────
+// The feed itself is served publicly from /api/feed; these endpoints mint,
+// inspect and revoke the token that authorises it.
+
+const feedOptsSchema = z.object({
+  events:    z.boolean().optional(),
+  timetable: z.boolean().optional(),
+  deadlines: z.boolean().optional(),
+  gym:       z.boolean().optional(),
+});
+
+function newToken() {
+  // 32 random bytes, URL-safe — far beyond guessable at 60 requests/15min.
+  return crypto.randomBytes(32).toString('base64url');
+}
+
+router.get('/feed-token', async (req, res, next) => {
+  try {
+    const u = await db.user.findUnique({
+      where: { id: req.user.id },
+      select: { calendarToken: true, calendarFeedOpts: true },
+    });
+    res.json({ token: u && u.calendarToken, options: (u && u.calendarFeedOpts) || {} });
+  } catch (err) { next(err); }
+});
+
+// Mint on first use, or rotate to revoke every existing subscription.
+router.post('/feed-token', async (req, res, next) => {
+  try {
+    const token = newToken();
+    await db.user.update({ where: { id: req.user.id }, data: { calendarToken: token } });
+    res.json({ token });
+  } catch (err) { next(err); }
+});
+
+router.delete('/feed-token', async (req, res, next) => {
+  try {
+    await db.user.update({ where: { id: req.user.id }, data: { calendarToken: null } });
+    res.json({ revoked: true });
+  } catch (err) { next(err); }
+});
+
+router.put('/feed-options', validate(feedOptsSchema), async (req, res, next) => {
+  try {
+    const u = await db.user.update({
+      where: { id: req.user.id },
+      data:  { calendarFeedOpts: req.body },
+      select: { calendarFeedOpts: true },
+    });
+    res.json({ options: u.calendarFeedOpts });
+  } catch (err) { next(err); }
+});
 
 // GET /api/calendar/events?from=&to=
 router.get('/events', async (req, res, next) => {
