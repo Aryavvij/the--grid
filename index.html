@@ -176,6 +176,58 @@
       emphasis: { focus: 'series' },
     };
   };
+  /**
+   * Bklit's Bar treatment: round caps, a bar-spanning gradient, and the grow
+   * animation staggered so the whole set lands in ~1.2s regardless of count.
+   * Hovering one bar fades the rest to 0.3, as fadedOpacity does.
+   */
+  window.bkBar = function (color, opts) {
+    var o = opts || {}, c = color || '#76b372';
+    var cap = o.lineCap === 'butt' ? 0 : (typeof o.lineCap === 'number' ? o.lineCap : 6);
+    var n = Math.max(1, o.count || 1);
+    var stagger = o.staggerDelay == null ? Math.min(40, 1100 / n) : o.staggerDelay;
+    return {
+      type: 'bar',
+      barMaxWidth: o.barWidth || 26,
+      itemStyle: {
+        borderRadius: [cap, cap, 0, 0],
+        color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+          { offset: 0, color: c },
+          { offset: 1, color: hexA(c, 0.35) },
+        ]),
+      },
+      emphasis: { focus: 'series', itemStyle: { color: c } },
+      blur: { itemStyle: { opacity: o.fadedOpacity == null ? 0.3 : o.fadedOpacity } },
+      animationDuration: 1100,
+      animationEasing: 'cubicInOut',
+      animationDelay: function (idx) { return idx * stagger; },
+    };
+  };
+
+  /**
+   * Bklit's Pie/Donut treatment: padded slices, rounded corners, and a slice
+   * that translates outward on hover while the others dim.
+   */
+  window.bkPie = function (opts) {
+    var o = opts || {};
+    return {
+      type: 'pie',
+      radius: o.radius || ['62%', '92%'],
+      padAngle: o.padAngle == null ? 2 : o.padAngle,
+      itemStyle: { borderRadius: o.cornerRadius == null ? 4 : o.cornerRadius },
+      label: { show: false },
+      labelLine: { show: false },
+      emphasis: {
+        scaleSize: o.hoverOffset == null ? 8 : o.hoverOffset,
+        itemStyle: { shadowBlur: 18, shadowColor: 'rgba(118,179,114,0.45)' },
+      },
+      blur: { itemStyle: { opacity: 0.35 } },
+      animationType: 'scale',
+      animationEasing: 'cubicInOut',
+      animationDelay: function (idx) { return idx * 60; },
+    };
+  };
+
   /* #rrggbb -> rgba() so gradient stops can carry their own alpha. */
   function hexA(hex, a) {
     if (hex.charAt(0) !== '#') return hex;
@@ -4202,6 +4254,29 @@ html, body {
   font-family:var(--font); font-size:9px; color:var(--text-muted); letter-spacing:1.5px; pointer-events:none; }
 .mg-stat b { color:var(--sig-900); font-variant-numeric:tabular-nums; }
 .mg-legend { position:absolute; bottom:16px; left:20px; z-index:4; display:flex; gap:5px; flex-wrap:wrap; max-width:70%; }
+
+/* ── Mindgraph view switch: force graph vs sunburst ── */
+.mg-viewtabs { display:flex; gap:0; margin-top:10px; border:1px solid rgba(255,255,255,0.10); border-radius:4px; width:max-content; overflow:hidden; }
+.mg-viewtab {
+  background:none; border:none; cursor:pointer; padding:5px 14px;
+  font-family:'Space Mono',monospace; font-size:9px; letter-spacing:1.5px;
+  color:var(--text-muted); transition:background .15s,color .15s;
+}
+.mg-viewtab:hover { color:var(--text-dim); }
+.mg-viewtab.active { background:var(--green-dim); color:var(--green); }
+#mgSunWrap { position:absolute; inset:0; z-index:3; display:none; flex-direction:column;
+             align-items:center; justify-content:center; gap:10px; padding:70px 20px 30px; }
+#mgSunWrap.on { display:flex; }
+#mgSunburst { width:100%; max-width:560px; flex:1; min-height:340px; }
+.mg-crumb { display:flex; gap:6px; align-items:center; flex-wrap:wrap; justify-content:center;
+            font-family:'Space Mono',monospace; font-size:10px; letter-spacing:1.2px; min-height:16px; }
+.mg-crumb button { background:none; border:none; cursor:pointer; padding:0; color:var(--text-muted);
+                   font:inherit; letter-spacing:inherit; }
+.mg-crumb button:hover { color:var(--green); }
+.mg-crumb .cur { color:var(--text); }
+.mg-crumb .sep { color:var(--text-muted); opacity:0.5; }
+.mg-hint { font-family:'Space Mono',monospace; font-size:9px; letter-spacing:1.4px;
+           color:var(--text-muted); text-align:center; min-height:14px; }
 .mg-chip { font-family:var(--font); font-size:8.5px; letter-spacing:1px; color:var(--text-dim); display:flex;
   align-items:center; gap:6px; text-transform:uppercase; background:rgba(15,15,15,.78); border:1px solid var(--carbon-4);
   border-radius:13px; padding:5px 10px; cursor:pointer; transition:.15s; }
@@ -5041,6 +5116,18 @@ html, body {
 
       </div>
 
+      <!-- Cross-module activity heatmap -->
+      <div class="hb-chart-card" style="margin-bottom:14px;">
+        <div class="hb-chart-head">
+          <div class="hb-matrix-title" style="font-size:13px">ACTIVITY_GRID</div>
+          <div class="hb-legend" id="hmLegend"></div>
+        </div>
+        <div style="overflow-x:auto;padding-bottom:4px;">
+          <div id="activityHeatmap" style="min-width:760px"></div>
+        </div>
+        <div id="hmSummary" style="font-size:9px;letter-spacing:1.2px;color:var(--text-muted);padding-top:8px;"></div>
+      </div>
+
     </div><!-- /page-habits -->
 
     <!-- ── FINANCES ──────────────────────────────────── -->
@@ -5795,9 +5882,21 @@ html, body {
     <div class="page" id="page-mindgraph">
       <div class="mg-root">
         <canvas id="mgCanvas" role="img" aria-label="Knowledge graph of all Grid data"></canvas>
+
+        <!-- Sunburst view of the same memory tree — proportions, not topology -->
+        <div id="mgSunWrap">
+          <div id="mgSunCrumb" class="mg-crumb"></div>
+          <div id="mgSunburst" role="img" aria-label="Sunburst of all Grid data by module"></div>
+          <div id="mgSunHint" class="mg-hint">CLICK A SEGMENT TO DRILL IN · CLICK THE CENTRE TO GO BACK</div>
+        </div>
+
         <div class="mg-head">
           <h2>MINDGRAPH</h2>
-          <p>DRAG TO ROTATE · SCROLL TO ZOOM · CLICK A NODE · DOUBLE-CLICK TO RESET</p>
+          <p id="mgHeadHint">DRAG TO ROTATE · SCROLL TO ZOOM · CLICK A NODE · DOUBLE-CLICK TO RESET</p>
+          <div class="mg-viewtabs">
+            <button class="mg-viewtab active" id="mgTabGraph" onclick="mgSetView('graph')">GRAPH</button>
+            <button class="mg-viewtab" id="mgTabSun" onclick="mgSetView('sunburst')">SUNBURST</button>
+          </div>
         </div>
         <div class="mg-stat">NODES <b id="mgN">0</b> · EDGES <b id="mgE">0</b></div>
         <div class="mg-tip" id="mgTip"></div>
@@ -8454,7 +8553,7 @@ function initCogFlowChart() {
     },
     xAxis: { type: 'category', data: parsed.map(p => p.time) },
     yAxis: { type: 'value', name: 'MIN', nameTextStyle: { fontSize: 9 } },
-    series: [{ type: 'bar', data: parsed.map(p => p.mins) }]
+    series: [{ ...bkBar('#76b372', { count: parsed.length }), data: parsed.map(p => p.mins) }]
   });
 }
 
@@ -9006,7 +9105,7 @@ async function initHabits() {
 
   if (isDemo) {
     habits = JSON.parse(localStorage.getItem('gridHabits') || JSON.stringify(_DEMO_HABITS));
-    buildHabitMatrix(); initMomentumChart(); renderHabitRings(); buildHabitRanks();
+    buildHabitMatrix(); initMomentumChart(); renderHabitRings(); renderActivityHeatmap(); buildHabitRanks();
     return;
   }
 
@@ -9036,7 +9135,7 @@ async function initHabits() {
     habits = JSON.parse(localStorage.getItem('gridHabits') || '[]');
   }
 
-  buildHabitMatrix(); initMomentumChart(); renderHabitRings(); buildHabitRanks();
+  buildHabitMatrix(); initMomentumChart(); renderHabitRings(); renderActivityHeatmap(); buildHabitRanks();
 }
 
 function buildHabitRanks() {
@@ -9169,7 +9268,8 @@ function toggleHabitDay(e) {
   term.scrollTop = term.scrollHeight;
 
   saveHabits(); // localStorage cache
-  renderHabitRings();   // rings track the matrix, so they move with every tick
+  renderHabitRings();          // rings track the matrix, so they move with every tick
+  renderActivityHeatmap();     // and so does the cross-module grid
 
   // Persist to API
   if (h.id) {
@@ -9222,6 +9322,129 @@ function renderHabitRings() {
         + '</div>'
       + '</div>';
     }).join('');
+  }
+}
+
+/* ══ ACTIVITY HEATMAP ═══════════════════════════════════════════════════════
+   One year, one cell per day, counting activity across EVERY module — habit
+   ticks, gym sessions and study minutes together. Each module already has its
+   own consistency view; the point of this one is that it is the only place the
+   whole record is visible at once, so a quiet fortnight shows up even when one
+   module stayed busy.                                                        */
+const HM_LEVELS = ['rgba(255,255,255,0.045)', 'rgba(118,179,114,0.30)',
+                   'rgba(118,179,114,0.52)', 'rgba(118,179,114,0.76)', '#a5f79e'];
+
+/** Raw count -> one of five visual levels. */
+function hmLevel(n) { return n <= 0 ? 0 : n <= 1 ? 1 : n <= 3 ? 2 : n <= 5 ? 3 : 4; }
+
+function hmCollect() {
+  const day = {};                                   // 'YYYY-MM-DD' -> count
+  const bump = (d, n) => { if (d) day[d] = (day[d] || 0) + (n || 1); };
+  const now = new Date(), y = now.getFullYear(), m = now.getMonth();
+  const iso = (yy, mm, dd) => yy + '-' + String(mm + 1).padStart(2, '0') + '-' + String(dd).padStart(2, '0');
+
+  // Habits — checked days are day-of-month within the CURRENT month only.
+  try {
+    (habits || []).forEach(h => (h.checked || []).forEach(d => bump(iso(y, m, d))));
+  } catch (e) {}
+  // Gym — one point per logged session.
+  try {
+    JSON.parse(localStorage.getItem('gymLogs') || '[]')
+      .forEach(l => bump(l.date || l.workoutDate));
+  } catch (e) {}
+  // Study — one point per 45 minutes, so a long session outweighs a token one.
+  try {
+    JSON.parse(localStorage.getItem('gridFocusLogs') || '[]')
+      .forEach(l => bump(l.date, Math.max(1, Math.round((+l.minutes || 0) / 45))));
+  } catch (e) {}
+  return day;
+}
+
+function renderActivityHeatmap() {
+  const el = document.getElementById('activityHeatmap');
+  if (!el) return;
+  const legEl = document.getElementById('hmLegend');
+  const sumEl = document.getElementById('hmSummary');
+
+  const counts = hmCollect();
+  const CELL = 11, GAP = 3, WEEKS = 53, TOP = 20, LEFT = 26;
+
+  // Grid ends on the most recent Saturday-completed week so columns stay whole.
+  const end = new Date(); end.setHours(0, 0, 0, 0);
+  end.setDate(end.getDate() + (6 - end.getDay()));
+  const start = new Date(end); start.setDate(start.getDate() - (WEEKS * 7 - 1));
+
+  const NS = 'http://www.w3.org/2000/svg';
+  const mk = (t, a) => { const n = document.createElementNS(NS, t);
+                         for (const k in a) if (a[k] != null) n.setAttribute(k, a[k]); return n; };
+  const W = LEFT + WEEKS * (CELL + GAP), H = TOP + 7 * (CELL + GAP);
+  const svg = mk('svg', { width: W, height: H, viewBox: `0 0 ${W} ${H}`,
+                          style: 'display:block;overflow:visible' });
+
+  const fmt = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0')
+                 + '-' + String(d.getDate()).padStart(2, '0');
+  const MON = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+  const today = fmt(new Date());
+
+  let total = 0, activeDays = 0, lastMonth = -1;
+  for (let w = 0; w < WEEKS; w++) {
+    for (let d = 0; d < 7; d++) {
+      const cur = new Date(start);
+      cur.setDate(start.getDate() + w * 7 + d);
+      if (cur > end) continue;
+      const key = fmt(cur), n = counts[key] || 0;
+      if (n > 0) { total += n; activeDays++; }
+
+      // Month label above the column where a new month first appears.
+      if (d === 0 && cur.getMonth() !== lastMonth) {
+        lastMonth = cur.getMonth();
+        const t = mk('text', { x: LEFT + w * (CELL + GAP), y: TOP - 8,
+          fill: 'var(--text-muted)', 'font-family': "'Space Mono',monospace", 'font-size': 8,
+          'letter-spacing': 1 });
+        t.textContent = MON[lastMonth];
+        svg.appendChild(t);
+      }
+
+      const rect = mk('rect', {
+        x: LEFT + w * (CELL + GAP), y: TOP + d * (CELL + GAP),
+        width: CELL, height: CELL, rx: 2,
+        fill: HM_LEVELS[hmLevel(n)],
+        stroke: key === today ? 'var(--green)' : 'none',
+        'stroke-width': key === today ? 1.2 : 0,
+        style: 'transition:opacity .12s',
+      });
+      const title = mk('title');
+      title.textContent = n
+        ? `${n} activit${n === 1 ? 'y' : 'ies'} on ${key}`
+        : `No activity on ${key}`;
+      rect.appendChild(title);
+      svg.appendChild(rect);
+    }
+  }
+
+  // Weekday labels, every other row so they do not crowd.
+  ['', 'MON', '', 'WED', '', 'FRI', ''].forEach((lab, i) => {
+    if (!lab) return;
+    const t = mk('text', { x: 0, y: TOP + i * (CELL + GAP) + CELL - 2,
+      fill: 'var(--text-muted)', 'font-family': "'Space Mono',monospace", 'font-size': 8,
+      'letter-spacing': 1 });
+    t.textContent = lab;
+    svg.appendChild(t);
+  });
+
+  el.innerHTML = '';
+  el.appendChild(svg);
+
+  if (legEl) {
+    legEl.innerHTML = '<span style="font-size:9px;color:var(--text-muted);letter-spacing:1px">LESS</span>'
+      + HM_LEVELS.map(c => '<span style="display:inline-block;width:10px;height:10px;border-radius:2px;'
+                         + 'background:' + c + ';margin:0 2px;vertical-align:middle"></span>').join('')
+      + '<span style="font-size:9px;color:var(--text-muted);letter-spacing:1px">MORE</span>';
+  }
+  if (sumEl) {
+    sumEl.textContent = activeDays
+      ? `${total} LOGGED ACTIONS ACROSS ${activeDays} ACTIVE DAYS · HABITS + GYM + STUDY`
+      : 'NO ACTIVITY LOGGED YET — TICK A HABIT, LOG A SESSION OR RECORD STUDY TIME';
   }
 }
 
@@ -10194,9 +10417,7 @@ function initDonutChart() {
 
   chart.setOption({
     tooltip: { trigger: 'item', valueFormatter: v => getCurrencySymbol() + Number(v).toLocaleString('en-IN') },
-    series: [{ type: 'pie', radius: ['62%', '92%'], data: rows,
-               label: { show: false }, labelLine: { show: false },
-               emphasis: { scaleSize: 6 } }]
+    series: [{ ...bkPie(), data: rows }]
   });
 }
 
@@ -12850,7 +13071,7 @@ function stRenderChart(rows) {
     tooltip: { trigger: 'axis', valueFormatter: v => v + ' min' },
     xAxis: { type: 'category', data: days.map(d => d.slice(5)) },
     yAxis: { type: 'value', name: 'MIN', nameTextStyle: { fontSize: 9 } },
-    series: [{ type: 'bar', data: days.map(d => byDay[d]) }],
+    series: [{ ...bkBar('#76b372', { count: days.length }), data: days.map(d => byDay[d]) }],
   });
 }
 
@@ -13134,6 +13355,218 @@ function mgCollect() {
   return named;
 }
 
+/* ══ SUNBURST VIEW ══════════════════════════════════════════════════════════
+   The same memory tree as the force graph, read the other way round. The graph
+   answers "what connects to what"; the sunburst answers "how much of my record
+   is each module", which the graph cannot show because node position there is
+   layout, not quantity. Both are built from mgCollect(), so they cannot drift.
+                                                                             */
+let MG_VIEW = 'graph', MG_SUN_FOCUS = 'root', MG_SUN_TREE = null;
+
+/** mgCollect()'s flat map -> root/module/entry tree. */
+function mgSunTree() {
+  const named = mgCollect();
+  const byCat = {};
+  Object.keys(named).forEach(label => {
+    const cat = named[label].cat;
+    (byCat[cat] = byCat[cat] || []).push({ name: label, value: 1, facts: named[label].facts });
+  });
+  return {
+    id: 'root', name: 'THE GRID',
+    children: Object.keys(byCat).sort().map(cat => ({
+      id: 'cat:' + cat, name: (MG_LABELS[cat] || cat).toUpperCase(),
+      color: MG_COLORS[cat] || '#76b372',
+      cat,
+      children: byCat[cat].map((n, i) => ({ id: 'n:' + cat + ':' + i, ...n })),
+    })),
+  };
+}
+
+/** Sum leaf values bottom-up, and index every node by id for drill-down. */
+function mgSunPrepare(node, index, depth, color) {
+  node.depth = depth;
+  node.color = node.color || color;
+  index[node.id] = node;
+  if (node.children && node.children.length) {
+    node.value = node.children.reduce((s, c) => s + mgSunPrepare(c, index, depth + 1, node.color), 0);
+  }
+  return node.value || 0;
+}
+
+function mgSetView(view) {
+  MG_VIEW = view;
+  const wrap = document.getElementById('mgSunWrap');
+  const cv   = document.getElementById('mgCanvas');
+  const hint = document.getElementById('mgHeadHint');
+  if (wrap) wrap.classList.toggle('on', view === 'sunburst');
+  if (cv)   cv.style.display = view === 'sunburst' ? 'none' : 'block';
+  document.getElementById('mgTabGraph').classList.toggle('active', view === 'graph');
+  document.getElementById('mgTabSun').classList.toggle('active', view === 'sunburst');
+  // The legend and dossier belong to the graph; hide them in the other view.
+  ['mgLegend', 'mgStat', 'mgTip'].forEach(id => {
+    const e = document.getElementById(id); if (e) e.style.display = view === 'sunburst' ? 'none' : '';
+  });
+  if (hint) hint.textContent = view === 'sunburst'
+    ? 'CLICK A SEGMENT TO DRILL IN · CLICK THE CENTRE TO GO BACK'
+    : 'DRAG TO ROTATE · SCROLL TO ZOOM · CLICK A NODE · DOUBLE-CLICK TO RESET';
+  if (view === 'sunburst') renderMindSunburst();
+}
+
+function mgSunZoom(id) { MG_SUN_FOCUS = id; renderMindSunburst(); }
+
+function renderMindSunburst() {
+  const el = document.getElementById('mgSunburst');
+  if (!el) return;
+  const crumbEl = document.getElementById('mgSunCrumb');
+  const hintEl  = document.getElementById('mgSunHint');
+
+  const index = {};
+  MG_SUN_TREE = mgSunTree();
+  mgSunPrepare(MG_SUN_TREE, index, 0, '#a5f79e');
+
+  const focus = index[MG_SUN_FOCUS] || MG_SUN_TREE;
+  if (!focus.children || !focus.children.length) { mgSunZoom('root'); return; }
+
+  const NS = 'http://www.w3.org/2000/svg';
+  const mk = (t, a) => { const n = document.createElementNS(NS, t);
+                         for (const k in a) if (a[k] != null) n.setAttribute(k, a[k]); return n; };
+
+  const S = 460, c = S / 2, HUB = 46, RING = 52, PAD = 10;
+  const svg = mk('svg', { viewBox: `0 0 ${S} ${S}`, width: '100%', height: '100%',
+                          preserveAspectRatio: 'xMidYMid meet',
+                          style: 'display:block;margin:0 auto;max-height:100%' });
+
+  // Depth of the visible subtree, capped at two rings so labels stay legible.
+  const ringsFor = n => {
+    let d = 0;
+    (function walk(x, lvl) { if (!x.children) { d = Math.max(d, lvl); return; }
+                             d = Math.max(d, lvl); x.children.forEach(ch => walk(ch, lvl + 1)); })(n, 0);
+    return Math.min(d, 2);
+  };
+  const rings = Math.max(1, ringsFor(focus));
+
+  function arcSeg(r0, r1, a0, a1) {
+    const p = (r, a) => [c + r * Math.cos(a), c + r * Math.sin(a)];
+    const large = (a1 - a0) > Math.PI ? 1 : 0;
+    const [x0, y0] = p(r0, a0), [x1, y1] = p(r1, a0), [x2, y2] = p(r1, a1), [x3, y3] = p(r0, a1);
+    return `M ${x0} ${y0} L ${x1} ${y1} A ${r1} ${r1} 0 ${large} 1 ${x2} ${y2} `
+         + `L ${x3} ${y3} A ${r0} ${r0} 0 ${large} 0 ${x0} ${y0} Z`;
+  }
+
+  const drawn = [];
+  (function layout(node, lvl, a0, a1) {
+    if (lvl > rings || !node.children) return;
+    const span = a1 - a0, total = node.value || 1;
+    let acc = a0;
+    node.children.forEach(ch => {
+      const sweep = span * ((ch.value || 0) / total);
+      const s0 = acc, s1 = acc + sweep; acc = s1;
+      if (sweep < 0.012) return;                       // too thin to see or hit
+      drawn.push({ node: ch, lvl, a0: s0, a1: s1 });
+      layout(ch, lvl + 1, s0, s1);
+    });
+  })(focus, 1, -Math.PI / 2, Math.PI * 1.5);
+
+  const groups = [];
+  drawn.forEach((d, i) => {
+    const r0 = HUB + (d.lvl - 1) * RING + (d.lvl > 1 ? PAD / 2 : 0);
+    const r1 = r0 + RING - PAD / 2;
+    // Outer rings step down in opacity for depth, as the reference does.
+    const op = d.lvl === 1 ? 0.85 : 0.45;
+    const path = mk('path', {
+      d: arcSeg(r0, r1, d.a0, d.a1),
+      fill: d.node.color, 'fill-opacity': 0,
+      stroke: 'rgba(8,8,8,0.85)', 'stroke-width': 1,
+      style: 'cursor:' + (d.node.children ? 'pointer' : 'default')
+           + ';transition:fill-opacity .35s ease-out,transform .16s ease-out;transform-origin:'
+           + c + 'px ' + c + 'px',
+    });
+    // Staggered clockwise reveal, ring by ring.
+    setTimeout(() => path.setAttribute('fill-opacity', op), 40 * i + 60 * (d.lvl - 1));
+
+    path.addEventListener('mouseenter', () => {
+      groups.forEach(g => { if (g !== path) g.setAttribute('fill-opacity', 0.25); });
+      path.setAttribute('fill-opacity', 1);
+      const pct = Math.round((d.node.value / (focus.value || 1)) * 100);
+      if (hintEl) hintEl.textContent = d.node.name + ' — ' + d.node.value
+        + (d.node.children ? ' ENTRIES' : ' ENTRY') + ' · ' + pct + '% OF ' + focus.name;
+    });
+    path.addEventListener('mouseleave', () => {
+      drawn.forEach((dd, j) => groups[j].setAttribute('fill-opacity', dd.lvl === 1 ? 0.85 : 0.45));
+      if (hintEl) hintEl.textContent = 'CLICK A SEGMENT TO DRILL IN · CLICK THE CENTRE TO GO BACK';
+    });
+    if (d.node.children) path.addEventListener('click', () => mgSunZoom(d.node.id));
+
+    groups.push(path);
+    svg.appendChild(path);
+  });
+
+  // Labels on the first ring only — deeper arcs are too narrow to read.
+  drawn.forEach(d => {
+    if (d.lvl !== 1 || (d.a1 - d.a0) < 0.34) return;
+    const mid = (d.a0 + d.a1) / 2, rr = HUB + RING / 2;
+    const t = mk('text', {
+      x: c + rr * Math.cos(mid), y: c + rr * Math.sin(mid),
+      'text-anchor': 'middle', 'dominant-baseline': 'middle',
+      fill: '#f0f0f0', 'font-family': "'Space Mono',monospace", 'font-size': 9,
+      'letter-spacing': 0.6, stroke: '#080808', 'stroke-width': 2.5,
+      'paint-order': 'stroke', style: 'pointer-events:none',
+    });
+    t.textContent = d.node.name.length > 12 ? d.node.name.slice(0, 11) + '…' : d.node.name;
+    svg.appendChild(t);
+  });
+
+  // Centre hub — click to zoom back out one level.
+  const parentOf = id => {
+    let found = null;
+    (function walk(n) { (n.children || []).forEach(ch => { if (ch.id === id) found = n; walk(ch); }); })(MG_SUN_TREE);
+    return found;
+  };
+  const up = focus.id === 'root' ? null : (parentOf(focus.id) || MG_SUN_TREE);
+  const hub = mk('circle', { cx: c, cy: c, r: HUB - 6, fill: 'rgba(255,255,255,0.03)',
+    stroke: 'rgba(255,255,255,0.10)', 'stroke-width': 1,
+    style: up ? 'cursor:pointer' : '' });
+  if (up) hub.addEventListener('click', () => mgSunZoom(up.id));
+  svg.appendChild(hub);
+
+  const nameT = mk('text', { x: c, y: c - 4, 'text-anchor': 'middle', fill: 'var(--text)',
+    'font-family': "'Space Mono',monospace", 'font-size': 11, 'font-weight': 700,
+    style: 'pointer-events:none' });
+  nameT.textContent = focus.name.length > 11 ? focus.name.slice(0, 10) + '…' : focus.name;
+  const valT = mk('text', { x: c, y: c + 12, 'text-anchor': 'middle', fill: 'var(--text-muted)',
+    'font-family': "'Space Mono',monospace", 'font-size': 9, style: 'pointer-events:none' });
+  valT.textContent = focus.value + (up ? ' ▲' : '');
+  svg.appendChild(nameT); svg.appendChild(valT);
+
+  el.innerHTML = '';
+  if (!drawn.length) {
+    el.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;'
+                 + 'font-size:11px;color:var(--text-muted);letter-spacing:1px">NO DATA YET</div>';
+  } else {
+    el.appendChild(svg);
+  }
+
+  // Breadcrumb trail back to the root.
+  if (crumbEl) {
+    const trail = []; let cur = focus;
+    while (cur) { trail.unshift(cur); cur = cur.id === 'root' ? null : (parentOf(cur.id) || MG_SUN_TREE); }
+    crumbEl.innerHTML = '';
+    trail.forEach((n, i) => {
+      if (i) { const s = document.createElement('span'); s.className = 'sep'; s.textContent = '/';
+               crumbEl.appendChild(s); }
+      if (n.id === focus.id) {
+        const cs = document.createElement('span'); cs.className = 'cur'; cs.textContent = n.name;
+        crumbEl.appendChild(cs);
+      } else {
+        const b = document.createElement('button');
+        b.textContent = n.name;
+        b.addEventListener('click', () => mgSunZoom(n.id));
+        crumbEl.appendChild(b);
+      }
+    });
+  }
+}
+
 /* ── Layout ── */
 let MG_NODES = [], MG_EDGES = [], MG_BUILT = false, MG_HUBS = {};
 function mgRand(seed) {
@@ -13386,6 +13819,8 @@ function initMindgraph() {
   // without this the canvas can stay blank until the tab regains focus.
   mgDraw();
   requestAnimationFrame(() => { mgFit(); mgDraw(); });
+  // The sunburst reads the same tree, so it rebuilds on every visit too.
+  if (MG_VIEW === 'sunburst') renderMindSunburst();
 }
 
 /* ══ CROSS-DEVICE SYNC: timetable · weekly tasks · study sessions ═══════════
