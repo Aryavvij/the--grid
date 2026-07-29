@@ -4941,27 +4941,8 @@ html, body {
                  Task moved out to their own row below, so this column is now
                  just NOW/NEXT plus the full day's timetable. -->
             <div style="display:flex; flex-direction:column; gap:16px; min-width:0; padding-left:12px;">
-              <div style="display:flex; gap:32px;">
-                <div class="hv-slot">
-                  <div class="hv-slot-l">NOW</div>
-                  <div class="hv-slot-v" id="hvNowV">—</div>
-                  <div class="hv-slot-t" id="hvNowT"></div>
-                </div>
-                <div class="hv-slot next">
-                  <div class="hv-slot-l">NEXT</div>
-                  <div class="hv-slot-v" id="hvNextV">—</div>
-                  <div class="hv-slot-t" id="hvNextT"></div>
-                </div>
-              </div>
-
-              <!-- Weekly Timetable, the whole day (00:00-24:00), not just
-                   what's left of it — spans the full width freed up by the
-                   mini-widget row moving out below. -->
-              <div style="border-top:1px solid var(--carbon-4); padding-top:12px; min-width:0;">
-                <div style="font-size:9px;letter-spacing:2px;color:var(--sig-500);margin-bottom:8px;">TODAY'S TIMETABLE</div>
-                <div id="hvUpcomingEvents" style="display:grid;grid-template-columns:repeat(auto-fill, minmax(130px, 1fr));gap:12px;padding-bottom:4px;">
-                  <span style="color:var(--text-muted);font-size:10px;">Loading…</span>
-                </div>
+              <div id="hvDaySlots" style="display:flex; flex-wrap:wrap; gap:32px; row-gap:24px;">
+                <span style="color:var(--text-muted);font-size:10px;">Loading…</span>
               </div>
             </div>
           </div>
@@ -13573,45 +13554,69 @@ function hvRenderMiniWidgets() {
 
 /** Render upcoming timetable events in the home page NOW zone */
 function hvRenderUpcoming() {
-  const el = document.getElementById('hvUpcomingEvents');
+  const el = document.getElementById('hvDaySlots');
   if (!el) return;
   try {
     const now = new Date();
-    const dayIdx = now.getDay();
+    const dayIdx = now.getDay() === 0 ? 6 : now.getDay() - 1; // TT is Mon-first (0-6)
     const hour = now.getHours();
+    
     const tt = JSON.parse(localStorage.getItem('gridTimetable') || 'null');
-    if (!tt || !tt[dayIdx]) { el.innerHTML = '<span style="color:var(--text-muted);font-size:10px;letter-spacing:0.5px;">NO SCHEDULE TODAY</span>'; return; }
-    const dayRow = tt[dayIdx];
+    const dayRow = tt ? tt[dayIdx] : null;
     const events = [];
-    let i = 0; // Show the full day
-    while (i < 24) { // No max limit
-      if (dayRow[i] && dayRow[i] !== '') {
-        const label = dayRow[i].replace(/_/g, ' ');
-        // group consecutive same-label hours
-        let end = i + 1;
-        while (end < 24 && dayRow[end] === dayRow[i]) end++;
-        const timeStr = String(i).padStart(2,'0') + ':00 – ' + String(end).padStart(2,'0') + ':00';
-        events.push({ label, time: timeStr, isNow: hour >= i && hour < end });
-        i = end;
-      } else {
-        i++;
+    
+    if (dayRow) {
+      let i = 0;
+      while (i < 24) {
+        if (dayRow[i] && dayRow[i] !== '') {
+          const label = dayRow[i].replace(/_/g, ' ');
+          let end = i + 1;
+          while (end < 24 && dayRow[end] === dayRow[i]) end++;
+          const timeStr = String(i).padStart(2,'0') + ':00 – ' + String(end).padStart(2,'0') + ':00';
+          events.push({ 
+            label, 
+            timeStr, 
+            isNow: hour >= i && hour < end,
+            isPast: hour >= end
+          });
+          i = end;
+        } else {
+          i++;
+        }
       }
     }
+
     if (!events.length) {
       el.innerHTML = '<span style="color:var(--text-muted);font-size:10px;letter-spacing:0.5px;">FREE ALL DAY</span>';
       return;
     }
-    el.innerHTML = events.map(ev => `
-      <div style="display:flex; flex-direction:column; justify-content:center; gap:4px; padding:14px 16px; border-radius:10px;
-        background:var(--carbon-2);
-        border:1px solid ${ev.isNow ? 'rgba(118,179,114,0.4)' : 'var(--carbon-4)'};
-        box-shadow:${ev.isNow ? '0 0 16px rgba(118,179,114,0.1)' : 'none'};
-        transition:border-color .15s; position:relative; overflow:hidden;">
-        ${ev.isNow ? '<div style="position:absolute; top:0; left:0; width:3px; height:100%; background:var(--sig-500);"></div>' : ''}
-        <div style="font-size:11px; font-weight:700; color:${ev.isNow ? 'var(--sig-500)' : 'var(--text)'}; letter-spacing:1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${ev.label}</div>
-        <div style="font-size:9px; letter-spacing:0.5px; color:var(--text-muted);">${ev.time}${ev.isNow ? ' · NOW' : ''}</div>
-      </div>
-    `).join('');
+
+    let foundNext = false;
+    el.innerHTML = events.map(ev => {
+      let slotLabel = '';
+      if (ev.isNow) {
+        slotLabel = 'NOW';
+      } else if (ev.isPast) {
+        slotLabel = 'PAST';
+      } else {
+        if (!foundNext) {
+          slotLabel = 'NEXT';
+          foundNext = true;
+        } else {
+          slotLabel = 'LATER';
+        }
+      }
+      
+      const isNow = ev.isNow;
+      return `
+        <div class="hv-slot ${isNow ? '' : 'next'}">
+          <div class="hv-slot-l">${slotLabel}</div>
+          <div class="hv-slot-v">${ev.label}</div>
+          <div class="hv-slot-t">${ev.timeStr}</div>
+        </div>
+      `;
+    }).join('');
+
   } catch (e) {
     el.innerHTML = '<span style="color:var(--text-muted);font-size:10px;">NO SCHEDULE</span>';
   }
