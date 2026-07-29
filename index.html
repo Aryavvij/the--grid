@@ -3155,6 +3155,12 @@ html, body {
   position: relative;
   transition: border-color 0.18s;
 }
+.fin-stat-card-wide {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 16px;
+  padding: 16px 20px;
+}
+.fin-stat-card-wide .fin-stat-label { margin-bottom: 0; }
+.fin-stat-card-wide .fin-stat-edit { position: static; }
 .fin-stat-card:hover { border-color: rgba(118,179,114,0.3); cursor: pointer; }
 .fin-stat-label {
   font-size: 9px;
@@ -4123,7 +4129,7 @@ html, body {
 .hv-chead { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
 
 /* ── ZONE 1 · NOW ── */
-.hv-now { display:grid; grid-template-columns:minmax(220px,300px) 1.15fr 1fr; gap:44px;
+.hv-now { display:grid; grid-template-columns:minmax(220px,300px) 1fr; gap:44px;
   align-items:start; min-height:260px; }
 @media (max-width:1000px){ .hv-now { grid-template-columns:1fr; } }
 .hv-clock { width:100%; height:100%; max-height:300px; min-height:210px;
@@ -4135,6 +4141,16 @@ html, body {
 .hv-slot.next .hv-slot-l { color:var(--text-muted); }
 .hv-slot.next .hv-slot-v { font-size:14px; color:var(--text-dim); }
 .hv-acts { display:flex; flex-direction:column; gap:9px; }
+.hv-mini {
+  background:var(--carbon-2); border:1px solid var(--carbon-4); border-radius:8px;
+  padding:10px 11px; min-width:0; cursor:pointer; transition:border-color 120ms;
+}
+.hv-mini:hover { border-color:rgba(118,179,114,0.3); }
+.hv-mini-label { font-size:8px; letter-spacing:1.5px; color:var(--text-muted); margin-bottom:6px; }
+.hv-mini-val { font-size:11.5px; color:var(--text); font-weight:600; line-height:1.3;
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.hv-mini-sub { font-size:9px; letter-spacing:0.4px; color:var(--text-muted); margin-top:3px;
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .hv-shortcut-row {
   display:flex; align-items:center; gap:9px; width:100%; padding:8px 10px; border-radius:7px;
   background:var(--carbon-2); border:1px solid var(--carbon-4); cursor:pointer;
@@ -4903,35 +4919,39 @@ html, body {
           <div class="hv-now">
             <svg class="hv-clock" id="hvClock" viewBox="0 0 200 200"></svg>
 
-            <!-- Column 2: NOW/NEXT slots + Upcoming Events — centered as a
-                 block within the column instead of pinned to its left edge,
-                 which is what read as "off to one side" against the clock. -->
-            <div class="hv-slots" style="display:flex; flex-direction:column; justify-content:center; align-items:center; gap:16px; height:100%; max-width:320px; margin:0 auto; text-align:center;">
-              <div style="display:flex; gap:20px; width:100%;">
-                <div class="hv-slot" style="flex:1; text-align:center;">
+            <!-- Everything that isn't the clock lives in one column now.
+                 Habit quick-log used to sit here as its own column — dropped
+                 since the Daily Console FAB (bottom-right, always visible)
+                 already does one-tap habit logging; this space now belongs
+                 to the weekly timetable and the day's other at-a-glance facts. -->
+            <div style="display:flex; flex-direction:column; gap:16px; min-width:0; padding-left:12px;">
+              <div style="display:flex; gap:32px;">
+                <div class="hv-slot">
                   <div class="hv-slot-l">NOW</div>
                   <div class="hv-slot-v" id="hvNowV">—</div>
                   <div class="hv-slot-t" id="hvNowT"></div>
                 </div>
-                <div class="hv-slot next" style="flex:1; text-align:center;">
+                <div class="hv-slot next">
                   <div class="hv-slot-l">NEXT</div>
                   <div class="hv-slot-v" id="hvNextV">—</div>
                   <div class="hv-slot-t" id="hvNextT"></div>
                 </div>
               </div>
-              <div style="border-top:1px solid var(--carbon-4); padding-top:12px; min-width:0; width:100%;">
-                <div style="font-size:9px;letter-spacing:2px;color:var(--sig-500);margin-bottom:8px;text-align:center;">UPCOMING TODAY</div>
-                <div id="hvUpcomingEvents" style="display:flex;flex-direction:column;gap:6px;text-align:left;">
+
+              <!-- Weekly Timetable, extended horizontally across the box -->
+              <div style="border-top:1px solid var(--carbon-4); padding-top:12px; min-width:0;">
+                <div style="font-size:9px;letter-spacing:2px;color:var(--sig-500);margin-bottom:8px;">TODAY'S TIMETABLE</div>
+                <div id="hvUpcomingEvents" style="display:flex;flex-direction:row;gap:8px;overflow-x:auto;padding-bottom:4px;">
                   <span style="color:var(--text-muted);font-size:10px;">Loading…</span>
                 </div>
               </div>
-            </div>
 
-            <!-- Column 3: Habit Quick Log shortcuts -->
-            <div style="display:flex; flex-direction:column; gap:10px; min-width:0; padding-left:12px;">
-              <div style="font-size:9px;letter-spacing:2px;color:var(--text-muted);">HABIT QUICK LOG</div>
-              <div class="hv-acts" id="hvHabitShortcuts">
-                <!-- Javascript will render habit quick-log buttons here -->
+              <!-- Deadlines · Calendar · Gym split · Today's task -->
+              <div style="border-top:1px solid var(--carbon-4); padding-top:12px; display:grid; grid-template-columns:repeat(4,1fr); gap:10px;">
+                <div class="hv-mini" id="hvMiniDeadline"></div>
+                <div class="hv-mini" id="hvMiniCalendar"></div>
+                <div class="hv-mini" id="hvMiniGym"></div>
+                <div class="hv-mini" id="hvMiniTask"></div>
               </div>
             </div>
           </div>
@@ -5220,22 +5240,16 @@ html, body {
         </div>
       </div>
 
-      <!-- Stat cards -->
-      <div class="fin-stat-row" style="grid-template-columns: repeat(3, 1fr);">
-        <div class="fin-stat-card" onclick="editStat('assets')">
+      <!-- Stat card — Monthly Spend and Budget Utilization dropped: both are
+           already the same numbers the Budget Consumption gauge below shows
+           (spend as ₹, utilization as %), just restated. -->
+      <div class="fin-stat-row" style="grid-template-columns: 1fr;">
+        <div class="fin-stat-card fin-stat-card-wide" onclick="editStat('assets')">
           <div class="fin-stat-label">LIQUID ASSETS</div>
-          <div class="fin-stat-val" id="fStatAssets">—</div>
-          <div class="fin-stat-edit"><svg viewBox="0 0 24 24" width="10" height="10" stroke="currentColor" fill="none" stroke-width="2" style="vertical-align:-1px"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></div>
-        </div>
-        <div class="fin-stat-card">
-          <div class="fin-stat-label">MONTHLY SPEND</div>
-          <div class="fin-stat-val" id="fStatMonthSpend">—</div>
-          <div style="font-size:9px;letter-spacing:1px;color:var(--text-muted);margin-top:4px" id="fStatMonthSpendSub"></div>
-        </div>
-        <div class="fin-stat-card">
-          <div class="fin-stat-label">BUDGET UTILIZATION</div>
-          <div class="fin-stat-val" id="fStatBudgetUtil">—</div>
-          <div style="font-size:9px;letter-spacing:1px;color:var(--text-muted);margin-top:4px" id="fStatBudgetUtilSub"></div>
+          <div style="display:flex; align-items:baseline; gap:10px;">
+            <div class="fin-stat-val" id="fStatAssets" style="font-size:28px;">—</div>
+            <div class="fin-stat-edit"><svg viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" fill="none" stroke-width="2" style="vertical-align:-1px"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></div>
+          </div>
         </div>
       </div>
 
@@ -5581,141 +5595,9 @@ html, body {
 
     </div><!-- /page-workout -->
 
-    <!-- ── WORK (NEURAL LOCK / STASIS) ──────────────── -->
-    <div class="page" id="page-work">
-      <div class="win-tabs">
-        <div class="win-tab" onclick="navigate('runway')">WORK</div>
-        <div class="win-tab active" onclick="navigate('work')">FOCUS</div>
-      </div>
-
-      <!-- Header -->
-      <div class="page-header" style="margin-bottom: 20px;">
-        <div>
-          <div class="page-title">THE FOCUS HUB</div>
-          <div class="page-subtitle">
-            <span class="dot" style="background: var(--blue);"></span>
-            Deep Work Sessions and Cognitive Performance Tracking
-          </div>
-        </div>
-      </div>
-
-      <!-- Hero -->
-      <div class="nl-hero">
-        <div>
-          <div class="nl-brand">FOCUS TIMER</div>
-          <div class="nl-brand-sub">Focus mode enabled. Shielding distraction.<br>Monitoring cognitive focus and duration metrics.</div>
-        </div>
-        <div class="nl-uplink"><span class="hb-status-dot" style="background:var(--green)"></span> TIMER ACTIVE</div>
-      </div>
-
-      <!-- 4 stat cards -->
-      <div class="nl-stat-row">
-        <div class="nl-stat-card">
-          <div class="hb-stat-label">TOTAL LOGGED (TODAY)</div>
-          <div class="nl-stat-val" id="nlTotalLogged">—</div>
-          <div class="nl-stat-sub" id="nlTotalLoggedSub"></div>
-        </div>
-        <div class="nl-stat-card">
-          <div class="hb-stat-label">SESSIONS (TODAY)</div>
-          <div class="nl-stat-val" id="nlSessionsToday">—</div>
-          <div class="nl-stat-sub" id="nlSessionsTodaySub"></div>
-        </div>
-        <div class="nl-stat-card">
-          <div class="hb-stat-label">MONTHLY AVG (DAILY)</div>
-          <div class="nl-stat-val" id="nlMonthlyAvg">—</div>
-          <div class="nl-stat-sub" id="nlMonthlyAvgSub"></div>
-        </div>
-        <div class="nl-stat-card">
-          <div class="hb-stat-label">LINKED TASKS</div>
-          <div class="nl-stat-val" id="nlLinkedTasks">—</div>
-          <div class="nl-stat-sub" id="nlLinkedTasksSub"></div>
-        </div>
-      </div>
-
-      <!-- Main split -->
-      <div class="nl-main-grid">
-
-        <!-- Left -->
-        <div class="nl-left">
-
-          <!-- Cognitive flow chart -->
-          <div class="nl-section">
-            <div class="nl-section-head">
-              <div class="nl-section-title">FOCUS HOURS</div>
-              <div class="rw-toggle-group">
-                <div class="rw-toggle active" onclick="nlToggle(this)">WEEK</div>
-                <div class="rw-toggle" onclick="nlToggle(this)">MONTH</div>
-              </div>
-            </div>
-            <!-- ECharts renders into this div (ethos theme) -->
-            <div id="cogFlowChart" style="width:100%;height:200px"></div>
-          </div>
-
-          <!-- Timer -->
-          <div class="nl-section nl-timer-section">
-            <div class="nl-timer-label">NEURAL LOCK SEQUENCE</div>
-            <div class="nl-timer" id="nlTimer">25:00<span class="nl-timer-ms" id="nlTimerMs">:00</span></div>
-            <div class="nl-timer-btns">
-              <button class="nl-btn-initiate" id="nlInitBtn" onclick="nlToggleTimer()">
-                <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" fill="none" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-                INITIATE
-              </button>
-              <button class="nl-btn-stop" onclick="nlStopLog()">
-                <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" fill="none" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
-                STOP &amp; LOG
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Right -->
-        <div class="nl-right">
-
-          <!-- Focus logs -->
-          <div class="nl-section" style="margin-bottom:14px">
-            <div class="nl-section-head">
-              <div class="nl-section-title">FOCUS LOGS</div>
-              <svg viewBox="0 0 24 24" width="16" height="16" stroke="var(--text-muted)" fill="none" stroke-width="1.5"><path d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4zm-8 2a2 2 0 1 0 0 4 2 2 0 0 0 0-4z"/></svg>
-            </div>
-            <div class="nl-logs" id="nlLogs"></div>
-          </div>
-
-          <!-- Session management -->
-          <div class="nl-section">
-            <div class="nl-section-title" style="margin-bottom:14px">SESSION MANAGEMENT</div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
-              <button class="nl-mgmt-btn">CORRECT SESSION</button>
-              <button class="nl-mgmt-btn" onclick="nlManageProjectOptions()">MANAGE TASKS</button>
-            </div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
-              <div class="form-group" style="margin-bottom:0">
-                <label class="form-label">START_TIME</label>
-                <input class="form-input" type="time" id="nlStart" value="09:00" />
-              </div>
-              <div class="form-group" style="margin-bottom:0">
-                <label class="form-label">END_TIME</label>
-                <input class="form-input" type="time" id="nlEnd" value="11:00" />
-              </div>
-            </div>
-            <div class="form-group" style="margin-bottom:12px">
-              <label class="form-label">PROJECT_TASK</label>
-              <select class="form-select" id="nlProject"></select>
-            </div>
-            <button class="fin-commit-btn" onclick="nlCommitLedger()">COMMIT TO LEDGER</button>
-          </div>
-
-        </div>
-      </div>
-
-    </div><!-- /page-work -->
 
     <!-- ── RUNWAY ─────────────────────────────────────── -->
     <div class="page" id="page-runway">
-      <div class="win-tabs">
-        <div class="win-tab active" onclick="navigate('runway')">WORK</div>
-        <div class="win-tab" onclick="navigate('work')">FOCUS</div>
-      </div>
-
       <!-- Header -->
       <div class="page-header" style="margin-bottom: 20px;">
         <div>
@@ -5732,7 +5614,7 @@ html, body {
         <div class="rw-subnav-title">PROJECT CONTROLS</div>
         <div class="rw-subnav-tabs">
           <div class="rw-tab active" onclick="rwTab(this,'overview')">OVERVIEW</div>
-          <div class="rw-tab" onclick="rwTab(this,'work')">WORK</div>
+          <div class="rw-tab" onclick="rwTab(this,'work')">STATUS</div>
           <div class="rw-tab" onclick="rwTab(this,'study')">STUDY</div>
         </div>
         <div class="rw-search">
@@ -10984,24 +10866,7 @@ function renderBudgetTable() {
     </tr>`;
   }).join('');
 
-  // Hydrate the two new stat cards (monthly spend + utilization)
-  const totalPlanned = budgetData.reduce((s, r) => s + (Number(r.planned) || 0), 0);
-  const totalActual  = budgetData.reduce((s, r) => s + (Number(r.actual)  || 0), 0);
-  const sym = typeof getCurrencySymbol === 'function' ? getCurrencySymbol() : '₹';
-  const spendEl = document.getElementById('fStatMonthSpend');
-  const spendSub = document.getElementById('fStatMonthSpendSub');
-  if (spendEl) spendEl.textContent = sym + totalActual.toLocaleString('en-IN', { maximumFractionDigits: 0 });
-  if (spendSub) spendSub.textContent = 'THIS MONTH';
-  const utilEl = document.getElementById('fStatBudgetUtil');
-  const utilSub = document.getElementById('fStatBudgetUtilSub');
-  if (utilEl && totalPlanned > 0) {
-    const pct = Math.round(totalActual / totalPlanned * 100);
-    utilEl.textContent = pct + '%';
-    utilEl.className = 'fin-stat-val' + (pct > 100 ? ' red' : '');
-    if (utilSub) utilSub.textContent = pct > 100 ? 'OVER BUDGET' : 'OF PLAN USED';
-  } else if (utilEl) { utilEl.textContent = '—'; if (utilSub) utilSub.textContent = 'NO BUDGET SET'; }
-
-  renderBudgetGauge();   // gauge reads the same rows, so it moves with the table
+  renderBudgetGauge();   // shows spend and utilization directly — see the removed stat cards above
 }
 
 /* ══ BUDGET CONSUMPTION GAUGE ═══════════════════════════════════════════════
@@ -12876,7 +12741,7 @@ function gkBuild() {
   const pages = [
     ['home','Home / Console'], ['calendar','Calendar'], ['weekly','Weekly'],
     ['habits','Habits'], ['finances','Finances'], ['workout','Gym'], ['mindgraph','Mindgraph'],
-    ['work','Focus'], ['runway','Runway'], ['resume','Resume'],
+    ['runway','Runway'], ['resume','Resume'],
   ];
   const items = pages.map(pair => ({
     kind: 'page', label: 'Go to ' + pair[1], run: () => navigate(pair[0]),
@@ -12884,10 +12749,8 @@ function gkBuild() {
 
   items.push({ kind: 'action', label: 'Open Daily Console', run: () => dcOpen() });
   items.push({ kind: 'action', label: 'This week (digest)', run: () => openWeeklyDigest() });
-  items.push({ kind: 'action', label: 'Start focus timer', run: () => {
-    navigate('work');
-    const b = document.getElementById('nlInitBtn'); if (b) b.click();
-  }});
+  // Focus Hub was merged into Study — same timer, one place instead of two.
+  items.push({ kind: 'action', label: 'Start focus timer', run: () => hvGoToStudyTimer() });
 
   // Log any habit straight from the palette — zero navigation.
   const hs = (typeof habits !== 'undefined' && Array.isArray(habits)) ? habits : [];
@@ -13301,8 +13164,17 @@ function hvRenderNow() {
   else if (/deep|study|focus|read|algo|research|code|lab|class|exam/.test(ctx)) { hvCtaMode = 'focus'; cta.textContent = 'START FOCUS'; }
   else { hvCtaMode = 'console'; cta.textContent = 'OPEN DAILY CONSOLE'; }
 }
+/** Focus Hub was merged into Runway's Study tab — one timer, not two. */
+function hvGoToStudyTimer() {
+  navigate('runway');
+  const studyTab = [...document.querySelectorAll('.rw-tab')].find(t => t.textContent.trim() === 'STUDY');
+  if (studyTab) rwTab(studyTab, 'study');
+  const b = document.getElementById('stToggle');
+  if (b && b.textContent.trim() === 'START') b.click();
+}
+
 function hvRunCta() {
-  if (hvCtaMode === 'focus') { navigate('work'); const b = document.getElementById('nlInitBtn'); if (b) b.click(); }
+  if (hvCtaMode === 'focus') hvGoToStudyTimer();
   else if (hvCtaMode === 'gym') navigate('workout');
   else if (typeof dcOpen === 'function') dcOpen();
 }
@@ -13564,8 +13436,13 @@ function hvRenderHeat() {
       pieces: [{ min: 0, max: 0.1, color: '#141a17' }, { min: 0.1, max: maxVol*0.25, color: '#1f3b28' },
                { min: maxVol*0.25, max: maxVol*0.5, color: '#3b6839' }, { min: maxVol*0.5, max: maxVol*0.75, color: '#76b372' },
                { min: maxVol*0.75, max: 9999, color: '#a5f79e' }] },
-    // Fixed equal width/height — cellSize [11,11] keeps cells square.
-    calendar: { top: 24, left: 34, right: 8, bottom: 6, cellSize: [11, 11], range: [start, end],
+    // Square cells need cellSize to actually drive the box size. Pinning
+    // BOTH edges of an axis (left+right, or top+bottom) makes ECharts treat
+    // that axis as a fixed region and auto-fill it, silently overriding
+    // cellSize back to 'auto' — confirmed via convertToPixel, not just
+    // getOption() (which reports the same wrong 'auto' either way). Anchor
+    // with top+left only and let cellSize size the box for real.
+    calendar: { top: 24, left: 34, cellSize: [11, 11], range: [start, end],
       splitLine: { show: false }, itemStyle: { color: '#0f0f0f', borderColor: '#141414', borderWidth: 2 },
       dayLabel: { color: '#5c6963', fontFamily: "'Space Mono',monospace", fontSize: 8, firstDay: 1 },
       monthLabel: { color: '#9ba8a2', fontFamily: "'Space Mono',monospace", fontSize: 9 },
@@ -13590,26 +13467,76 @@ async function hvEnsureHabits() {
   return Array.isArray(habits) && habits.length > 0;
 }
 
-function hvRenderShortcuts() {
-  const container = document.getElementById('hvHabitShortcuts');
-  if (!container) return;
-  const hs = (typeof habits !== 'undefined' && Array.isArray(habits)) ? habits : [];
-  const day = new Date().getDate();
-  if (!hs.length) {
-    container.innerHTML = '<span style="color:#5c6963;font-size:10px;">NO HABITS TRACKED YET</span>';
-    return;
-  }
-  // Full-width rows instead of loose wrapping pills — in a narrow column,
-  // pills that don't fit two-per-line just stack anyway, so make that the
-  // deliberate layout: one consistent row per habit, not an accidental one.
-  const checkSvg = '<svg viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" fill="none" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>';
-  container.innerHTML = hs.map((h, i) => {
-    const isDone = (h.checked || []).indexOf(day) !== -1;
-    return `<button class="hv-shortcut-row${isDone ? ' done' : ''}" onclick="logHabitToday(${i})">
-      <span class="hv-shortcut-box">${isDone ? checkSvg : ''}</span>
-      <span class="hv-shortcut-name">${(h.name || '').replace(/_/g, ' ')}</span>
-    </button>`;
-  }).join('');
+/* ══ HOME MINI WIDGETS ══════════════════════════════════════════════════════
+   Replaced the habit quick-log column — the Daily Console FAB already covers
+   one-tap habit logging, so this space now surfaces four other "what's going
+   on today" facts the NOW card never showed at a glance. Each reads directly
+   from the same modules it links to, so it can't drift out of sync with them. */
+function hvMini(id, label, val, sub, page) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.innerHTML = `<div class="hv-mini-label">${label}</div>
+    <div class="hv-mini-val">${escHtml(val)}</div>
+    ${sub ? `<div class="hv-mini-sub">${escHtml(sub)}</div>` : ''}`;
+  el.onclick = () => navigate(page);
+}
+
+function hvRenderMiniDeadline() {
+  try {
+    const now = new Date(), soon = new Date(); soon.setDate(soon.getDate() + 14);
+    const candidates = [];
+    (typeof rwProjects !== 'undefined' ? rwProjects : []).forEach(p => {
+      if (p.status !== 'completed' && p.deadline) candidates.push({ name: p.name, dl: new Date(p.deadline), raw: p.deadline });
+    });
+    (typeof kanbanTasks !== 'undefined' ? kanbanTasks : []).flat().forEach(t => {
+      if (t && !t.done && t.deadline) candidates.push({ name: t.name || t.title, dl: new Date(t.deadline), raw: t.deadline });
+    });
+    const upcoming = candidates.filter(c => c.dl <= soon).sort((a, b) => a.dl - b.dl);
+    if (!upcoming.length) { hvMini('hvMiniDeadline', 'DEADLINES', 'NONE SOON', '', 'runway'); return; }
+    const next = upcoming[0];
+    const overdue = next.dl < now;
+    hvMini('hvMiniDeadline', 'DEADLINES', next.name,
+      (overdue ? 'OVERDUE · ' : '') + next.raw + (upcoming.length > 1 ? ' · +' + (upcoming.length - 1) + ' more' : ''), 'runway');
+  } catch (e) { hvMini('hvMiniDeadline', 'DEADLINES', '—', '', 'runway'); }
+}
+
+function hvRenderMiniCalendar() {
+  try {
+    const today = hvToday();
+    const entries = JSON.parse(localStorage.getItem('gridEntries') || '{}');
+    const evts = (entries[today] || []).filter(e => e.type === 'ev');
+    if (!evts.length) { hvMini('hvMiniCalendar', 'CALENDAR', 'NOTHING TODAY', '', 'calendar'); return; }
+    hvMini('hvMiniCalendar', 'CALENDAR', evts[0].title,
+      (evts[0].time || '') + (evts.length > 1 ? ' · +' + (evts.length - 1) + ' more' : ''), 'calendar');
+  } catch (e) { hvMini('hvMiniCalendar', 'CALENDAR', '—', '', 'calendar'); }
+}
+
+function hvRenderMiniGym() {
+  try {
+    const split = JSON.parse(localStorage.getItem('gymSplitData') || 'null');
+    const jsDow = new Date().getDay();
+    const d = split && split.days[jsDow === 0 ? 6 : jsDow - 1];
+    if (!d) { hvMini('hvMiniGym', 'GYM SPLIT TODAY', '—', '', 'workout'); return; }
+    hvMini('hvMiniGym', 'GYM SPLIT TODAY', d.title, d.rest ? 'REST DAY' : (d.exercises || []).length + ' exercises', 'workout');
+  } catch (e) { hvMini('hvMiniGym', 'GYM SPLIT TODAY', '—', '', 'workout'); }
+}
+
+function hvRenderMiniTask() {
+  try {
+    const jsDow = new Date().getDay();
+    const col = (typeof kanbanTasks !== 'undefined' ? kanbanTasks : [])[jsDow === 0 ? 6 : jsDow - 1] || [];
+    const pending = col.filter(t => t && !t.done);
+    if (!pending.length) { hvMini('hvMiniTask', "TODAY'S TASK", col.length ? 'ALL DONE' : 'NONE LISTED', '', 'weekly'); return; }
+    hvMini('hvMiniTask', "TODAY'S TASK", pending[0].name,
+      pending.length > 1 ? '+' + (pending.length - 1) + ' more pending' : '', 'weekly');
+  } catch (e) { hvMini('hvMiniTask', "TODAY'S TASK", '—', '', 'weekly'); }
+}
+
+function hvRenderMiniWidgets() {
+  hvRenderMiniDeadline();
+  hvRenderMiniCalendar();
+  hvRenderMiniGym();
+  hvRenderMiniTask();
 }
 
 /** Render upcoming timetable events in the home page NOW zone */
@@ -13659,36 +13586,16 @@ function hvRenderUpcoming() {
   }
 }
 
-window.logHabitToday = function(hi) {
-  const h = habits[hi];
-  if(!h) return;
-  const d = new Date().getDate();
-  if (!h.checked) h.checked = [];
-  const idx = h.checked.indexOf(d);
-  const completing = idx < 0;
-  if (completing) {
-    h.checked.push(d);
-  } else {
-    h.checked.splice(idx, 1);
-  }
-  h.pct = Math.round((h.checked.length / new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate()) * 100);
-  if(typeof saveHabits === 'function') saveHabits();
-  if (h.id && typeof gridSync === 'function') gridSync(`/api/habits/${h.id}/log`, { date: new Date().getFullYear() + '-' + String(new Date().getMonth() + 1).padStart(2,'0') + '-' + String(d).padStart(2,'0'), completed: completing });
-  hvRenderShortcuts();
-  if(typeof hvRenderStatus === 'function') hvRenderStatus();
-  if(typeof hvRenderHeat === 'function') hvRenderHeat();
-}
-
 function renderConsole() {
   // hvRenderChips intentionally omitted: the NOW card no longer carries habit
   // chips — one-tap logging lives in the Daily Console (LOG TODAY / ⌘K).
-  [hvRenderHead, hvRenderNow, hvRenderAttention, hvRenderStatus, hvRenderHeat, hvRenderShortcuts, hvRenderUpcoming]
+  [hvRenderHead, hvRenderNow, hvRenderAttention, hvRenderStatus, hvRenderHeat, hvRenderMiniWidgets, hvRenderUpcoming]
     .forEach(fn => { try { fn(); } catch (e) { console.warn('home ' + fn.name + ':', e); } });
 
   // Pull habit data if this is a cold landing on Home, then repaint what uses it.
   hvEnsureHabits().then(loaded => {
     if (!loaded) return;
-    [hvRenderHead, hvRenderAttention, hvRenderStatus, hvRenderHeat, hvRenderShortcuts, hvRenderUpcoming]
+    [hvRenderHead, hvRenderAttention, hvRenderStatus, hvRenderHeat, hvRenderMiniWidgets, hvRenderUpcoming]
       .forEach(fn => { try { fn(); } catch (e) {} });
   });
   hvStartClock();
