@@ -4135,11 +4135,24 @@ html, body {
 .hv-clock { width:100%; height:100%; max-height:300px; min-height:210px;
   aspect-ratio:1/1; flex-shrink:0; justify-self:center; }
 .hv-slots { display:flex; flex-direction:column; gap:14px; padding-left:12px; }
-.hv-slot-l { font-size:9px; letter-spacing:2px; color:var(--sig-500); margin-bottom:3px; }
-.hv-slot-v { font-size:17px; color:var(--text); line-height:1.2; }
-.hv-slot-t { font-size:10px; letter-spacing:1px; color:var(--text-muted); margin-top:2px; }
-.hv-slot.next .hv-slot-l { color:var(--text-muted); }
-.hv-slot.next .hv-slot-v { font-size:14px; color:var(--text-dim); }
+.hv-slot-l { font-size:11px; letter-spacing:2px; color:var(--sig-500); margin-bottom:6px; font-weight:700; }
+.hv-slot-v { font-size:26px; color:#fff; font-weight:700; line-height:1.1; text-transform:uppercase; }
+.hv-slot-t { font-size:13px; letter-spacing:1px; color:var(--sig-500); margin-top:6px; }
+
+.hv-slot.active {
+  padding: 14px 20px;
+  background: var(--carbon-2);
+  border: 1px solid rgba(118,179,114,0.3);
+  border-left: 4px solid var(--sig-500);
+  border-radius: 12px;
+  box-shadow: 0 0 24px rgba(118,179,114,0.15);
+  margin: -14px 0 0 -10px; /* Offset padding to align nicely */
+}
+
+.hv-slot.next { padding:0; background:transparent; border:none; box-shadow:none; margin:0; }
+.hv-slot.next .hv-slot-l { color:var(--text-muted); font-size:10px; }
+.hv-slot.next .hv-slot-v { font-size:18px; color:var(--text-dim); }
+.hv-slot.next .hv-slot-t { font-size:12px; color:var(--text-muted); }
 .hv-acts { display:flex; flex-direction:column; gap:9px; }
 /* Own row between the NOW card and the heatmap — bigger than when these sat
    cramped inside the NOW card's third column, now that they have the width
@@ -13609,7 +13622,7 @@ function hvRenderUpcoming() {
       
       const isNow = ev.isNow;
       return `
-        <div class="hv-slot ${isNow ? '' : 'next'}">
+        <div class="hv-slot ${isNow ? 'active' : 'next'}">
           <div class="hv-slot-l">${slotLabel}</div>
           <div class="hv-slot-v">${ev.label}</div>
           <div class="hv-slot-t">${ev.timeStr}</div>
