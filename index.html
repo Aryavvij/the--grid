@@ -3192,14 +3192,23 @@ html, body {
 }
 .fin-row-row2 {
   display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+  align-items: stretch;
+}
+.fin-row-row3 {
+  display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 16px;
   margin-bottom: 16px;
   align-items: stretch;
 }
-.fin-row-row3 { display:block; }
-.fin-row3-left-col { display:grid; grid-template-columns:1fr 1fr; gap:14px; align-items:stretch; }
-.fin-row3-left-col .fin-section { margin-bottom:0; display:flex; flex-direction:column; }
+.fin-row-row3 .fin-section { margin-bottom:0; display:flex; flex-direction:column; }
+.fin-group-label {
+  font-size: 9px; letter-spacing: 2.5px; color: var(--text-muted); font-weight: 700;
+  margin: 4px 0 10px;
+}
 .fin-row-a-left { margin-bottom: 0 !important; }
 .fin-row-a-right { margin-bottom: 0 !important; }
 .fin-row-a-inner { display: grid; grid-template-columns: auto 1fr; gap: 20px; align-items: start; }
@@ -4115,7 +4124,7 @@ html, body {
 
 /* ── ZONE 1 · NOW ── */
 .hv-now { display:grid; grid-template-columns:minmax(220px,300px) 1.15fr 1fr; gap:44px;
-  align-items:center; min-height:260px; }
+  align-items:start; min-height:260px; }
 @media (max-width:1000px){ .hv-now { grid-template-columns:1fr; } }
 .hv-clock { width:100%; height:100%; max-height:300px; min-height:210px;
   aspect-ratio:1/1; flex-shrink:0; justify-self:center; }
@@ -4126,6 +4135,21 @@ html, body {
 .hv-slot.next .hv-slot-l { color:var(--text-muted); }
 .hv-slot.next .hv-slot-v { font-size:14px; color:var(--text-dim); }
 .hv-acts { display:flex; flex-direction:column; gap:9px; }
+.hv-shortcut-row {
+  display:flex; align-items:center; gap:9px; width:100%; padding:8px 10px; border-radius:7px;
+  background:var(--carbon-2); border:1px solid var(--carbon-4); cursor:pointer;
+  font-family:var(--font); font-size:10.5px; letter-spacing:0.6px; color:var(--text-dim);
+  transition:border-color 120ms, background 120ms;
+}
+.hv-shortcut-row:hover { border-color:rgba(118,179,114,0.35); }
+.hv-shortcut-box {
+  flex-shrink:0; width:16px; height:16px; border-radius:4px; border:1.5px solid var(--carbon-4);
+  display:flex; align-items:center; justify-content:center; color:#08110b;
+}
+.hv-shortcut-name { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.hv-shortcut-row.done { background:rgba(118,179,114,0.08); border-color:rgba(118,179,114,0.25); }
+.hv-shortcut-row.done .hv-shortcut-box { background:var(--sig-500); border-color:var(--sig-500); }
+.hv-shortcut-row.done .hv-shortcut-name { color:var(--text-muted); text-decoration:line-through; opacity:0.75; }
 .hv-btn { padding:12px; border-radius:8px; cursor:pointer; border:none; font-family:var(--font);
   font-size:11px; letter-spacing:1.6px; font-weight:700; transition:all 140ms var(--ease-snap); }
 .hv-btn.primary { background:var(--sig-500); color:#08110b; }
@@ -4879,21 +4903,36 @@ html, body {
           <div class="hv-now">
             <svg class="hv-clock" id="hvClock" viewBox="0 0 200 200"></svg>
 
-            <div class="hv-slots">
-              <div class="hv-slot">
-                <div class="hv-slot-l">NOW</div>
-                <div class="hv-slot-v" id="hvNowV">—</div>
-                <div class="hv-slot-t" id="hvNowT"></div>
+            <!-- Column 2: NOW/NEXT slots + Upcoming Events — centered as a
+                 block within the column instead of pinned to its left edge,
+                 which is what read as "off to one side" against the clock. -->
+            <div class="hv-slots" style="display:flex; flex-direction:column; justify-content:center; align-items:center; gap:16px; height:100%; max-width:320px; margin:0 auto; text-align:center;">
+              <div style="display:flex; gap:20px; width:100%;">
+                <div class="hv-slot" style="flex:1; text-align:center;">
+                  <div class="hv-slot-l">NOW</div>
+                  <div class="hv-slot-v" id="hvNowV">—</div>
+                  <div class="hv-slot-t" id="hvNowT"></div>
+                </div>
+                <div class="hv-slot next" style="flex:1; text-align:center;">
+                  <div class="hv-slot-l">NEXT</div>
+                  <div class="hv-slot-v" id="hvNextV">—</div>
+                  <div class="hv-slot-t" id="hvNextT"></div>
+                </div>
               </div>
-              <div class="hv-slot next">
-                <div class="hv-slot-l">NEXT</div>
-                <div class="hv-slot-v" id="hvNextV">—</div>
-                <div class="hv-slot-t" id="hvNextT"></div>
+              <div style="border-top:1px solid var(--carbon-4); padding-top:12px; min-width:0; width:100%;">
+                <div style="font-size:9px;letter-spacing:2px;color:var(--sig-500);margin-bottom:8px;text-align:center;">UPCOMING TODAY</div>
+                <div id="hvUpcomingEvents" style="display:flex;flex-direction:column;gap:6px;text-align:left;">
+                  <span style="color:var(--text-muted);font-size:10px;">Loading…</span>
+                </div>
               </div>
             </div>
 
-            <div class="hv-acts" id="hvHabitShortcuts" style="display:flex; flex-wrap:wrap; gap:8px;">
-              <!-- Javascript will render habit quick-log buttons here -->
+            <!-- Column 3: Habit Quick Log shortcuts -->
+            <div style="display:flex; flex-direction:column; gap:10px; min-width:0; padding-left:12px;">
+              <div style="font-size:9px;letter-spacing:2px;color:var(--text-muted);">HABIT QUICK LOG</div>
+              <div class="hv-acts" id="hvHabitShortcuts">
+                <!-- Javascript will render habit quick-log buttons here -->
+              </div>
             </div>
           </div>
         </div>
@@ -4907,11 +4946,11 @@ html, body {
           <div class="hv-alerts" id="hvAlerts"></div>
         </div>
 
-        <!-- ZONE 3 · STATUS -->
+        <!-- ZONE 3 · THE GRID ACTIVITY HEATMAP -->
         <div class="hv-status">
-          <div class="hv-card hv-heat" onclick="navigate('habits')" style="cursor:pointer">
-            <div class="hv-chead"><span class="hv-ct">THE GRID</span><span class="hv-cm">FULL YEAR</span></div>
-            <div id="hvHeatWall"></div>
+          <div class="hv-card hv-heat">
+            <div class="hv-chead"><span class="hv-ct">THE GRID ACTIVITY HEATMAP</span><span class="hv-cm">FULL YEAR</span></div>
+            <div id="hvHeatWall" style="min-height:160px;"></div>
           </div>
 
         </div>
@@ -5181,19 +5220,30 @@ html, body {
         </div>
       </div>
 
-      <!-- Stat card -->
-      <div class="fin-stat-row" style="grid-template-columns: 1fr;">
+      <!-- Stat cards -->
+      <div class="fin-stat-row" style="grid-template-columns: repeat(3, 1fr);">
         <div class="fin-stat-card" onclick="editStat('assets')">
           <div class="fin-stat-label">LIQUID ASSETS</div>
           <div class="fin-stat-val" id="fStatAssets">—</div>
           <div class="fin-stat-edit"><svg viewBox="0 0 24 24" width="10" height="10" stroke="currentColor" fill="none" stroke-width="2" style="vertical-align:-1px"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></div>
         </div>
+        <div class="fin-stat-card">
+          <div class="fin-stat-label">MONTHLY SPEND</div>
+          <div class="fin-stat-val" id="fStatMonthSpend">—</div>
+          <div style="font-size:9px;letter-spacing:1px;color:var(--text-muted);margin-top:4px" id="fStatMonthSpendSub"></div>
+        </div>
+        <div class="fin-stat-card">
+          <div class="fin-stat-label">BUDGET UTILIZATION</div>
+          <div class="fin-stat-val" id="fStatBudgetUtil">—</div>
+          <div style="font-size:9px;letter-spacing:1px;color:var(--text-muted);margin-top:4px" id="fStatBudgetUtilSub"></div>
+        </div>
       </div>
 
-      <!-- ROW 2: Spending Distribution | Monthly Recurring | New Entry Deployment Terminal (0.33, 0.33, 0.33) -->
-      <div class="fin-row-row2">
-        <!-- Card 1: Spending Distribution -->
-        <div class="fin-section" style="margin-bottom:0">
+      <!-- OVERVIEW: the three read-only "here's where you stand" cards,
+           grouped together instead of split across two unrelated rows. -->
+      <div class="fin-group-label">OVERVIEW</div>
+      <div class="fin-row-row3">
+        <div class="fin-section">
           <div class="fin-section-title">
             <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" fill="none" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
             SPENDING DISTRIBUTION ANALYSIS
@@ -5201,7 +5251,6 @@ html, body {
           <div class="fin-donut-wrap">
             <div class="fin-donut-chart-area">
               <div id="spendDonut" style="width:160px;height:160px"></div>
-              
             </div>
             <div class="fin-legend">
               <div class="fin-legend-item"><span class="fin-legend-dot" style="background:#9b59b6"></span>ACADEMIC</div>
@@ -5213,8 +5262,38 @@ html, body {
           </div>
         </div>
 
-        <!-- Card 2: Monthly Recurring -->
-        <div class="fin-section" style="margin-bottom:0">
+        <div class="fin-section">
+          <div class="fin-section-title" style="justify-content:space-between">
+            <span style="display:flex;align-items:center;gap:8px">
+              <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" fill="none" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+              BUDGETARY PERFORMANCE MATRIX
+            </span>
+            <button class="fin-modify-btn" onclick="openBudgetModal()">MODIFY_PLAN</button>
+          </div>
+          <table class="fin-budget-table" id="budgetTable">
+            <thead><tr><th>SECTOR</th><th>PLANNED</th><th>ACTUAL</th><th>REMAINING</th></tr></thead>
+            <tbody id="budgetBody"></tbody>
+          </table>
+        </div>
+
+        <div class="fin-section">
+          <div class="fin-section-title" style="justify-content:space-between">
+            <span style="display:flex;align-items:center;gap:8px">
+              <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" fill="none" stroke-width="2"><path d="M12 2v4"/><path d="M4.9 4.9l2.9 2.9"/><path d="M2 12h4"/><path d="M19.1 4.9l-2.9 2.9"/><path d="M22 12h-4"/><path d="M12 12l5-3"/></svg>
+              BUDGET CONSUMPTION
+            </span>
+            <span class="fin-gauge-pace" id="finGaugePace">—</span>
+          </div>
+          <div id="finBudgetGauge" style="width:100%;height:210px"></div>
+          <div id="finGaugeNote" style="text-align:center;font-size:9px;letter-spacing:1.2px;color:var(--text-muted);padding:0 12px 12px;"></div>
+        </div>
+      </div>
+
+      <!-- MANAGE: the things you edit — obligations and new entries — kept
+           apart from the read-only overview above them. -->
+      <div class="fin-group-label">MANAGE</div>
+      <div class="fin-row-row3">
+        <div class="fin-section">
           <div class="fin-section-title" style="justify-content:space-between">
             <span style="display:flex;align-items:center;gap:8px">
               <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" fill="none" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
@@ -5225,8 +5304,18 @@ html, body {
           <div id="recurringList"></div>
         </div>
 
-        <!-- Card 3: New Entry Deployment Terminal -->
-        <div class="fin-section" style="margin-bottom:0">
+        <div class="fin-section">
+          <div class="fin-section-title" style="justify-content:space-between">
+            <span style="display:flex;align-items:center;gap:8px">
+              <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" fill="none" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+              DEBT AMORTIZATION BALANCE MATRIX
+            </span>
+            <button class="fin-modify-btn" onclick="openAddDebtModal()">ADD_DEBT_NODE</button>
+          </div>
+          <div id="finDebtList"></div>
+        </div>
+
+        <div class="fin-section">
           <div class="fin-section-title">
             <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" fill="none" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
             NEW ENTRY DEPLOYMENT TERMINAL
@@ -5250,54 +5339,6 @@ html, body {
           </div>
           <button class="fin-commit-btn" onclick="commitTransaction()">COMMIT_TO_LEDGER_SEQUENCE</button>
         </div>
-      </div>
-
-      <!-- ROW 3: Left Column (0.66) stacked matrices | Right Column (0.33) Add Recurring -->
-      <div class="fin-row-row3">
-        <div class="fin-row3-left-col">
-          <!-- Card 1: Debt Amortization Balance Matrix -->
-          <div class="fin-section">
-            <div class="fin-section-title" style="justify-content:space-between">
-              <span style="display:flex;align-items:center;gap:8px">
-                <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" fill="none" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
-                DEBT AMORTIZATION BALANCE MATRIX
-              </span>
-              <button class="fin-modify-btn" onclick="openAddDebtModal()">ADD_DEBT_NODE</button>
-            </div>
-            <div id="finDebtList"></div>
-          </div>
-
-          <!-- Card 2: Budgetary Performance Matrix -->
-          <div class="fin-section">
-            <div class="fin-section-title" style="justify-content:space-between">
-              <span style="display:flex;align-items:center;gap:8px">
-                <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" fill="none" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-                BUDGETARY PERFORMANCE MATRIX
-              </span>
-              <button class="fin-modify-btn" onclick="openBudgetModal()">MODIFY_PLAN</button>
-            </div>
-            <table class="fin-budget-table" id="budgetTable">
-              <thead><tr><th>SECTOR</th><th>PLANNED</th><th>ACTUAL</th><th>REMAINING</th></tr></thead>
-              <tbody id="budgetBody"></tbody>
-            </table>
-          </div>
-
-          <!-- Card 3: Budget consumption gauge -->
-          <div class="fin-section">
-            <div class="fin-section-title" style="justify-content:space-between">
-              <span style="display:flex;align-items:center;gap:8px">
-                <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" fill="none" stroke-width="2"><path d="M12 2v4"/><path d="M4.9 4.9l2.9 2.9"/><path d="M2 12h4"/><path d="M19.1 4.9l-2.9 2.9"/><path d="M22 12h-4"/><path d="M12 12l5-3"/></svg>
-                BUDGET CONSUMPTION
-              </span>
-              <span class="fin-gauge-pace" id="finGaugePace">—</span>
-            </div>
-            <div id="finBudgetGauge" style="width:100%;height:210px"></div>
-            <div id="finGaugeNote" style="text-align:center;font-size:9px;letter-spacing:1.2px;color:var(--text-muted);padding:0 12px 12px;"></div>
-          </div>
-        </div>
-
-        <!-- duplicate recurring form removed; use ADD_RECURRING modal -->
-
       </div>
 
       <!-- ROW D: Ledger — 5 latest + View All -->
@@ -5439,6 +5480,7 @@ html, body {
             <span style="font-size:9px;letter-spacing:1.5px;color:var(--green)">REAL-TIME BIOMETRICS SYNCING...</span>
             <button class="gym-action-btn gym-cal-btn">RE-CALIBRATE</button>
             <button class="gym-action-btn" onclick="gymAddMuscleGroup()">ADD MUSCLE GROUP</button>
+            <button class="gym-action-btn" onclick="gymAddExerciseFromOverview()" style="background:rgba(118,179,114,0.12);border-color:rgba(118,179,114,0.3);color:var(--green);">+ ADD EXERCISE</button>
             <button class="gym-action-btn">EXPORT DATA</button>
           </div>
         </div>
@@ -5854,28 +5896,24 @@ html, body {
           <!-- Session clock -->
           <div class="rw-section" style="margin-bottom:0;">
             <div class="rw-section-title" style="margin-bottom:14px;">STUDY SESSION</div>
-            <div style="display:grid; grid-template-columns: 260px 1fr 220px; gap:20px; align-items:center;">
-            <div id="stClock" style="font-family:var(--font); font-size:46px; font-variant-numeric:tabular-nums;
-                 color:var(--sig-900); letter-spacing:2px; line-height:1; margin:10px 0 4px;">00:00:00</div>
-            <div id="stState" style="font-size:9px; letter-spacing:2px; color:var(--text-muted); margin-bottom:16px;">IDLE</div>
-
-            <div class="form-group" style="width:100%;">
-              <label class="form-label">CATEGORY</label>
-              <input class="form-input" id="stCat" list="stCatOptions" placeholder="e.g. algos, physics, revision" autocomplete="off">
-              <datalist id="stCatOptions"></datalist>
-            </div>
-            <div class="form-group" style="width:100%;">
-              <label class="form-label">NOTE (OPTIONAL)</label>
-              <input class="form-input" id="stNote" placeholder="What are you working on?">
-            </div>
-
-            <div>
-              <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
-                <button class="fin-commit-btn" id="stToggle" onclick="stToggle()" style="margin:0;">START</button>
-                <button class="fin-modify-btn" onclick="stStopAndLog()" style="padding:10px;">STOP &amp; LOG</button>
+            <div style="display:flex; gap:24px; align-items:center;">
+              <div style="flex-shrink:0;">
+                <div id="stClock" style="font-family:var(--font); font-size:46px; font-variant-numeric:tabular-nums;
+                     color:var(--sig-900); letter-spacing:2px; line-height:1; margin:10px 0 4px;">00:00:00</div>
+                <div id="stState" style="font-size:9px; letter-spacing:2px; color:var(--text-muted);">IDLE</div>
               </div>
-              <button class="fin-modify-btn" onclick="stManualEntry()" style="width:100%; margin-top:8px; padding:8px;">ADD PAST SESSION</button>
-            </div>
+
+              <!-- Category + note stacked, aligned with the buttons below them -->
+              <div style="flex:1; min-width:0; display:flex; flex-direction:column; gap:10px;">
+                <input class="form-input" id="stCat" list="stCatOptions" placeholder="Category — e.g. algos, physics, revision" autocomplete="off" style="width:100%;">
+                <datalist id="stCatOptions"></datalist>
+                <input class="form-input" id="stNote" placeholder="What are you working on?" style="width:100%;">
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+                  <button class="fin-commit-btn" id="stToggle" onclick="stToggle()" style="margin:0;">START</button>
+                  <button class="fin-modify-btn" onclick="stStopAndLog()" style="padding:10px;">STOP &amp; LOG</button>
+                </div>
+                <button class="fin-modify-btn" onclick="stManualEntry()" style="width:100%; padding:8px;">ADD PAST SESSION</button>
+              </div>
             </div>
           </div>
 
@@ -6002,30 +6040,17 @@ html, body {
             </div>
           </div>
 
-          <!-- Skill distribution, full width now that the logging form is gone -->
-          <div class="rs-panels" style="grid-template-columns:1fr;">
-            <div class="rs-panel">
-              <div class="rs-panel-hdr" style="display:flex; justify-content:space-between; align-items:center;">
-                <span class="rs-panel-hdr-title">SKILL NODES</span>
-                <span style="display:flex; align-items:center; gap:8px;">
-                  <button class="fin-modify-btn" style="padding:2px 8px; font-size:9px;" onclick="openAddSkillModal()">ADD_SKILL</button>
-                  <span class="rs-panel-hdr-right">UNIT: TOTAL_HOURS_LOGGED</span>
-                </span>
-              </div>
-              <div class="rs-stack-row" id="rsStackBars"></div>
-            </div>
-          </div>
-
-          
-
           <!-- Tabs -->
-          <div class="rs-tabs">
-            <button class="rs-tab active" onclick="rsTab(this,'projects')">PROJECTS</button>
-            <button class="rs-tab" onclick="rsTab(this,'internships')">INTERNSHIPS</button>
-            <button class="rs-tab" onclick="rsTab(this,'positions')">POSITIONS</button>
-            <button class="rs-tab" onclick="rsTab(this,'courses')">COURSES & EDUCATION</button>
-            <button class="rs-tab" onclick="rsTab(this,'research')">RESEARCH PIPELINE</button>
-            <button class="rs-tab" onclick="rsTab(this,'achievements')">ACHIEVEMENTS</button>
+          <div class="rs-tabs" style="display:flex; justify-content:space-between; align-items:center;">
+            <div style="display:flex; flex-wrap:wrap;">
+              <button class="rs-tab active" onclick="rsTab(this,'projects')">PROJECTS</button>
+              <button class="rs-tab" onclick="rsTab(this,'internships')">INTERNSHIPS</button>
+              <button class="rs-tab" onclick="rsTab(this,'positions')">POSITIONS</button>
+              <button class="rs-tab" onclick="rsTab(this,'courses')">COURSES & EDUCATION</button>
+              <button class="rs-tab" onclick="rsTab(this,'research')">RESEARCH PIPELINE</button>
+              <button class="rs-tab" onclick="rsTab(this,'achievements')">ACHIEVEMENTS</button>
+            </div>
+            <button class="fin-modify-btn" style="padding:6px 14px; font-size:9px; flex-shrink:0;" onclick="openAddRsItemModal()">+ ADD ENTRY</button>
           </div>
 
           <!-- Tab Content -->
@@ -6397,30 +6422,39 @@ function seedDemoData() {
   console.log('[seeder] Seeding rich years-long demo history...');
 
   // 1. Gym logs (generate 2 years of workout data with progression)
+  // Exactly 3 exercises per muscle group (24 total) so the muscle-balance
+  // radar and growth charts have all 3 to work with for every group, not
+  // just the ones that happened to have full coverage before.
   const gymLogs = [];
   const exerciseDefs = {
-    'BENCH PRESS': { baseWeight: 60, progressRate: 0.15, reps: 8, split: 'PUSH A' },
-    'OHP PRESS': { baseWeight: 35, progressRate: 0.10, reps: 8, split: 'PUSH A' },
-    'LATERAL RAISES': { baseWeight: 10, progressRate: 0.04, reps: 12, split: 'PUSH A' },
-    'TRICEP PUSH': { baseWeight: 20, progressRate: 0.08, reps: 10, split: 'PUSH A' },
-    
-    'DEADLIFT': { baseWeight: 100, progressRate: 0.35, reps: 5, split: 'PULL A' },
-    'PULL UPS': { baseWeight: 0, progressRate: 0.05, reps: 8, split: 'PULL A' },
-    'SEATED ROW': { baseWeight: 45, progressRate: 0.12, reps: 10, split: 'PULL A' },
-    'FACE PULLS': { baseWeight: 15, progressRate: 0.05, reps: 15, split: 'PULL A' },
-    
-    'SQUATS': { baseWeight: 80, progressRate: 0.25, reps: 6, split: 'LEGS A' },
-    'LUNGES': { baseWeight: 16, progressRate: 0.06, reps: 10, split: 'LEGS A' },
-    'LEG CURLS': { baseWeight: 30, progressRate: 0.08, reps: 12, split: 'LEGS A' },
-    'CALF RAISES': { baseWeight: 40, progressRate: 0.15, reps: 15, split: 'LEGS A' },
-    
-    'DB INCLINE': { baseWeight: 20, progressRate: 0.10, reps: 8, split: 'PUSH B' },
-    'ARNOLD PRESS': { baseWeight: 14, progressRate: 0.06, reps: 10, split: 'PUSH B' },
-    'DIPS': { baseWeight: 0, progressRate: 0.10, reps: 10, split: 'PUSH B' },
-    
-    'BB ROWS': { baseWeight: 50, progressRate: 0.15, reps: 8, split: 'PULL B' },
-    'LAT PULLS': { baseWeight: 45, progressRate: 0.10, reps: 10, split: 'PULL B' },
-    'HAMMER CURL': { baseWeight: 12, progressRate: 0.05, reps: 10, split: 'PULL B' }
+    'BENCH PRESS': { baseWeight: 60, progressRate: 0.15, reps: 8, split: 'PUSH A' },       // chest
+    'CABLE FLY': { baseWeight: 12, progressRate: 0.05, reps: 12, split: 'PUSH A' },        // chest
+    'OHP PRESS': { baseWeight: 35, progressRate: 0.10, reps: 8, split: 'PUSH A' },         // shoulders
+    'LATERAL RAISES': { baseWeight: 10, progressRate: 0.04, reps: 12, split: 'PUSH A' },   // shoulders
+    'TRICEP PUSH': { baseWeight: 20, progressRate: 0.08, reps: 10, split: 'PUSH A' },      // triceps
+    'WEIGHTED SIT-UP': { baseWeight: 5, progressRate: 0.04, reps: 15, split: 'PUSH A' },   // abs
+
+    'DEADLIFT': { baseWeight: 100, progressRate: 0.35, reps: 5, split: 'PULL A' },         // back
+    'PULL UPS': { baseWeight: 0, progressRate: 0.05, reps: 8, split: 'PULL A' },           // back
+    'SEATED ROW': { baseWeight: 45, progressRate: 0.12, reps: 10, split: 'PULL A' },       // back
+    'HANGING LEG RAISE': { baseWeight: 0, progressRate: 0.03, reps: 12, split: 'PULL A' }, // abs
+
+    'SQUATS': { baseWeight: 80, progressRate: 0.25, reps: 6, split: 'LEGS A' },            // legs
+    'LUNGES': { baseWeight: 16, progressRate: 0.06, reps: 10, split: 'LEGS A' },           // legs
+    'LEG CURLS': { baseWeight: 30, progressRate: 0.08, reps: 12, split: 'LEGS A' },        // legs
+    'CABLE CRUNCH': { baseWeight: 25, progressRate: 0.06, reps: 15, split: 'LEGS A' },     // abs
+    'FARMERS CARRY': { baseWeight: 24, progressRate: 0.06, reps: 4, split: 'LEGS A' },     // forearms (reps = trips)
+
+    'DB INCLINE': { baseWeight: 20, progressRate: 0.10, reps: 8, split: 'PUSH B' },        // chest
+    'ARNOLD PRESS': { baseWeight: 14, progressRate: 0.06, reps: 10, split: 'PUSH B' },     // shoulders
+    'DIPS': { baseWeight: 0, progressRate: 0.10, reps: 10, split: 'PUSH B' },              // triceps
+    'SKULL CRUSHERS': { baseWeight: 15, progressRate: 0.06, reps: 10, split: 'PUSH B' },   // triceps
+
+    'HAMMER CURL': { baseWeight: 12, progressRate: 0.05, reps: 10, split: 'PULL B' },      // biceps
+    'BARBELL CURL': { baseWeight: 20, progressRate: 0.06, reps: 8, split: 'PULL B' },      // biceps
+    'PREACHER CURL': { baseWeight: 14, progressRate: 0.05, reps: 10, split: 'PULL B' },    // biceps
+    'WRIST CURL': { baseWeight: 8, progressRate: 0.03, reps: 15, split: 'PULL B' },        // forearms
+    'REVERSE WRIST CURL': { baseWeight: 6, progressRate: 0.03, reps: 15, split: 'PULL B' } // forearms
   };
 
   const startDate = new Date(today.getTime() - 2 * 365 * 24 * 60 * 60 * 1000); // 2 years ago
@@ -6487,38 +6521,54 @@ function seedDemoData() {
   // Save gymLogs (most recent first)
   localStorage.setItem('gymLogs', JSON.stringify(gymLogs.reverse()));
 
-  // 2. Gym Exercise Registry
+  // 2. Gym Exercise Registry — 3 per group, matching exerciseDefs above.
+  // `bars`/`orm`/`delta` are overwritten from the real gymLogs history the
+  // moment the user opens Gym (recomputeGymProgression runs on every visit),
+  // so these seed values only need to look reasonable for the first paint.
+  // `segs` (activation-profile bar) has no such recompute, so it must be
+  // seeded correctly here or the registry card silently fails to render —
+  // see the ex.segs.map() fix in gymShowRegistry().
   const gymExerciseRegistry = {
     CHEST: { exercises: [
-      { name: 'BENCH PRESS', badge: 'STRENGTH', target: 'CHEST', pr: '95.0', orm: '120.3', delta: '+25.2% VS FIRST', bars: [80, 85, 90, 92, 95, 98, 102, 105] },
-      { name: 'DB INCLINE', badge: 'VOLUME', target: 'CHEST', pr: '32.0', orm: '40.5', delta: '+18.5% VS FIRST', bars: [28, 30, 32, 34, 35, 36, 38, 38] }
+      { name: 'BENCH PRESS', badge: 'STRENGTH', target: 'CHEST', pr: '95.0', orm: '120.3', delta: '+25.2% VS FIRST', bars: [80, 85, 90, 92, 95, 98, 102, 105], segs: [70, 20, 10] },
+      { name: 'DB INCLINE', badge: 'VOLUME', target: 'CHEST', pr: '32.0', orm: '40.5', delta: '+18.5% VS FIRST', bars: [28, 30, 32, 34, 35, 36, 38, 38], segs: [65, 25, 10] },
+      { name: 'CABLE FLY', badge: 'VOLUME', target: 'CHEST', pr: '14.0', orm: '18.7', delta: '+16.0% VS FIRST', bars: [11, 12, 12, 13, 13, 14, 14, 15], segs: [80, 15, 5] }
     ] },
     BACK: { exercises: [
-      { name: 'DEADLIFT', badge: 'POWER', target: 'BACK', pr: '175.0', orm: '204.2', delta: '+30.4% VS FIRST', bars: [120, 130, 140, 150, 155, 160, 165, 170] },
-      { name: 'PULL UPS', badge: 'VOLUME', target: 'BACK', pr: '15.0', orm: '25.0', delta: '+15.0% VS FIRST', bars: [10, 12, 14, 15, 16, 18, 20, 20] },
-      { name: 'SEATED ROW', badge: 'VOLUME', target: 'BACK', pr: '72.0', orm: '96.0', delta: '+20.0% VS FIRST', bars: [55, 60, 62, 65, 68, 70, 72, 75] },
-      { name: 'FACE PULLS', badge: 'RECOVERY', target: 'BACK', pr: '22.0', orm: '33.0', delta: '+10.0% VS FIRST', bars: [18, 20, 20, 22, 22, 24, 25, 25] }
+      { name: 'DEADLIFT', badge: 'POWER', target: 'BACK', pr: '175.0', orm: '204.2', delta: '+30.4% VS FIRST', bars: [120, 130, 140, 150, 155, 160, 165, 170], segs: [60, 30, 10] },
+      { name: 'PULL UPS', badge: 'VOLUME', target: 'BACK', pr: '15.0', orm: '25.0', delta: '+15.0% VS FIRST', bars: [10, 12, 14, 15, 16, 18, 20, 20], segs: [70, 20, 10] },
+      { name: 'SEATED ROW', badge: 'VOLUME', target: 'BACK', pr: '72.0', orm: '96.0', delta: '+20.0% VS FIRST', bars: [55, 60, 62, 65, 68, 70, 72, 75], segs: [65, 25, 10] }
     ] },
     LEGS: { exercises: [
-      { name: 'SQUATS', badge: 'STRENGTH', target: 'LEGS', pr: '130.0', orm: '156.0', delta: '+28.0% VS FIRST', bars: [95, 105, 110, 115, 120, 125, 130, 135] },
-      { name: 'LUNGES', badge: 'VOLUME', target: 'LEGS', pr: '28.0', orm: '37.3', delta: '+12.0% VS FIRST', bars: [22, 24, 25, 26, 28, 28, 30, 30] },
-      { name: 'LEG CURLS', badge: 'VOLUME', target: 'LEGS', pr: '48.0', orm: '67.2', delta: '+15.0% VS FIRST', bars: [38, 40, 42, 44, 45, 48, 50, 50] },
-      { name: 'CALF RAISES', badge: 'VOLUME', target: 'LEGS', pr: '78.0', orm: '117.0', delta: '+22.0% VS FIRST', bars: [60, 65, 68, 70, 72, 75, 80, 80] }
+      { name: 'SQUATS', badge: 'STRENGTH', target: 'LEGS', pr: '130.0', orm: '156.0', delta: '+28.0% VS FIRST', bars: [95, 105, 110, 115, 120, 125, 130, 135], segs: [75, 15, 10] },
+      { name: 'LUNGES', badge: 'VOLUME', target: 'LEGS', pr: '28.0', orm: '37.3', delta: '+12.0% VS FIRST', bars: [22, 24, 25, 26, 28, 28, 30, 30], segs: [60, 25, 15] },
+      { name: 'LEG CURLS', badge: 'VOLUME', target: 'LEGS', pr: '48.0', orm: '67.2', delta: '+15.0% VS FIRST', bars: [38, 40, 42, 44, 45, 48, 50, 50], segs: [55, 30, 15] }
     ] },
     SHOULDERS: { exercises: [
-      { name: 'OHP PRESS', badge: 'STRENGTH', target: 'SHOULDERS', pr: '55.0', orm: '69.7', delta: '+22.0% VS FIRST', bars: [45, 48, 50, 52, 53, 55, 56, 58] },
-      { name: 'LATERAL RAISES', badge: 'VOLUME', target: 'SHOULDERS', pr: '14.0', orm: '19.6', delta: '+15.0% VS FIRST', bars: [12, 12, 13, 14, 14, 15, 16, 16] },
-      { name: 'ARNOLD PRESS', badge: 'VOLUME', target: 'SHOULDERS', pr: '22.0', orm: '29.3', delta: '+10.0% VS FIRST', bars: [18, 18, 20, 20, 22, 22, 24, 24] }
+      { name: 'OHP PRESS', badge: 'STRENGTH', target: 'SHOULDERS', pr: '55.0', orm: '69.7', delta: '+22.0% VS FIRST', bars: [45, 48, 50, 52, 53, 55, 56, 58], segs: [70, 20, 10] },
+      { name: 'LATERAL RAISES', badge: 'VOLUME', target: 'SHOULDERS', pr: '14.0', orm: '19.6', delta: '+15.0% VS FIRST', bars: [12, 12, 13, 14, 14, 15, 16, 16], segs: [80, 15, 5] },
+      { name: 'ARNOLD PRESS', badge: 'VOLUME', target: 'SHOULDERS', pr: '22.0', orm: '29.3', delta: '+10.0% VS FIRST', bars: [18, 18, 20, 20, 22, 22, 24, 24], segs: [65, 25, 10] }
     ] },
     BICEPS: { exercises: [
-      { name: 'HAMMER CURL', badge: 'VOLUME', target: 'BICEPS', pr: '20.0', orm: '26.7', delta: '+18.0% VS FIRST', bars: [16, 16, 18, 18, 20, 20, 22, 22] }
+      { name: 'HAMMER CURL', badge: 'VOLUME', target: 'BICEPS', pr: '20.0', orm: '26.7', delta: '+18.0% VS FIRST', bars: [16, 16, 18, 18, 20, 20, 22, 22], segs: [15, 75, 10] },
+      { name: 'BARBELL CURL', badge: 'VOLUME', target: 'BICEPS', pr: '24.0', orm: '30.4', delta: '+22.0% VS FIRST', bars: [17, 18, 19, 20, 21, 22, 23, 24], segs: [10, 80, 10] },
+      { name: 'PREACHER CURL', badge: 'VOLUME', target: 'BICEPS', pr: '16.0', orm: '21.3', delta: '+18.0% VS FIRST', bars: [11, 12, 13, 14, 15, 15, 16, 16], segs: [10, 85, 5] }
     ] },
     TRICEPS: { exercises: [
-      { name: 'TRICEP PUSH', badge: 'VOLUME', target: 'TRICEPS', pr: '36.0', orm: '48.0', delta: '+25.0% VS FIRST', bars: [28, 30, 32, 32, 34, 35, 38, 38] },
-      { name: 'DIPS', badge: 'STRENGTH', target: 'TRICEPS', pr: '28.0', orm: '37.3', delta: '+15.0% VS FIRST', bars: [20, 22, 24, 25, 26, 28, 30, 30] }
+      { name: 'TRICEP PUSH', badge: 'VOLUME', target: 'TRICEPS', pr: '36.0', orm: '48.0', delta: '+25.0% VS FIRST', bars: [28, 30, 32, 32, 34, 35, 38, 38], segs: [20, 70, 10] },
+      { name: 'DIPS', badge: 'STRENGTH', target: 'TRICEPS', pr: '28.0', orm: '37.3', delta: '+15.0% VS FIRST', bars: [20, 22, 24, 25, 26, 28, 30, 30], segs: [25, 65, 10] },
+      { name: 'SKULL CRUSHERS', badge: 'VOLUME', target: 'TRICEPS', pr: '18.0', orm: '24.0', delta: '+20.0% VS FIRST', bars: [13, 14, 15, 16, 17, 17, 18, 19], segs: [15, 75, 10] }
     ] },
-    ABS: { exercises: [] },
-    FOREARMS: { exercises: [] }
+    ABS: { exercises: [
+      { name: 'WEIGHTED SIT-UP', badge: 'VOLUME', target: 'ABS', pr: '8.0', orm: '12.0', delta: '+20.0% VS FIRST', bars: [5, 6, 6, 7, 7, 8, 8, 9], segs: [75, 15, 10] },
+      { name: 'HANGING LEG RAISE', badge: 'VOLUME', target: 'ABS', pr: '0.0', orm: '6.5', delta: 'NEW ENTRY', bars: [0, 0, 2, 2, 3, 3, 4, 5], segs: [65, 25, 10] },
+      { name: 'CABLE CRUNCH', badge: 'VOLUME', target: 'ABS', pr: '30.0', orm: '41.0', delta: '+18.0% VS FIRST', bars: [24, 26, 27, 28, 29, 30, 31, 32], segs: [70, 20, 10] }
+    ] },
+    FOREARMS: { exercises: [
+      { name: 'WRIST CURL', badge: 'VOLUME', target: 'FOREARMS', pr: '10.0', orm: '15.0', delta: '+25.0% VS FIRST', bars: [6, 7, 8, 9, 9, 10, 10, 11], segs: [10, 15, 75] },
+      { name: 'REVERSE WRIST CURL', badge: 'VOLUME', target: 'FOREARMS', pr: '7.0', orm: '10.5', delta: '+20.0% VS FIRST', bars: [4, 5, 5, 6, 6, 7, 7, 8], segs: [10, 15, 75] },
+      { name: 'FARMERS CARRY', badge: 'STRENGTH', target: 'FOREARMS', pr: '28.0', orm: '32.7', delta: '+15.0% VS FIRST', bars: [22, 23, 24, 25, 26, 27, 28, 29], segs: [30, 30, 40] }
+    ] }
   };
   localStorage.setItem('gymExerciseRegistry', JSON.stringify(gymExerciseRegistry));
 
@@ -6530,43 +6580,49 @@ function seedDemoData() {
     { name:'SHOULDERS', growth:'+22.0%', muscles:'Front, Lateral And Rear Delt',          id:'004', bars:[20,30,28,40,38,50,48,60,58,72] },
     { name:'BICEPS',    growth:'+18.0%', muscles:'Long and Short Head, Brachialis',            id:'005', bars:[30,35,32,42,40,50,48,55,60,68] },
     { name:'TRICEPS',   growth:'+25.0%', muscles:'Long, Medial and Short Head',           id:'006', bars:[25,32,35,45,42,55,52,62,65,78] },
-    { name:'ABS',       growth:'+0.0%',  muscles:'Upper, Lower, Obliques',          id:'007', bars:[0,0,0,0,0,0,0,0,0,0] },
-    { name:'FOREARMS',  growth:'+0.0%',  muscles:'Brachioradialis And Extensor',           id:'008', bars:[0,0,0,0,0,0,0,0,0,0] },
+    { name:'ABS',       growth:'+19.0%', muscles:'Upper, Lower, Obliques',          id:'007', bars:[10,15,20,25,30,35,40,45,50,55] },
+    { name:'FOREARMS',  growth:'+21.0%', muscles:'Brachioradialis And Extensor',           id:'008', bars:[8,12,18,22,28,32,38,42,48,52] },
   ];
   localStorage.setItem('gymMuscleGroups', JSON.stringify(gymMuscleGroups));
-  
+
   const defaultSplit = {
     title: "HYPERTROPHY 2.0",
     sub: "Cycle duration: 7 Days | Optimization target: Strength-to-Mass Ratio",
     days: [
       { day: 'MON', title: 'PUSH A', status: 'planned', duration: '65 MIN', icon: '', rest: false, exercises: [
         { name: 'BENCH PRESS', sets: '4 x 8-10' },
+        { name: 'CABLE FLY', sets: '3 x 12-15' },
         { name: 'OHP PRESS', sets: '3 x 10-12' },
         { name: 'LATERAL RAISES', sets: '4 x 15' },
-        { name: 'TRICEP PUSH', sets: '3 x 12-15' }
+        { name: 'TRICEP PUSH', sets: '3 x 12-15' },
+        { name: 'WEIGHTED SIT-UP', sets: '3 x 15' }
       ]},
       { day: 'TUE', title: 'PULL A', status: 'queued', duration: '75 MIN', icon: '', rest: false, exercises: [
         { name: 'DEADLIFT', sets: '3 x 5' },
         { name: 'PULL UPS', sets: '3 x AMRAP' },
         { name: 'SEATED ROW', sets: '3 x 10-12' },
-        { name: 'FACE PULLS', sets: '3 x 20' }
+        { name: 'HANGING LEG RAISE', sets: '3 x 12' }
       ]},
       { day: 'WED', title: 'LEGS A', status: 'queued', duration: '60 MIN', icon: '', rest: false, exercises: [
         { name: 'SQUATS', sets: '4 x 6-8' },
         { name: 'LUNGES', sets: '3 x 12/leg' },
         { name: 'LEG CURLS', sets: '3 x 15' },
-        { name: 'CALF RAISES', sets: '4 x 20' }
+        { name: 'CABLE CRUNCH', sets: '3 x 15' },
+        { name: 'FARMERS CARRY', sets: '4 x trips' }
       ]},
       { day: 'THU', title: 'STASIS', status: 'idle', duration: '24 HRS', icon: '', rest: true, exercises: [] },
       { day: 'FRI', title: 'PUSH B', status: 'queued', duration: '55 MIN', icon: '', rest: false, exercises: [
         { name: 'DB INCLINE', sets: '3 x 10' },
         { name: 'ARNOLD PRESS', sets: '3 x 12' },
-        { name: 'DIPS', sets: '3 x 12-15' }
+        { name: 'DIPS', sets: '3 x 12-15' },
+        { name: 'SKULL CRUSHERS', sets: '3 x 10-12' }
       ]},
       { day: 'SAT', title: 'PULL B', status: 'queued', duration: '60 MIN', icon: '〰', rest: false, exercises: [
-        { name: 'BB ROWS', sets: '4 x 8' },
-        { name: 'LAT PULLS', sets: '3 x 10-12' },
-        { name: 'HAMMER CURL', sets: '3 x 12' }
+        { name: 'HAMMER CURL', sets: '3 x 12' },
+        { name: 'BARBELL CURL', sets: '3 x 8-10' },
+        { name: 'PREACHER CURL', sets: '3 x 10-12' },
+        { name: 'WRIST CURL', sets: '3 x 15' },
+        { name: 'REVERSE WRIST CURL', sets: '3 x 15' }
       ]},
       { day: 'SUN', title: 'BIO-REC', status: 'recovery', duration: '50 MIN', icon: '', rest: false, exercises: [
         { name: 'MOBILITY FLOW', sets: '20 MIN' },
@@ -6898,23 +6954,6 @@ function seedDemoData() {
     spent: '₹7,640'
   };
   localStorage.setItem('gridFinTelemetry', JSON.stringify(gridFinTelemetry));
-
-  // 14. Resume Stack Data (skill nodes)
-  const gridRsStackData = [
-    { name: 'JAVASCRIPT', hrs: 1240 },
-    { name: 'PYTHON', hrs: 980 },
-    { name: 'GO', hrs: 560 },
-    { name: 'REACT', hrs: 720 },
-    { name: 'NODE.JS', hrs: 890 },
-    { name: 'PYTORCH', hrs: 340 },
-    { name: 'SQL', hrs: 480 },
-    { name: 'DOCKER', hrs: 290 },
-    { name: 'KUBERNETES', hrs: 180 },
-    { name: 'C++', hrs: 420 },
-    { name: 'RUST', hrs: 150 },
-    { name: 'FIGMA', hrs: 210 }
-  ];
-  localStorage.setItem('gridRsStackData', JSON.stringify(gridRsStackData));
 
   console.log('[seeder] Demo data successfully seeded!');
 }
@@ -8010,6 +8049,48 @@ function gymAddMuscleGroup() {
   });
 }
 
+/** Add exercise from the overview page — prompts user to pick a muscle group,
+    then opens the standard exercise registration modal for that group. */
+function gymAddExerciseFromOverview() {
+  const mgData = JSON.parse(localStorage.getItem('gymMuscleGroups')) || muscleGroups;
+  if (!mgData.length) { gymAddMuscleGroup(); return; }
+
+  showUniversalModal({
+    title: 'ADD EXERCISE',
+    fields: [
+      { id: 'mg', label: 'Target Muscle Group', type: 'select',
+        options: mgData.map(m => ({ value: m.name, label: m.name })) },
+      { id: 'name', label: 'Exercise Name', type: 'text', placeholder: 'e.g. INCLINE PRESS' },
+      { id: 'badge', label: 'Type', type: 'text', value: 'COMPOUND_HEAVY', placeholder: 'e.g. STRENGTH, VOLUME, POWER' },
+      { id: 'pr', label: 'Current PR (kg)', type: 'text', value: '0.0' },
+      { id: 'reps', label: 'PR Reps', type: 'text', value: '0', placeholder: 'Reps at PR weight (for 1RM calc)' },
+    ],
+    onSave: (data) => {
+      const name = (data.name || '').trim().toUpperCase();
+      if (!name) return;
+      const mgName = data.mg || mgData[0].name;
+      const badge = (data.badge || 'COMPOUND_HEAVY').trim().toUpperCase();
+      const prWt = parseFloat(data.pr) || 0;
+      const prReps = parseInt(data.reps) || 0;
+      const orm = prReps > 0 ? parseFloat((prWt * (1 + prReps / 30)).toFixed(1)) : prWt;
+
+      const reg = JSON.parse(localStorage.getItem('gymExerciseRegistry')) || exerciseRegistry;
+      if (!reg[mgName]) reg[mgName] = { exercises: [] };
+      reg[mgName].exercises.push({
+        name, badge, pr: prWt.toFixed(1), orm: orm.toFixed(1),
+        prDate: new Date().toLocaleDateString('en-GB', {day:'2-digit',month:'short',year:'numeric'}).toUpperCase(),
+        delta: 'NEW ENTRY', target: mgName,
+        bars: [0,0,0,0,0,0, Math.round(orm || 0), Math.round(orm || 0)],
+        segs: [50, 30, 20]
+      });
+      localStorage.setItem('gymExerciseRegistry', JSON.stringify(reg));
+      initGymData();
+      buildMuscleGrid();
+      gymShowToast(`EXERCISE REGISTERED — ${name} added to ${mgName}`);
+    }
+  });
+}
+
 function editMuscleGroupNode(event, idx) {
   if (event) event.stopPropagation();
   const mgData = JSON.parse(localStorage.getItem('gymMuscleGroups')) || muscleGroups;
@@ -8097,7 +8178,10 @@ function gymShowRegistry(name, id) {
     const bars = ex.bars.map((b,i) =>
       `<div class="gym-vol-bar${i===ex.bars.length-1?' hi':''}" style="height:${Math.round((b/maxB)*100)}%"></div>`
     ).join('');
-    const segs = ex.segs.map(s =>
+    // Exercises registered before `segs` existed on this shape have none —
+    // ex.segs.map() on undefined threw here and silently killed the whole
+    // grid render, taking the "REGISTER EXERCISE" add card down with it.
+    const segs = (ex.segs || [50, 30, 20]).map(s =>
       `<div class="gym-act-seg" style="width:${s}%"></div>`
     ).join('');
     const deltaClass = ex.delta.startsWith('+') ? 'gym-ex-metric-delta' : 'gym-ex-metric-sub';
@@ -8156,6 +8240,23 @@ function gymShowToast(msg, color) {
   b.style.display = 'flex';
   clearTimeout(b._hideTimer);
   b._hideTimer = setTimeout(() => { b.style.display = 'none'; }, 3500);
+}
+
+/** Special PR-broken notification — gold/amber with trophy, stays visible longer */
+function gymShowPRToast(exerciseName, weight, orm) {
+  const b = document.getElementById('gymBanner');
+  const t = document.getElementById('gymBannerText');
+  if (!b || !t) return;
+  t.innerHTML = `🏆 <b>NEW PR!</b> ${exerciseName}: ${weight}kg → Est. 1RM ${orm}kg`;
+  b.style.color = '#E8B44A';
+  b.style.borderBottomColor = 'rgba(232,180,74,0.3)';
+  b.style.background = 'linear-gradient(90deg, rgba(232,180,74,0.08), transparent)';
+  b.style.display = 'flex';
+  clearTimeout(b._hideTimer);
+  b._hideTimer = setTimeout(() => {
+    b.style.display = 'none';
+    b.style.background = '';
+  }, 6000);
 }
 
 function gymStitch() {
@@ -8653,8 +8754,12 @@ function commitWorkoutLog() {
     exercises: []
   };
   
-  const reg = JSON.parse(localStorage.getItem('gymExerciseRegistry')) || exerciseRegistry;
+  // Must mutate the actual global, not a separate freshly-parsed copy: the
+  // recomputeGymProgression() call below reads/writes exerciseRegistry
+  // directly, and would silently clobber a PR update made on any other copy.
+  const reg = exerciseRegistry = JSON.parse(localStorage.getItem('gymExerciseRegistry')) || exerciseRegistry;
   let newPrFound = false;
+  const prsBroken = [];   // collected so the final toast can mention them — see below
   
   d.exercises.forEach(ex => {
     const weightInputs = document.querySelectorAll(`.logger-weight-input[data-ex="${ex.name}"]`);
@@ -8681,7 +8786,7 @@ function commitWorkoutLog() {
     
     if (sets.length > 0) {
       // Push exercise entry (isPR added below if applicable)
-      const logEntry = { name: ex.name, sets, sessionMax1RM, isPR: false };
+      const logEntry = { name: ex.name, sets, sessionMax1RM: maxSession1RM, isPR: false };
       sessionLog.exercises.push(logEntry);
 
       // Check PR updating in registry
@@ -8717,8 +8822,11 @@ function commitWorkoutLog() {
           const mgObject = muscleGroups.find(m => m.name === exMuscleGroup);
           if (mgObject) { mgObject.bars.shift(); mgObject.bars.push(Math.round(maxSession1RM)); }
 
-          // Toast instead of terminal
-          gymShowToast(`PR BROKEN — ${ex.name}: ${maxWeight}kg → Est. 1RM ${maxSession1RM}kg`);
+          // Collected rather than shown here — the unconditional "SESSION
+          // LOGGED" toast right after this loop shares the same banner
+          // element and would immediately overwrite it, so a real user
+          // never actually saw this even though the code "showed" it.
+          prsBroken.push({ name: ex.name, weight: maxWeight, orm: maxSession1RM });
         }
       }
     }
@@ -8742,7 +8850,25 @@ function commitWorkoutLog() {
     updateVolumeTelemetry();
     renderLoggerPanel();
     buildMuscleGrid();
-    gymShowToast(`SESSION LOGGED — ${d.title} recorded at UTC ${new Date().toISOString().substring(11,19)}`);
+    // A PR toast takes priority — one banner, one message, and it should be
+    // the more important fact when both are true at once.
+    if (prsBroken.length === 1) {
+      const p = prsBroken[0];
+      gymShowPRToast(p.name, p.weight, p.orm);
+    } else if (prsBroken.length > 1) {
+      const b = document.getElementById('gymBanner'), t = document.getElementById('gymBannerText');
+      if (b && t) {
+        t.innerHTML = `🏆 <b>${prsBroken.length} NEW PRs!</b> ` + prsBroken.map(p => `${p.name} → ${p.orm}kg`).join(' · ');
+        b.style.color = '#E8B44A';
+        b.style.borderBottomColor = 'rgba(232,180,74,0.3)';
+        b.style.background = 'linear-gradient(90deg, rgba(232,180,74,0.08), transparent)';
+        b.style.display = 'flex';
+        clearTimeout(b._hideTimer);
+        b._hideTimer = setTimeout(() => { b.style.display = 'none'; b.style.background = ''; }, 6000);
+      }
+    } else {
+      gymShowToast(`SESSION LOGGED — ${d.title} recorded at UTC ${new Date().toISOString().substring(11,19)}`);
+    }
     document.querySelectorAll('.logger-weight-input').forEach(i => i.value = '');
     document.querySelectorAll('.logger-reps-input').forEach(i => i.value = '');
 
@@ -8971,6 +9097,7 @@ function saveExerciseModal() {
     if (calculatedORM > prevORM && prevORM > 0) {
       ex.delta = `+${((calculatedORM - prevORM) / prevORM * 100).toFixed(1)}% VS PREV`;
       ex.bars.shift(); ex.bars.push(Math.round(calculatedORM));
+      gymShowPRToast(name, prWt.toFixed(1), calculatedORM.toFixed(1));
     } else if (prevORM === 0) {
       ex.delta = 'NEW ENTRY';
       ex.bars = [0,0,0,0,0,0, Math.round(calculatedORM), Math.round(calculatedORM)];
@@ -10856,6 +10983,24 @@ function renderBudgetTable() {
       <td class="${cls}">${rem < 0 ? '-' : ''}${getCurrencySymbol()}${Math.abs(rem).toLocaleString()}</td>
     </tr>`;
   }).join('');
+
+  // Hydrate the two new stat cards (monthly spend + utilization)
+  const totalPlanned = budgetData.reduce((s, r) => s + (Number(r.planned) || 0), 0);
+  const totalActual  = budgetData.reduce((s, r) => s + (Number(r.actual)  || 0), 0);
+  const sym = typeof getCurrencySymbol === 'function' ? getCurrencySymbol() : '₹';
+  const spendEl = document.getElementById('fStatMonthSpend');
+  const spendSub = document.getElementById('fStatMonthSpendSub');
+  if (spendEl) spendEl.textContent = sym + totalActual.toLocaleString('en-IN', { maximumFractionDigits: 0 });
+  if (spendSub) spendSub.textContent = 'THIS MONTH';
+  const utilEl = document.getElementById('fStatBudgetUtil');
+  const utilSub = document.getElementById('fStatBudgetUtilSub');
+  if (utilEl && totalPlanned > 0) {
+    const pct = Math.round(totalActual / totalPlanned * 100);
+    utilEl.textContent = pct + '%';
+    utilEl.className = 'fin-stat-val' + (pct > 100 ? ' red' : '');
+    if (utilSub) utilSub.textContent = pct > 100 ? 'OVER BUDGET' : 'OF PLAN USED';
+  } else if (utilEl) { utilEl.textContent = '—'; if (utilSub) utilSub.textContent = 'NO BUDGET SET'; }
+
   renderBudgetGauge();   // gauge reads the same rows, so it moves with the table
 }
 
@@ -11107,11 +11252,6 @@ function closeBudgetModal() {
 // ══════════════════════════════════════════════════════
 
 let rsActiveTab = 'projects';
-let rsStackData = JSON.parse(localStorage.getItem('gridRsStackData') || '[]');
-
-function saveRsStackData() {
-  localStorage.setItem('gridRsStackData', JSON.stringify(rsStackData));
-}
 
 // A brand-new real account has written NOTHING here yet — every tab (and the
 // PROJECTS / INTERNSHIPS / RESEARCH PAPERS counts on Overview, which are just
@@ -11119,8 +11259,6 @@ function saveRsStackData() {
 let rsTabData = JSON.parse(localStorage.getItem('rsTabData') || '{}');
 
 async function initResume() {
-  renderRsStack();
-
   const isDemo = sessionStorage.getItem('gridMode') === 'demo';
   const saved  = localStorage.getItem('rsTabData');
   if (saved) rsTabData = JSON.parse(saved);
@@ -11143,77 +11281,58 @@ function _syncResumeToAPI() {
   gridSync('/api/resume', { sections: rsTabData }, 'PUT');
 }
 
-function renderRsStack() {
-  const container = document.getElementById('rsStackBars');
-  if (!container) return;
-  
-  container.style.display = 'flex';
-  container.style.flexWrap = 'wrap';
-  container.style.gap = '8px';
-  container.style.padding = '15px 0';
-  container.style.justifyContent = 'center';
-  
-  container.innerHTML = rsStackData.map((s, idx) => `
-    <div onclick="editRsSkillNode(${idx})" title="Click to edit or delete skill node" style="cursor:pointer; background:var(--carbon-2); border:1px solid var(--carbon-4); border-radius:15px; padding:6px 14px; display:inline-flex; align-items:center; gap:8px; transition:border-color 0.2s;" onmouseover="this.style.borderColor='var(--sig-500)'" onmouseout="this.style.borderColor='var(--carbon-4)'">
-      <span style="font-size:12px; color:var(--text); letter-spacing:1px; font-family:'Bebas Neue',var(--font);">${s.name}</span>
-      <span style="font-size:10px; color:var(--sig-500); font-variant-numeric:tabular-nums;">${s.hrs}h</span>
-    </div>
-  `).join('');
-  
-  container.innerHTML += `
-    <div onclick="openAddSkillModal()" style="cursor:pointer; background:transparent; border:1px dashed var(--carbon-4); border-radius:15px; padding:6px 14px; display:inline-flex; align-items:center; transition:border-color 0.2s;" onmouseover="this.style.borderColor='var(--text-muted)'" onmouseout="this.style.borderColor='var(--carbon-4)'">
-      <span style="font-size:12px; color:var(--text-muted); letter-spacing:1px; font-family:'Bebas Neue',var(--font);">+ ADD NODE</span>
-    </div>
-  `;
-}
+// Category -> the badge class/label combo its cards use (see .rs-card-badge.*).
+const RS_CAT_BADGE = {
+  projects:     { badge: 'active-proj', badgeLabel: 'ACTIVE' },
+  internships:  { badge: 'internship',  badgeLabel: 'INTERNSHIP' },
+  positions:    { badge: 'position',    badgeLabel: 'POSITION' },
+  courses:      { badge: 'course',      badgeLabel: 'COURSE' },
+  research:     { badge: 'research',    badgeLabel: 'RESEARCH' },
+  achievements: { badge: 'completed',   badgeLabel: 'COMPLETED' },
+};
+const RS_CAT_LABELS = {
+  projects: 'Project', internships: 'Internship', positions: 'Position',
+  courses: 'Course', research: 'Research paper', achievements: 'Achievement',
+};
 
-function editRsSkillNode(idx) {
-  const s = rsStackData[idx];
-  
+/** The only way to get a new node into any Resume tab — there was none before. */
+function openAddRsItemModal() {
+  const cat = rsActiveTab in RS_CAT_LABELS ? rsActiveTab : 'projects';
   showUniversalModal({
-    title: `EDIT SKILL: ${s.name}`,
+    title: 'ADD ' + (RS_CAT_LABELS[cat] || 'ENTRY').toUpperCase(),
     fields: [
-      { id: 'name', label: 'Skill Name', type: 'text', value: s.name },
-      { id: 'hrs', label: 'Invested Hours', type: 'number', value: s.hrs }
+      { id: 'cat', label: 'Category', type: 'select', value: cat,
+        options: Object.keys(RS_CAT_LABELS).map(k => ({ value: k, label: RS_CAT_LABELS[k] })) },
+      { id: 'name',     label: 'Title',                    type: 'text', placeholder: 'e.g. Distributed Log Engine' },
+      { id: 'date',     label: 'Date / range',              type: 'text', placeholder: 'e.g. Q3 2025 or PRESENT' },
+      { id: 'desc',     label: 'One-line summary',          type: 'text', placeholder: 'What it is, in one line' },
+      { id: 'fullDesc', label: 'Full description',          type: 'text', placeholder: 'Optional — shown in the detail view' },
+      { id: 'tags',     label: 'Tags (comma separated)',    type: 'text', placeholder: 'e.g. rust, kafka, distributed-systems' },
+      { id: 'links',    label: 'Links (comma separated)',   type: 'text', placeholder: 'e.g. https://github.com/you/repo' },
     ],
-    onSave: (data) => {
-      const name = data.name.trim().toUpperCase();
-      if (!name) return;
-      s.name = name;
-      s.hrs = parseInt(data.hrs) || 0;
-      saveRsStackData();
-      rsStackData.sort((a,b) => b.hrs - a.hrs);
-      renderRsStack();
-    },
-    onDelete: () => {
-      rsStackData.splice(idx, 1);
-      saveRsStackData();
-      renderRsStack();
-    }
-  });
-}
+    onSave: (v) => {
+      if (!v.name) return;
+      const targetCat = v.cat || cat;
+      const badge = RS_CAT_BADGE[targetCat] || RS_CAT_BADGE.projects;
+      if (!rsTabData[targetCat]) rsTabData[targetCat] = [];
+      rsTabData[targetCat].unshift({
+        name: v.name, date: v.date || '', desc: v.desc || '',
+        fullDesc: v.fullDesc || v.desc || '',
+        tags: (v.tags || '').split(',').map(t => t.trim()).filter(Boolean),
+        links: (v.links || '').split(',').map(t => t.trim()).filter(Boolean),
+        badge: badge.badge, badgeLabel: badge.badgeLabel,
+      });
+      persistRsData();
 
-function openAddSkillModal() {
-  showUniversalModal({
-    title: "ADD SKILL NODE",
-    fields: [
-      { id: 'name', label: 'Skill Name', type: 'text', placeholder: 'E.G. PYTORCH' },
-      { id: 'hrs', label: 'Initial Hours Logged', type: 'number', value: 0 }
-    ],
-    onSave: (data) => {
-      const name = data.name.trim().toUpperCase();
-      if (!name) return;
-      
-      const existing = rsStackData.find(s => s.name.toUpperCase() === name);
-      if (existing) {
-        existing.hrs += parseInt(data.hrs) || 0;
-      } else {
-        rsStackData.push({ name: name, hrs: parseInt(data.hrs) || 0 });
-      }
-      
-      saveRsStackData();
-      rsStackData.sort((a,b) => b.hrs - a.hrs);
-      renderRsStack();
+      // Land on the tab the entry actually went into, even if it differs
+      // from the one the modal was opened from.
+      rsActiveTab = targetCat;
+      const tabBtn = [...document.querySelectorAll('.rs-tab')]
+        .find(t => t.getAttribute('onclick') === `rsTab(this,'${targetCat}')`);
+      if (tabBtn) { document.querySelectorAll('.rs-tab').forEach(t => t.classList.remove('active')); tabBtn.classList.add('active'); }
+      renderRsContent(targetCat);
+      if (typeof renderRsStats === 'function') renderRsStats();
+      if (typeof renderMindgraphIfActive === 'function') renderMindgraphIfActive();
     }
   });
 }
@@ -13407,6 +13526,8 @@ function hvRenderHeat() {
     .forEach(x => { if(x.date) rec(x.date.slice(0,10)); if(x.workoutDate) rec(x.workoutDate.slice(0,10)); }); }catch(e){}
   try { gridAsOf(JSON.parse(localStorage.getItem('gridStudyLogs')||'[]'), x => x.date)
     .forEach(x => { if(x.date) rec(x.date.slice(0,10)); }); }catch(e){}
+  try { gridAsOf(JSON.parse(localStorage.getItem('gridFocusLogs')||'[]'), x => x.date)
+    .forEach(x => { if(x.date) rec(x.date.slice(0,10)); }); }catch(e){}
   // ts is 'YY.MM.DD HH:MM', not ISO — _txDateIso reshapes it so this actually matches rows.
   try { gridAsOf(JSON.parse(localStorage.getItem('gridTxLog')||'[]'), x => _txDateIso(x.ts))
     .forEach(x => { const d = _txDateIso(x.ts); if (d) rec(d); }); }catch(e){}
@@ -13443,7 +13564,8 @@ function hvRenderHeat() {
       pieces: [{ min: 0, max: 0.1, color: '#141a17' }, { min: 0.1, max: maxVol*0.25, color: '#1f3b28' },
                { min: maxVol*0.25, max: maxVol*0.5, color: '#3b6839' }, { min: maxVol*0.5, max: maxVol*0.75, color: '#76b372' },
                { min: maxVol*0.75, max: 9999, color: '#a5f79e' }] },
-    calendar: { top: 24, left: 34, right: 8, bottom: 6, cellSize: ['auto', 12], range: [start, end],
+    // Fixed equal width/height — cellSize [11,11] keeps cells square.
+    calendar: { top: 24, left: 34, right: 8, bottom: 6, cellSize: [11, 11], range: [start, end],
       splitLine: { show: false }, itemStyle: { color: '#0f0f0f', borderColor: '#141414', borderWidth: 2 },
       dayLabel: { color: '#5c6963', fontFamily: "'Space Mono',monospace", fontSize: 8, firstDay: 1 },
       monthLabel: { color: '#9ba8a2', fontFamily: "'Space Mono',monospace", fontSize: 9 },
@@ -13451,6 +13573,9 @@ function hvRenderHeat() {
     series: [{ type: 'heatmap', coordinateSystem: 'calendar', data,
       itemStyle: { borderColor: '#0f0f0f', borderWidth: 2, borderRadius: 3 } }]
   });
+
+  // Prevent clicks on the heatmap from navigating anywhere
+  chart.off('click');
 }
 
 /**
@@ -13474,12 +13599,64 @@ function hvRenderShortcuts() {
     container.innerHTML = '<span style="color:#5c6963;font-size:10px;">NO HABITS TRACKED YET</span>';
     return;
   }
-  let html = '';
-  hs.forEach((h, i) => {
+  // Full-width rows instead of loose wrapping pills — in a narrow column,
+  // pills that don't fit two-per-line just stack anyway, so make that the
+  // deliberate layout: one consistent row per habit, not an accidental one.
+  const checkSvg = '<svg viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" fill="none" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>';
+  container.innerHTML = hs.map((h, i) => {
     const isDone = (h.checked || []).indexOf(day) !== -1;
-    html += `<button class="hv-btn ${isDone ? 'ghost' : 'primary'}" style="padding: 4px 8px; font-size: 9px; flex: 1 1 auto;" onclick="logHabitToday(${i})">${(h.name || '').replace(/_/g, ' ')} ${isDone ? '✓' : ''}</button>`;
-  });
-  container.innerHTML = html;
+    return `<button class="hv-shortcut-row${isDone ? ' done' : ''}" onclick="logHabitToday(${i})">
+      <span class="hv-shortcut-box">${isDone ? checkSvg : ''}</span>
+      <span class="hv-shortcut-name">${(h.name || '').replace(/_/g, ' ')}</span>
+    </button>`;
+  }).join('');
+}
+
+/** Render upcoming timetable events in the home page NOW zone */
+function hvRenderUpcoming() {
+  const el = document.getElementById('hvUpcomingEvents');
+  if (!el) return;
+  try {
+    const now = new Date();
+    const dayIdx = now.getDay();
+    const hour = now.getHours();
+    const tt = JSON.parse(localStorage.getItem('gridTimetable') || 'null');
+    if (!tt || !tt[dayIdx]) { el.innerHTML = '<span style="color:var(--text-muted);font-size:10px;letter-spacing:0.5px;">NO SCHEDULE TODAY</span>'; return; }
+    const dayRow = tt[dayIdx];
+    const events = [];
+    let i = hour;
+    while (i < 24 && events.length < 4) {
+      if (dayRow[i] && dayRow[i] !== '') {
+        const label = dayRow[i].replace(/_/g, ' ');
+        // group consecutive same-label hours
+        let end = i + 1;
+        while (end < 24 && dayRow[end] === dayRow[i]) end++;
+        const timeStr = String(i).padStart(2,'0') + ':00 – ' + String(end).padStart(2,'0') + ':00';
+        events.push({ label, time: timeStr, isNow: hour >= i && hour < end });
+        i = end;
+      } else {
+        i++;
+      }
+    }
+    if (!events.length) {
+      el.innerHTML = '<span style="color:var(--text-muted);font-size:10px;letter-spacing:0.5px;">FREE FOR THE REST OF TODAY</span>';
+      return;
+    }
+    el.innerHTML = events.map(ev => `
+      <div style="display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:8px;
+        background:${ev.isNow ? 'rgba(118,179,114,0.12)' : 'var(--carbon-2)'};
+        border:1px solid ${ev.isNow ? 'rgba(118,179,114,0.25)' : 'var(--carbon-4)'};
+        transition:all .15s;">
+        <div style="width:3px;height:24px;border-radius:2px;background:${ev.isNow ? 'var(--sig-500)' : 'var(--carbon-4)'};flex-shrink:0;"></div>
+        <div style="min-width:0;">
+          <div style="font-size:10px;font-weight:700;color:${ev.isNow ? 'var(--sig-500)' : 'var(--text)'};letter-spacing:0.5px;">${ev.label}</div>
+          <div style="font-size:8px;letter-spacing:1px;color:var(--text-muted);margin-top:1px;">${ev.time}${ev.isNow ? ' · NOW' : ''}</div>
+        </div>
+      </div>
+    `).join('');
+  } catch (e) {
+    el.innerHTML = '<span style="color:var(--text-muted);font-size:10px;">NO SCHEDULE</span>';
+  }
 }
 
 window.logHabitToday = function(hi) {
@@ -13505,13 +13682,13 @@ window.logHabitToday = function(hi) {
 function renderConsole() {
   // hvRenderChips intentionally omitted: the NOW card no longer carries habit
   // chips — one-tap logging lives in the Daily Console (LOG TODAY / ⌘K).
-  [hvRenderHead, hvRenderNow, hvRenderAttention, hvRenderStatus, hvRenderHeat, hvRenderShortcuts]
+  [hvRenderHead, hvRenderNow, hvRenderAttention, hvRenderStatus, hvRenderHeat, hvRenderShortcuts, hvRenderUpcoming]
     .forEach(fn => { try { fn(); } catch (e) { console.warn('home ' + fn.name + ':', e); } });
 
   // Pull habit data if this is a cold landing on Home, then repaint what uses it.
   hvEnsureHabits().then(loaded => {
     if (!loaded) return;
-    [hvRenderHead, hvRenderAttention, hvRenderStatus, hvRenderHeat, hvRenderShortcuts]
+    [hvRenderHead, hvRenderAttention, hvRenderStatus, hvRenderHeat, hvRenderShortcuts, hvRenderUpcoming]
       .forEach(fn => { try { fn(); } catch (e) {} });
   });
   hvStartClock();
