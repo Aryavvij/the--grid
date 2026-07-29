@@ -57,8 +57,6 @@ app.use('/api/planning', require('./routes/planning'));
 app.use('/api/gym',      require('./routes/gym'));
 app.use('/api/finance',  require('./routes/finance'));
 app.use('/api/calendar', require('./routes/calendar'));
-// Public by design — token in the URL is the credential (iOS cannot send one).
-app.use('/api/feed',     require('./routes/feed'));
 app.use('/api/projects', require('./routes/projects'));
 app.use('/api/resume',   require('./routes/resume'));
 

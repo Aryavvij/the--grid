@@ -39,14 +39,4 @@ const sandboxLimiter = rateLimit({
   message: { error: 'Too many demo sessions created — try again later.' },
 });
 
-// The .ics feed is public (token in URL) and polled by phones — allow frequent
-// legitimate polling while capping brute-force attempts against the token space.
-const feedLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  limit: 60,
-  standardHeaders: 'draft-7',
-  legacyHeaders: false,
-  message: { error: 'Too many requests.' },
-});
-
-module.exports = { globalLimiter, authLimiter, sandboxLimiter, feedLimiter };
+module.exports = { globalLimiter, authLimiter, sandboxLimiter };

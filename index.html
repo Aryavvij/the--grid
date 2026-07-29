@@ -4263,50 +4263,6 @@ html, body {
     </div>
     <div class="panel-body">
 
-      <!-- iPhone / device calendar subscription -->
-      <div class="settings-section">
-        <div class="settings-section-title">Calendar Sync</div>
-        <div style="font-size:10px;color:var(--text-muted);line-height:1.6;margin-bottom:12px;">
-          Subscribe from your phone to see Grid events, timetable blocks and deadlines
-          in the native Calendar app. Read-only and auto-refreshing.
-        </div>
-
-        <div id="calFeedOff">
-          <button class="fin-commit-btn" style="width:100%;margin:0;" onclick="calFeedCreate()">CREATE SUBSCRIPTION LINK</button>
-        </div>
-
-        <div id="calFeedOn" style="display:none;">
-          <div style="font-size:9px;letter-spacing:1.5px;color:var(--sig-500);margin-bottom:6px;">SUBSCRIPTION URL</div>
-          <input class="form-input" id="calFeedUrl" readonly onclick="this.select()"
-                 style="font-size:10px;margin-bottom:8px;">
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
-            <button class="fin-modify-btn" onclick="calFeedCopy()" style="padding:8px;">COPY LINK</button>
-            <button class="fin-modify-btn" onclick="calFeedOpen()" style="padding:8px;">ADD TO IPHONE</button>
-          </div>
-
-          <div style="font-size:9px;letter-spacing:1.5px;color:var(--text-muted);margin-bottom:8px;">INCLUDE</div>
-          <div class="settings-row"><span class="settings-label">Calendar events</span>
-            <input type="checkbox" id="cfEvents" checked onchange="calFeedSaveOpts()"></div>
-          <div class="settings-row"><span class="settings-label">Timetable blocks</span>
-            <input type="checkbox" id="cfTimetable" checked onchange="calFeedSaveOpts()"></div>
-          <div class="settings-row"><span class="settings-label">Task deadlines</span>
-            <input type="checkbox" id="cfDeadlines" checked onchange="calFeedSaveOpts()"></div>
-          <div class="settings-row"><span class="settings-label">Gym split days</span>
-            <input type="checkbox" id="cfGym" onchange="calFeedSaveOpts()"></div>
-
-          <div style="font-size:9px;color:var(--text-muted);line-height:1.6;margin:12px 0;">
-            On iPhone: Settings &rarr; Apps &rarr; Calendar &rarr; Accounts &rarr; Add Account
-            &rarr; Other &rarr; Add Subscribed Calendar, then paste the link.
-          </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-            <button class="fin-modify-btn" onclick="calFeedCreate(true)" style="padding:8px;">REGENERATE</button>
-            <button class="fin-modify-btn" onclick="calFeedRevoke()"
-                    style="padding:8px;border-color:var(--pink);color:var(--pink);">REVOKE</button>
-          </div>
-          <div id="calFeedMsg" style="font-size:9px;letter-spacing:1px;color:var(--sig-500);margin-top:10px;min-height:12px;"></div>
-        </div>
-      </div>
-
       <!-- App Preferences -->
       <div class="settings-section">
         <div class="settings-section-title">App Preferences</div>
@@ -9420,8 +9376,6 @@ function qTab(el, tab) {
   renderQueue(tab);
 }
 
-
-
 // ═══════════════════════════════════════════════════
 // FINANCES
 // ═══════════════════════════════════════════════════
@@ -9658,8 +9612,6 @@ function openAddRecurringModal() {
     }
   });
 }
-
-
 
 function renderDebtList() {
   const el = document.getElementById('finDebtList');
@@ -10114,8 +10066,6 @@ function renderRsContent(tab) {
   `).join('');
 }
 
-
-
 function rsCompile() {
   const btn = document.querySelector('.rs-compile-btn');
   if (!btn) return;
@@ -10198,10 +10148,6 @@ function closeRsDetailModal() {
   overlay.classList.remove('open');
 }
 
-
-
-
-
 /**
  * Edit a portfolio node. The Profile-editor page it used to populate was
  * removed, so this now drives the universal modal directly — which is also how
@@ -10250,8 +10196,6 @@ function deleteRsItem(cat, idx) {
   if (typeof renderRsStats === 'function') renderRsStats();
   if (typeof renderMindgraphIfActive === 'function') renderMindgraphIfActive();
 }
-
-
 
 function renderRsPdfSelectors() {
   const container = document.getElementById('rsPdfSelectors');
@@ -10763,8 +10707,6 @@ function openPanel(id) {
   document.getElementById(id).classList.add('open');
   document.getElementById('panelOverlay').classList.add('open');
   document.body.style.overflow = 'hidden';
-  // Refresh the subscription state each time settings opens.
-  if (id === 'panelSettings') { try { calFeedLoad(); } catch (e) {} }
 }
 
 function closePanel() {
@@ -13058,7 +13000,6 @@ function initMindgraph() {
   requestAnimationFrame(() => { mgFit(); mgDraw(); });
 }
 
-
 /* ══ CROSS-DEVICE SYNC: timetable · weekly tasks · study sessions ═══════════
    These three used to be localStorage-only. They now have real backend models,
    so they sync like every other module: localStorage stays the instant local
@@ -13156,94 +13097,6 @@ function pushStudySession(entry) {
     minutes: entry.minutes, category: entry.category || 'general',
     note: entry.note || null,
   });
-}
-
-
-
-/* ══ CALENDAR SUBSCRIPTION (iPhone / any CalDAV-capable client) ═════════════
-   Grid publishes a read-only .ics feed; the phone subscribes and refreshes on
-   its own schedule. The token in the URL is the credential, so regenerating it
-   instantly revokes every existing subscription.                            */
-
-function calFeedUrlFor(token) { return GRID_API + '/api/feed/' + token + '.ics'; }
-
-function calFeedShow(token, opts) {
-  const on = document.getElementById('calFeedOn');
-  const off = document.getElementById('calFeedOff');
-  if (!on || !off) return;
-  if (token) {
-    off.style.display = 'none';
-    on.style.display = 'block';
-    document.getElementById('calFeedUrl').value = calFeedUrlFor(token);
-    const o = opts || {};
-    const set = (id, v) => { const el = document.getElementById(id); if (el) el.checked = v; };
-    set('cfEvents',    o.events    !== false);
-    set('cfTimetable', o.timetable !== false);
-    set('cfDeadlines', o.deadlines !== false);
-    set('cfGym',       o.gym === true);
-  } else {
-    off.style.display = 'block';
-    on.style.display = 'none';
-  }
-}
-
-function calFeedMsg(text) {
-  const el = document.getElementById('calFeedMsg');
-  if (!el) return;
-  el.textContent = text;
-  clearTimeout(calFeedMsg._t);
-  calFeedMsg._t = setTimeout(() => { el.textContent = ''; }, 3000);
-}
-
-async function calFeedLoad() {
-  if (GridMode.isDemo()) { calFeedShow(null); return; }
-  try {
-    const r = await gridFetch('/api/calendar/feed-token');
-    calFeedShow(r.token, r.options);
-  } catch (e) { calFeedShow(null); }
-}
-
-async function calFeedCreate(regen) {
-  if (GridMode.isDemo()) { alert('Sign in to create a subscription link.'); return; }
-  if (regen && !confirm('Regenerate the link? Any device already subscribed will stop updating.')) return;
-  try {
-    const r = await gridFetch('/api/calendar/feed-token', { method: 'POST' });
-    calFeedShow(r.token, {});
-    calFeedMsg(regen ? 'Link regenerated — re-subscribe on your phone.' : 'Link created.');
-  } catch (e) { calFeedMsg('Could not create link.'); }
-}
-
-async function calFeedRevoke() {
-  if (!confirm('Revoke the link? Subscribed devices will stop updating.')) return;
-  try {
-    await gridFetch('/api/calendar/feed-token', { method: 'DELETE' });
-    calFeedShow(null);
-  } catch (e) { calFeedMsg('Could not revoke.'); }
-}
-
-function calFeedSaveOpts() {
-  const opts = {
-    events:    document.getElementById('cfEvents').checked,
-    timetable: document.getElementById('cfTimetable').checked,
-    deadlines: document.getElementById('cfDeadlines').checked,
-    gym:       document.getElementById('cfGym').checked,
-  };
-  gridSync('/api/calendar/feed-options', opts, 'PUT');
-  calFeedMsg('Updated — your phone will pick this up on its next refresh.');
-}
-
-function calFeedCopy() {
-  const el = document.getElementById('calFeedUrl');
-  el.select();
-  navigator.clipboard.writeText(el.value)
-    .then(() => calFeedMsg('Link copied.'))
-    .catch(() => { document.execCommand('copy'); calFeedMsg('Link copied.'); });
-}
-
-/** webcal:// makes iOS offer to subscribe directly instead of downloading. */
-function calFeedOpen() {
-  const url = document.getElementById('calFeedUrl').value;
-  window.location.href = url.replace(/^https?:/, 'webcal:');
 }
 
 </script>

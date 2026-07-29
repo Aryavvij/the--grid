@@ -25,10 +25,6 @@ model User {
   // Claimable into a permanent account; prunable once expired.
   isSandbox        Boolean   @default(false) @map("is_sandbox")
   sandboxExpiresAt DateTime? @map("sandbox_expires_at")
-  // Secret used by the read-only .ics subscription feed. iOS cannot present a
-  // cookie, so the URL itself is the credential — regenerating revokes it.
-  calendarToken    String?   @unique @map("calendar_token")
-  calendarFeedOpts Json?     @map("calendar_feed_opts") // which layers to publish
   createdAt        DateTime  @default(now()) @map("created_at")
   updatedAt        DateTime  @updatedAt @map("updated_at")
 
