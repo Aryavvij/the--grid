@@ -143,6 +143,174 @@
     window.addEventListener('resize', function () { chart.resize(); });
     return chart;
   };
+
+  /* ══ SVG CHART PRIMITIVES ═════════════════════════════════════════════════
+     Gauge and Ring are drawn in SVG rather than ECharts on purpose. ECharts'
+     gauge is a needle-and-axis dial with no notion of discrete notches, and its
+     pie cannot produce round-capped concentric tracks. Both Bklit charts are
+     literally arcs in SVG, so drawing them directly is the faithful route and
+     costs less than fighting a component into the wrong shape.                */
+
+  /**
+   * Bklit's Area treatment as ECharts series props: monotone curve, a gradient
+   * that falls to zero at the baseline, no point symbols, and a 2px stroke.
+   * Spread it into a series so every area in the app reads the same way.
+   */
+  window.bkArea = function (color, opts) {
+    var o = opts || {};
+    var c = color || '#76b372';
+    var top = o.fillOpacity == null ? 0.4 : o.fillOpacity;
+    return {
+      type: 'line',
+      smooth: 0.35,                       // curveMonotoneX equivalent
+      smoothMonotone: 'x',
+      symbol: 'none',                     // showMarkers={false}
+      lineStyle: { color: c, width: o.strokeWidth || 2 },
+      itemStyle: { color: c },
+      areaStyle: {
+        color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+          { offset: 0, color: hexA(c, top) },
+          { offset: 1, color: hexA(c, o.gradientToOpacity || 0) },
+        ]),
+      },
+      emphasis: { focus: 'series' },
+    };
+  };
+  /* #rrggbb -> rgba() so gradient stops can carry their own alpha. */
+  function hexA(hex, a) {
+    if (hex.charAt(0) !== '#') return hex;
+    var n = parseInt(hex.slice(1), 16);
+    return 'rgba(' + ((n >> 16) & 255) + ',' + ((n >> 8) & 255) + ',' + (n & 255) + ',' + a + ')';
+  }
+
+  var NS = 'http://www.w3.org/2000/svg';
+  function svgEl(tag, attrs) {
+    var n = document.createElementNS(NS, tag);
+    for (var k in attrs) if (attrs[k] != null) n.setAttribute(k, attrs[k]);
+    return n;
+  }
+  /* Polar helper — 0deg points right, angles run clockwise like the Bklit sweep. */
+  function polar(cx, cy, r, deg) {
+    var a = (deg - 0) * Math.PI / 180;
+    return [cx + r * Math.cos(a), cy + r * Math.sin(a)];
+  }
+  function arcPath(cx, cy, r, from, to) {
+    var s = polar(cx, cy, r, from), e = polar(cx, cy, r, to);
+    var large = Math.abs(to - from) > 180 ? 1 : 0;
+    return 'M ' + s[0] + ' ' + s[1] + ' A ' + r + ' ' + r + ' 0 ' + large + ' 1 ' + e[0] + ' ' + e[1];
+  }
+
+  /**
+   * Notched gauge. `value` is the fill level 0-100; `centerValue` is the
+   * statistic in the label, which is often a different number to the fill.
+   */
+  window.gridGauge = function (elOrId, opts) {
+    var el = typeof elOrId === 'string' ? document.getElementById(elOrId) : elOrId;
+    if (!el) return;
+    var o = opts || {};
+    var total    = o.totalNotches || 44;
+    var spacing  = o.spacing == null ? 25 : o.spacing;   // % of slot left as gap
+    var startAng = o.startAngle == null ? 135 : o.startAngle;
+    var endAng   = o.endAngle   == null ? 405 : o.endAngle;
+    var active   = o.activeFill   || '#76b372';
+    var inactive = o.inactiveFill || 'rgba(255,255,255,0.10)';
+    var W = 300, H = 220, cx = W / 2, cy = H / 2 + 14, rOuter = 96;
+    var depth = rOuter * ((o.notchLengthPercent == null ? 100 : o.notchLengthPercent) / 100) * 0.20;
+
+    var svg = svgEl('svg', { viewBox: '0 0 ' + W + ' ' + H, width: '100%', height: '100%',
+                             preserveAspectRatio: 'xMidYMid meet' });
+    var sweep = endAng - startAng;
+    var slot  = sweep / total;
+    var notch = slot * (1 - spacing / 100);
+    var lit   = Math.round((Math.max(0, Math.min(100, o.value || 0)) / 100) * total);
+
+    for (var i = 0; i < total; i++) {
+      var a0 = startAng + i * slot + (slot - notch) / 2;
+      var on = i < lit;
+      var g  = svgEl('path', {
+        d: arcPath(cx, cy, rOuter - depth / 2, a0, a0 + notch),
+        stroke: on ? active : inactive,
+        'stroke-width': depth,
+        'stroke-opacity': on ? (o.activeFillOpacity == null ? 1 : o.activeFillOpacity)
+                             : (o.inactiveFillOpacity == null ? 0.4 : o.inactiveFillOpacity),
+        'stroke-linecap': o.notchCornerRadius ? 'round' : 'butt',
+        fill: 'none',
+      });
+      svg.appendChild(g);
+    }
+
+    if (o.centerValue != null) {
+      svg.appendChild(svgEl('text', { x: cx, y: cy + 2, 'text-anchor': 'middle',
+        fill: 'var(--text)', 'font-family': "'Space Mono',monospace",
+        'font-size': 30, 'font-weight': 700 })).textContent =
+        (o.prefix || '') + o.centerValue + (o.suffix || '');
+      svg.appendChild(svgEl('text', { x: cx, y: cy + 24, 'text-anchor': 'middle',
+        fill: 'var(--text-muted)', 'font-family': "'Space Mono',monospace",
+        'font-size': 9, 'letter-spacing': 1.5 })).textContent = o.defaultLabel || 'TOTAL';
+    }
+    el.innerHTML = '';
+    el.appendChild(svg);
+  };
+
+  /**
+   * Concentric ring chart. One ring per series, each a track plus a progress
+   * arc; the centre shows the total, or the hovered ring's own numbers.
+   */
+  window.gridRingChart = function (elOrId, data, opts) {
+    var el = typeof elOrId === 'string' ? document.getElementById(elOrId) : elOrId;
+    if (!el) return;
+    var o = opts || {}, rows = (data || []).slice(0, 6);
+    var stroke = o.strokeWidth || 11, gap = o.ringGap == null ? 7 : o.ringGap;
+    var baseInner = o.baseInnerRadius == null ? 38 : o.baseInnerRadius;
+    var S = 260, c = S / 2;
+    var svg = svgEl('svg', { viewBox: '0 0 ' + S + ' ' + S, width: '100%', height: '100%',
+                             preserveAspectRatio: 'xMidYMid meet' });
+
+    var label = svgEl('text', { x: c, y: c - 2, 'text-anchor': 'middle', fill: 'var(--text)',
+      'font-family': "'Space Mono',monospace", 'font-size': 28, 'font-weight': 700 });
+    var sub = svgEl('text', { x: c, y: c + 20, 'text-anchor': 'middle', fill: 'var(--text-muted)',
+      'font-family': "'Space Mono',monospace", 'font-size': 9, 'letter-spacing': 1.5 });
+
+    function setCentre(t, s) { label.textContent = t; sub.textContent = s; }
+    var totV = rows.reduce(function (a, r) { return a + (r.value || 0); }, 0);
+    var totM = rows.reduce(function (a, r) { return a + (r.maxValue || 0); }, 0);
+    var defaultTop = totM ? Math.round(totV / totM * 100) + '%' : '—';
+
+    rows.forEach(function (r, i) {
+      var rad = baseInner + i * (stroke + gap);
+      if (rad > c - stroke) return;                      // ran out of room
+      var circ = 2 * Math.PI * rad;
+      var pct  = r.maxValue ? Math.max(0, Math.min(1, (r.value || 0) / r.maxValue)) : 0;
+
+      svg.appendChild(svgEl('circle', { cx: c, cy: c, r: rad, fill: 'none',
+        stroke: 'rgba(255,255,255,0.07)', 'stroke-width': stroke }));
+
+      var arc = svgEl('circle', { cx: c, cy: c, r: rad, fill: 'none',
+        stroke: r.color || '#76b372', 'stroke-width': stroke, 'stroke-linecap': 'round',
+        'stroke-dasharray': circ, 'stroke-dashoffset': circ,
+        transform: 'rotate(-90 ' + c + ' ' + c + ')',
+        style: 'transition:stroke-dashoffset .9s cubic-bezier(.85,0,.15,1),stroke-width .15s' });
+      svg.appendChild(arc);
+      // Kick the reveal on the next frame so the transition actually runs.
+      requestAnimationFrame(function () {
+        arc.setAttribute('stroke-dashoffset', String(circ * (1 - pct)));
+      });
+
+      arc.addEventListener('mouseenter', function () {
+        arc.setAttribute('stroke-width', stroke + 3);
+        setCentre(Math.round(pct * 100) + '%', String(r.label || '').toUpperCase());
+      });
+      arc.addEventListener('mouseleave', function () {
+        arc.setAttribute('stroke-width', stroke);
+        setCentre(defaultTop, o.defaultLabel || 'TOTAL');
+      });
+    });
+
+    setCentre(defaultTop, o.defaultLabel || 'TOTAL');
+    svg.appendChild(label); svg.appendChild(sub);
+    el.innerHTML = '';
+    el.appendChild(svg);
+  };
 })();
 </script>
 
@@ -2325,8 +2493,14 @@ html, body {
 }
 .hb-cb:hover { border-color: rgba(118,179,114,0.6); }
 
-/* Bottom grid */
-.hb-bottom-grid { grid-template-columns: 1fr !important; }
+/* Bottom grid — momentum trend beside the per-habit rings */
+.hb-bottom-grid {
+  display: grid;
+  grid-template-columns: 1fr 420px;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+@media (max-width: 1100px) { .hb-bottom-grid { grid-template-columns: 1fr; } }
 ._hb_bottom_grid_legacy {
   display: grid;
   grid-template-columns: 1fr 300px;
@@ -3095,6 +3269,15 @@ html, body {
 .fin-budget-table td:first-child { color: var(--text); font-weight: 700; }
 .fin-budget-table td.neg { color: var(--pink); }
 .fin-budget-table td.pos { color: var(--green); }
+
+/* Gauge pace chip — spend rate against how far through the month you are */
+.fin-gauge-pace {
+  font-size: 9px; letter-spacing: 1.4px; padding: 3px 8px; border-radius: 3px;
+  color: var(--text-muted); border: 1px solid rgba(255,255,255,0.08);
+}
+.fin-gauge-pace.good { color: var(--green);  border-color: rgba(118,179,114,0.3); background: var(--green-dim); }
+.fin-gauge-pace.warn { color: var(--orange); border-color: rgba(249,115,22,0.3);  background: rgba(249,115,22,0.12); }
+.fin-gauge-pace.bad  { color: var(--pink);   border-color: rgba(224,112,154,0.3); background: rgba(224,112,154,0.12); }
 .fin-modify-btn {
   background: var(--card);
   border: 1px solid var(--card-border);
@@ -4842,6 +5025,20 @@ html, body {
           <div id="momentumChart" style="width:100%;height:240px"></div>
         </div>
 
+        <!-- Right: per-habit completion rings -->
+        <div class="hb-chart-card">
+          <div class="hb-chart-head">
+            <div class="hb-matrix-title" style="font-size:13px">COMPLETION_RINGS</div>
+            <div class="hb-legend">
+              <span class="hb-leg-dot" style="background:var(--green)"></span><span>DAYS DONE / DAYS ELAPSED</span>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:16px;">
+            <div id="habitRings" style="width:230px;height:230px;flex-shrink:0"></div>
+            <div id="habitRingLegend" style="flex:1;display:flex;flex-direction:column;gap:9px;min-width:0"></div>
+          </div>
+        </div>
+
       </div>
 
     </div><!-- /page-habits -->
@@ -4970,6 +5167,19 @@ html, body {
               <thead><tr><th>SECTOR</th><th>PLANNED</th><th>ACTUAL</th><th>REMAINING</th></tr></thead>
               <tbody id="budgetBody"></tbody>
             </table>
+          </div>
+
+          <!-- Card 3: Budget consumption gauge -->
+          <div class="fin-section">
+            <div class="fin-section-title" style="justify-content:space-between">
+              <span style="display:flex;align-items:center;gap:8px">
+                <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" fill="none" stroke-width="2"><path d="M12 2v4"/><path d="M4.9 4.9l2.9 2.9"/><path d="M2 12h4"/><path d="M19.1 4.9l-2.9 2.9"/><path d="M22 12h-4"/><path d="M12 12l5-3"/></svg>
+                BUDGET CONSUMPTION
+              </span>
+              <span class="fin-gauge-pace" id="finGaugePace">—</span>
+            </div>
+            <div id="finBudgetGauge" style="width:100%;height:210px"></div>
+            <div id="finGaugeNote" style="text-align:center;font-size:9px;letter-spacing:1.2px;color:var(--text-muted);padding:0 12px 12px;"></div>
           </div>
         </div>
 
@@ -7496,7 +7706,7 @@ function initGymQuarterlyChart(muscleName) {
     tooltip: { trigger: 'axis', valueFormatter: v => v + ' kg (cumulative 1RM)' },
     xAxis: { type: 'category', data: keys.map(k => k.slice(5)) },
     yAxis: { type: 'value', name: 'KG', nameTextStyle: { fontSize: 9 } },
-    series: [{ type: 'line', data: keys.map(k => buckets[k]), areaStyle: { color: 'rgba(118,179,114,0.18)' } }]
+    series: [{ ...bkArea('#76b372'), data: keys.map(k => buckets[k]) }]
   });
 }
 
@@ -7520,11 +7730,7 @@ function initGymChart() {
     tooltip: { trigger: 'axis', valueFormatter: v => v + ' kg' },
     xAxis: { type: 'category', data: trend.map(w => w.weekLabel) },
     yAxis: { type: 'value', min, name: 'KG', nameTextStyle: { fontSize: 9 } },
-    series: [{
-      type: 'line', data,
-      areaStyle: { color: new echarts.graphic.LinearGradient(0,0,0,1,[
-        { offset:0, color:'rgba(118,179,114,0.28)' }, { offset:1, color:'rgba(118,179,114,0.02)' }]) }
-    }]
+    series: [{ ...bkArea('#76b372'), data }]
   });
 }
 
@@ -8800,7 +9006,7 @@ async function initHabits() {
 
   if (isDemo) {
     habits = JSON.parse(localStorage.getItem('gridHabits') || JSON.stringify(_DEMO_HABITS));
-    buildHabitMatrix(); initMomentumChart(); buildHabitRanks();
+    buildHabitMatrix(); initMomentumChart(); renderHabitRings(); buildHabitRanks();
     return;
   }
 
@@ -8830,7 +9036,7 @@ async function initHabits() {
     habits = JSON.parse(localStorage.getItem('gridHabits') || '[]');
   }
 
-  buildHabitMatrix(); initMomentumChart(); buildHabitRanks();
+  buildHabitMatrix(); initMomentumChart(); renderHabitRings(); buildHabitRanks();
 }
 
 function buildHabitRanks() {
@@ -8963,10 +9169,59 @@ function toggleHabitDay(e) {
   term.scrollTop = term.scrollHeight;
 
   saveHabits(); // localStorage cache
+  renderHabitRings();   // rings track the matrix, so they move with every tick
 
   // Persist to API
   if (h.id) {
     gridSync(`/api/habits/${h.id}/log`, { date: _habitDateStr(d), completed: completing });
+  }
+}
+
+/* ══ HABIT COMPLETION RINGS ═════════════════════════════════════════════════
+   One ring per habit: days completed against days ELAPSED, not days in the
+   month. Measuring against the full month would score every habit as failing
+   until the 31st, which reads as discouraging noise rather than signal.       */
+const RING_COLORS = ['#76b372', '#a5f79e', '#4ea3d1', '#e0709a', '#d9a441', '#8b7fd4'];
+
+function renderHabitRings() {
+  const el  = document.getElementById('habitRings');
+  const leg = document.getElementById('habitRingLegend');
+  if (!el) return;
+
+  const hs = (typeof habits !== 'undefined' && Array.isArray(habits)) ? habits : [];
+  if (!hs.length) {
+    el.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;'
+                 + 'font-size:11px;color:var(--text-muted);letter-spacing:1px;text-align:center">NO HABITS YET</div>';
+    if (leg) leg.innerHTML = '';
+    return;
+  }
+
+  const now     = new Date();
+  const elapsed = Math.max(1, now.getDate());   // day-of-month so far
+
+  const rows = hs.slice(0, 6).map((h, i) => ({
+    label:    h.name || ('HABIT ' + (i + 1)),
+    value:    (h.checked || []).filter(d => d <= elapsed).length,
+    maxValue: elapsed,
+    color:    RING_COLORS[i % RING_COLORS.length],
+  }));
+
+  gridRingChart(el, rows, { defaultLabel: 'THIS MONTH', strokeWidth: 11, ringGap: 7, baseInnerRadius: 36 });
+
+  if (leg) {
+    leg.innerHTML = rows.map(r => {
+      const pct = Math.round(r.value / r.maxValue * 100);
+      return '<div>'
+        + '<div style="display:flex;align-items:center;gap:6px;font-size:10px;letter-spacing:0.8px;margin-bottom:4px;">'
+          + '<span style="width:7px;height:7px;border-radius:50%;background:' + r.color + ';flex-shrink:0"></span>'
+          + '<span style="color:var(--text-dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + escHtml(r.label) + '</span>'
+          + '<span style="margin-left:auto;color:var(--text-muted);white-space:nowrap">' + r.value + '/' + r.maxValue + '</span>'
+        + '</div>'
+        + '<div style="height:3px;background:var(--carbon-3);border-radius:3px;overflow:hidden;">'
+          + '<div style="height:100%;width:' + pct + '%;background:' + r.color + ';border-radius:3px;"></div>'
+        + '</div>'
+      + '</div>';
+    }).join('');
   }
 }
 
@@ -9004,11 +9259,8 @@ function initMomentumChart() {
     tooltip: { trigger: 'axis', valueFormatter: v => v + '%' },
     xAxis: { type: 'category', data: weeks },
     yAxis: { type: 'value', max: 100, name: '%', nameTextStyle: { fontSize: 9 } },
-    series: [{
-      type: 'line', data: vals,
-      areaStyle: { color: new echarts.graphic.LinearGradient(0,0,0,1,[
-        { offset:0, color:'rgba(118,179,114,0.28)' }, { offset:1, color:'rgba(118,179,114,0.02)' }]) }
-    }]
+    // Bklit area treatment — see bkArea()
+    series: [{ ...bkArea('#76b372'), data: vals }]
   });
 }
 
@@ -9795,6 +10047,58 @@ function renderBudgetTable() {
       <td class="${cls}">${rem < 0 ? '-' : ''}${getCurrencySymbol()}${Math.abs(rem).toLocaleString()}</td>
     </tr>`;
   }).join('');
+  renderBudgetGauge();   // gauge reads the same rows, so it moves with the table
+}
+
+/* ══ BUDGET CONSUMPTION GAUGE ═══════════════════════════════════════════════
+   Fill is the share of the monthly plan already spent. The gauge alone would
+   say "68% spent" without saying whether that is early or late, so it is read
+   against how far through the month you are — that comparison is the point.  */
+function renderBudgetGauge() {
+  const el = document.getElementById('finBudgetGauge');
+  if (!el) return;
+  const noteEl = document.getElementById('finGaugeNote');
+  const paceEl = document.getElementById('finGaugePace');
+
+  const planned = budgetData.reduce((s, r) => s + (Number(r.planned) || 0), 0);
+  const actual  = budgetData.reduce((s, r) => s + (Number(r.actual)  || 0), 0);
+
+  if (!planned) {
+    el.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;'
+                 + 'font-size:11px;color:var(--text-muted);letter-spacing:1px">NO BUDGET SET</div>';
+    if (noteEl) noteEl.textContent = '';
+    if (paceEl) { paceEl.textContent = '—'; paceEl.className = 'fin-gauge-pace'; }
+    return;
+  }
+
+  const pct = Math.round(actual / planned * 100);
+  const now = new Date();
+  const daysInMonth  = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+  const monthPct     = Math.round(now.getDate() / daysInMonth * 100);
+  const over         = pct > 100;
+  const aheadOfPace  = pct > monthPct + 5;
+
+  gridGauge(el, {
+    value: Math.min(100, pct),          // fill saturates; the overrun is called out in words
+    centerValue: pct,
+    suffix: '%',
+    defaultLabel: 'OF PLAN SPENT',
+    totalNotches: 44,
+    spacing: 25,
+    notchCornerRadius: 2,
+    inactiveFillOpacity: 0.4,
+    activeFill: over ? 'var(--pink)' : aheadOfPace ? 'var(--orange)' : 'var(--green)',
+  });
+
+  if (paceEl) {
+    paceEl.textContent = over ? 'OVER BUDGET' : aheadOfPace ? 'AHEAD OF PACE' : 'ON PACE';
+    paceEl.className   = 'fin-gauge-pace ' + (over ? 'bad' : aheadOfPace ? 'warn' : 'good');
+  }
+  if (noteEl) {
+    const sym = getCurrencySymbol();
+    noteEl.textContent = sym + actual.toLocaleString() + ' OF ' + sym + planned.toLocaleString()
+      + '  ·  DAY ' + now.getDate() + '/' + daysInMonth + ' (' + monthPct + '% THROUGH MONTH)';
+  }
 }
 
 function editBudgetSectorNode(idx) {
