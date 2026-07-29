@@ -4199,7 +4199,13 @@ html, body {
 .hv-alert b { color:var(--text); font-weight:700; }
 
 /* ── ZONE 3 · STATUS ── */
-.hv-status { flex:1; display:grid; grid-template-columns:repeat(12,1fr); grid-auto-rows:minmax(88px,auto); gap:13px; }
+/* Was flex:1 — a leftover from when this zone held more than just the
+   heatmap and needed to stretch to balance the page. Now it's the sole
+   occupant: a fixed-height visualization, not something that should grow to
+   swallow whatever vertical space is left. .hv-wrap already guarantees
+   full-viewport-height coverage on its own, so this card just sizing to its
+   real content is enough — no reason for a dead gap inside its border. */
+.hv-status { flex:0 0 auto; display:grid; grid-template-columns:repeat(12,1fr); grid-auto-rows:minmax(88px,auto); gap:13px; }
 /* grid-row was span 2 — a leftover from when this card shared the zone with
    other status tiles that have since moved elsewhere. Square, fixed-size
    cells no longer need (or want) that forced extra height: it just left a
