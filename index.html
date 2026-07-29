@@ -4947,14 +4947,9 @@ html, body {
           <div class="hv-now">
             <svg class="hv-clock" id="hvClock" viewBox="0 0 200 200"></svg>
 
-            <!-- Everything that isn't the clock lives in one column now.
-                 Habit quick-log used to sit here as its own column — dropped
-                 since the Daily Console FAB (bottom-right, always visible)
-                 already does one-tap habit logging. Deadlines/Calendar/Gym/
-                 Task moved out to their own row below, so this column is now
-                 just NOW/NEXT plus the full day's timetable. -->
-            <div style="display:flex; flex-direction:column; gap:16px; min-width:0; padding-left:12px;">
-              <div id="hvDaySlots" style="display:flex; flex-wrap:wrap; gap:32px; row-gap:24px;">
+            <!-- Everything that isn't the clock lives in one column now. -->
+            <div style="display:flex; flex-direction:column; justify-content:center; height:100%; min-width:0; padding-left:12px;">
+              <div id="hvDaySlots" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(160px, 1fr)); gap:32px 48px; width:100%; align-content:center;">
                 <span style="color:var(--text-muted);font-size:10px;">Loading…</span>
               </div>
             </div>
