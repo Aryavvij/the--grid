@@ -4959,7 +4959,7 @@ html, body {
                    mini-widget row moving out below. -->
               <div style="border-top:1px solid var(--carbon-4); padding-top:12px; min-width:0;">
                 <div style="font-size:9px;letter-spacing:2px;color:var(--sig-500);margin-bottom:8px;">TODAY'S TIMETABLE</div>
-                <div id="hvUpcomingEvents" style="display:flex;flex-wrap:wrap;gap:8px;padding-bottom:4px;">
+                <div id="hvUpcomingEvents" style="display:grid;grid-template-columns:repeat(auto-fill, minmax(130px, 1fr));gap:12px;padding-bottom:4px;">
                   <span style="color:var(--text-muted);font-size:10px;">Loading…</span>
                 </div>
               </div>
@@ -13602,15 +13602,14 @@ function hvRenderUpcoming() {
       return;
     }
     el.innerHTML = events.map(ev => `
-      <div style="display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:8px;
-        background:${ev.isNow ? 'rgba(118,179,114,0.12)' : 'var(--carbon-2)'};
-        border:1px solid ${ev.isNow ? 'rgba(118,179,114,0.25)' : 'var(--carbon-4)'};
-        transition:all .15s;">
-        <div style="width:3px;height:24px;border-radius:2px;background:${ev.isNow ? 'var(--sig-500)' : 'var(--carbon-4)'};flex-shrink:0;"></div>
-        <div style="min-width:0;">
-          <div style="font-size:10px;font-weight:700;color:${ev.isNow ? 'var(--sig-500)' : 'var(--text)'};letter-spacing:0.5px;">${ev.label}</div>
-          <div style="font-size:8px;letter-spacing:1px;color:var(--text-muted);margin-top:1px;">${ev.time}${ev.isNow ? ' · NOW' : ''}</div>
-        </div>
+      <div style="display:flex; flex-direction:column; justify-content:center; gap:4px; padding:14px 16px; border-radius:10px;
+        background:var(--carbon-2);
+        border:1px solid ${ev.isNow ? 'rgba(118,179,114,0.4)' : 'var(--carbon-4)'};
+        box-shadow:${ev.isNow ? '0 0 16px rgba(118,179,114,0.1)' : 'none'};
+        transition:border-color .15s; position:relative; overflow:hidden;">
+        ${ev.isNow ? '<div style="position:absolute; top:0; left:0; width:3px; height:100%; background:var(--sig-500);"></div>' : ''}
+        <div style="font-size:11px; font-weight:700; color:${ev.isNow ? 'var(--sig-500)' : 'var(--text)'}; letter-spacing:1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${ev.label}</div>
+        <div style="font-size:9px; letter-spacing:0.5px; color:var(--text-muted);">${ev.time}${ev.isNow ? ' · NOW' : ''}</div>
       </div>
     `).join('');
   } catch (e) {
