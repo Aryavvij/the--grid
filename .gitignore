@@ -12,3 +12,7 @@ Ethos-Hub-main/
 # Editor
 .vscode/
 .idea/
+.vercel
+
+# Personal chat export, not project source
+Enhancing Grid Demo and Login UI.md

@@ -880,6 +880,26 @@ html, body {
   position: relative;
 }
 
+/* ── TIME MACHINE BAR ─────────────────────────────── */
+#timeTravelBar {
+  position: sticky; top: 0; z-index: 60;
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 20px;
+  background: linear-gradient(90deg, rgba(224,112,154,0.16), rgba(224,112,154,0.06));
+  border-bottom: 1px solid rgba(224,112,154,0.35);
+  color: var(--pink);
+  font-family: 'Space Mono', monospace; font-size: 10px; letter-spacing: 1.3px;
+}
+#timeTravelBar svg { flex-shrink: 0; stroke: var(--pink); }
+#timeTravelNote { color: var(--text-muted); letter-spacing: 0.8px; }
+#timeTravelBar button {
+  margin-left: auto; flex-shrink: 0; cursor: pointer;
+  background: rgba(224,112,154,0.14); border: 1px solid rgba(224,112,154,0.4);
+  color: var(--pink); border-radius: 4px; padding: 4px 10px;
+  font-family: inherit; font-size: 9px; letter-spacing: 1.4px;
+}
+#timeTravelBar button:hover { background: var(--pink); color: #0a0a0a; }
+
 /* ── PAGE ─────────────────────────────────────────── */
 .page {
   display: none;
@@ -2545,14 +2565,14 @@ html, body {
 }
 .hb-cb:hover { border-color: rgba(118,179,114,0.6); }
 
-/* Bottom grid — momentum trend beside the per-habit rings */
+/* Bottom grid — momentum trend, full width (rings dropped: redundant with the
+   % column already in PERFORMANCE_MATRIX above) */
 .hb-bottom-grid {
   display: grid;
-  grid-template-columns: 1fr 420px;
+  grid-template-columns: 1fr;
   gap: 16px;
   margin-bottom: 14px;
 }
-@media (max-width: 1100px) { .hb-bottom-grid { grid-template-columns: 1fr; } }
 ._hb_bottom_grid_legacy {
   display: grid;
   grid-template-columns: 1fr 300px;
@@ -3801,15 +3821,25 @@ html, body {
 
 #access-terminal .modules-label { font-size: 8px; letter-spacing: 2.5px; color: var(--text-muted); margin: 32px 0 14px; }
 #access-terminal .modules-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 32px; }
-#access-terminal .module-card {
+.module-card {
   background: var(--bg-2); border: 1px solid var(--card-border); border-radius: 6px;
-  padding: 14px 12px; cursor: default;
+  padding: 12px; cursor: default; display: flex; align-items: center; gap: 10px;
   transition: border-color .2s, background .2s;
 }
-#access-terminal .module-card:hover { border-color: rgba(118,179,114,0.25); background: rgba(118,179,114,0.04); }
-#access-terminal .module-card-icon { font-size: 22px; margin-bottom: 9px; }
-#access-terminal .module-card-name { font-size: 10px; letter-spacing: 1.5px; color: var(--text-dim); font-weight: 700; }
-#access-terminal .module-card-sub  { font-size: 9px; letter-spacing: 0.8px; color: var(--text-muted); margin-top: 4px; }
+.module-card:hover { border-color: rgba(118,179,114,0.25); background: rgba(118,179,114,0.04); }
+/* Icons are inline SVGs with no width/height, so without an explicit cap here
+   they render at the browser's default replaced-element size (~300px) — that
+   was the giant-icon bug. font-size did nothing; these were never text/emoji. */
+.module-card-icon {
+  flex-shrink: 0; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;
+  border-radius: 6px; background: rgba(118,179,114,0.08); border: 1px solid rgba(118,179,114,0.15);
+  color: var(--green);
+}
+.module-card-icon svg { width: 15px; height: 15px; stroke: currentColor; display: block; }
+.module-card-text { min-width: 0; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; text-align: left; }
+.module-card-name { font-size: 10px; letter-spacing: 1.3px; color: var(--text-dim); font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.module-card-sub  { font-size: 8.5px; letter-spacing: 0.5px; color: var(--text-muted); margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+@media (max-width: 720px) { #access-terminal .modules-grid { grid-template-columns: repeat(2, 1fr); } }
 
 #access-terminal .demo-banner {
   background: var(--green-dim); border: 1px solid rgba(118,179,114,0.18); border-radius: 6px;
@@ -4065,9 +4095,9 @@ html, body {
 .hv-head { display:flex; align-items:flex-end; justify-content:space-between; gap:18px; flex-wrap:wrap; }
 .hv-greet { font-family:'Bebas Neue',var(--font); font-size:clamp(26px,3vw,40px); letter-spacing:2px; line-height:.95; color:var(--text); }
 .hv-date { font-size:10px; letter-spacing:2px; color:var(--text-muted); margin-top:6px; }
-.hv-head-right { display:flex; align-items:center; gap:10px; }
+.hv-head-right { display:flex; align-items:stretch; gap:10px; }
 .hv-kbd { font-size:10px; letter-spacing:1px; color:var(--text-muted); border:1px solid var(--carbon-4);
-  border-radius:7px; padding:8px 12px; cursor:pointer; transition:all .15s; }
+  border-radius:9px; padding:0 15px; cursor:pointer; transition:all .15s; display:flex; align-items:center; }
 .hv-kbd:hover { border-color:var(--sig-500); color:var(--sig-500); }
 .hv-kbd b { color:var(--text-dim); font-weight:400; }
 .hv-streak { display:flex; flex-direction:column; align-items:flex-end; border:1px solid var(--carbon-4);
@@ -4130,8 +4160,8 @@ html, body {
 
 /* ── ZONE 3 · STATUS ── */
 .hv-status { flex:1; display:grid; grid-template-columns:repeat(12,1fr); grid-auto-rows:minmax(88px,auto); gap:13px; }
-.hv-heat { grid-column:span 7; grid-row:span 2; }
-.hv-heat #hvHeatWall { flex:1; width:100%; min-height:150px; }
+.hv-heat { grid-column:1/-1; grid-row:span 2; }
+.hv-heat #hvHeatWall { flex:1; width:100%; min-height:170px; }
 .hv-k { grid-column:span 5; display:grid; grid-template-columns:1fr 1fr; grid-auto-rows:1fr; gap:13px; grid-row:span 2; }
 .hv-tile { background:var(--carbon-1); border:1px solid var(--carbon-4); border-radius:14px; padding:14px 16px;
   display:flex; flex-direction:column; cursor:pointer; transition:all .18s; }
@@ -4255,8 +4285,11 @@ html, body {
 .mg-stat b { color:var(--sig-900); font-variant-numeric:tabular-nums; }
 .mg-legend { position:absolute; bottom:16px; left:20px; z-index:4; display:flex; gap:5px; flex-wrap:wrap; max-width:70%; }
 
-/* ── Mindgraph view switch: force graph vs sunburst ── */
-.mg-viewtabs { display:flex; gap:0; margin-top:10px; border:1px solid rgba(255,255,255,0.10); border-radius:4px; width:max-content; overflow:hidden; }
+/* ── Mindgraph view switch: force graph vs sunburst ──
+   .mg-head has pointer-events:none so its label text never blocks the
+   canvas drag/rotate underneath — every actually-interactive child here
+   has to opt back in with pointer-events:auto, or it's just unclickable. */
+.mg-viewtabs { display:flex; gap:0; margin-top:10px; border:1px solid rgba(255,255,255,0.10); border-radius:4px; width:max-content; overflow:hidden; pointer-events:auto; }
 .mg-viewtab {
   background:none; border:none; cursor:pointer; padding:5px 14px;
   font-family:'Space Mono',monospace; font-size:9px; letter-spacing:1.5px;
@@ -4264,6 +4297,45 @@ html, body {
 }
 .mg-viewtab:hover { color:var(--text-dim); }
 .mg-viewtab.active { background:var(--green-dim); color:var(--green); }
+.mg-search-wrap {
+  position:relative; pointer-events:auto; margin-top:10px;
+  display:flex; align-items:center; gap:7px;
+  width:340px; max-width:70vw; padding:7px 10px;
+  background:rgba(10,10,10,0.72); border:1px solid rgba(255,255,255,0.10); border-radius:6px;
+  backdrop-filter:blur(6px);
+}
+.mg-search-wrap svg { flex-shrink:0; stroke:var(--text-muted); }
+.mg-search-wrap input {
+  flex:1; min-width:0; background:none; border:none; outline:none;
+  color:var(--text); font-family:'Space Mono',monospace; font-size:10.5px; letter-spacing:0.4px;
+}
+.mg-search-wrap input::placeholder { color:var(--text-muted); }
+.mg-search-wrap button {
+  background:none; border:none; cursor:pointer; color:var(--text-muted); font-size:15px;
+  line-height:1; padding:0 2px;
+}
+.mg-search-wrap button:hover { color:var(--text); }
+#mgSearchResults {
+  position:absolute; top:calc(100% + 6px); left:0; right:0; z-index:10;
+  max-height:320px; overflow-y:auto; display:none;
+  background:#0d0f0e; border:1px solid rgba(255,255,255,0.12); border-radius:6px;
+  box-shadow:0 12px 32px rgba(0,0,0,0.5);
+}
+#mgSearchResults.open { display:block; }
+.mg-sr-group-label {
+  font-size:8px; letter-spacing:1.6px; color:var(--text-muted);
+  padding:8px 12px 4px;
+}
+.mg-sr-item {
+  display:flex; align-items:center; gap:8px; padding:8px 12px; cursor:pointer;
+  font-family:'Space Mono',monospace; font-size:10.5px; color:var(--text-dim);
+  border-top:1px solid rgba(255,255,255,0.05);
+}
+.mg-sr-item:hover { background:rgba(118,179,114,0.08); color:var(--text); }
+.mg-sr-item .mg-sr-dot { width:6px; height:6px; border-radius:50%; flex-shrink:0; }
+.mg-sr-item .mg-sr-sub { margin-left:auto; color:var(--text-muted); font-size:9px; white-space:nowrap; }
+.mg-sr-empty { padding:12px; font-size:10px; color:var(--text-muted); letter-spacing:1px; text-align:center; }
+
 #mgSunWrap { position:absolute; inset:0; z-index:3; display:none; flex-direction:column;
              align-items:center; justify-content:center; gap:10px; padding:70px 20px 30px; }
 #mgSunWrap.on { display:flex; }
@@ -4318,14 +4390,14 @@ html, body {
 
         <div class="modules-label">INTEGRATED MODULES</div>
         <div class="modules-grid">
-          <div class="module-card"><div class="module-card-icon"><svg viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="1.6"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div><div class="module-card-name">CALENDAR</div><div class="module-card-sub">Events & schedule</div></div>
-          <div class="module-card"><div class="module-card-icon"><svg viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="1.6"><path d="M6 8v8M18 8v8M3 10v4M21 10v4M6 12h12"/></svg></div><div class="module-card-name">GYM</div><div class="module-card-sub">1RM tracking & splits</div></div>
-          <div class="module-card"><div class="module-card-icon"><svg viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="1.6"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div><div class="module-card-name">FINANCES</div><div class="module-card-sub">Budget & ledger</div></div>
-          <div class="module-card"><div class="module-card-icon"><svg viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="1.6"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div><div class="module-card-name">HABITS</div><div class="module-card-sub">Streaks & momentum</div></div>
-          <div class="module-card"><div class="module-card-icon"><svg viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="1.6"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/></svg></div><div class="module-card-name">FOCUS</div><div class="module-card-sub">Deep work sessions</div></div>
-          <div class="module-card"><div class="module-card-icon"><svg viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="1.6"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg></div><div class="module-card-name">WEEKLY</div><div class="module-card-sub">Time architecture</div></div>
-          <div class="module-card"><div class="module-card-icon"><svg viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="1.6"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div><div class="module-card-name">RUNWAY</div><div class="module-card-sub">Goals & trajectory</div></div>
-          <div class="module-card"><div class="module-card-icon"><svg viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="1.6"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div><div class="module-card-name">RESUME</div><div class="module-card-sub">Skills & projects</div></div>
+          <div class="module-card"><div class="module-card-icon"><svg viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="1.6"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div><div class="module-card-text"><div class="module-card-name">CALENDAR</div><div class="module-card-sub">Events & schedule</div></div></div>
+          <div class="module-card"><div class="module-card-icon"><svg viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="1.6"><path d="M6 8v8M18 8v8M3 10v4M21 10v4M6 12h12"/></svg></div><div class="module-card-text"><div class="module-card-name">GYM</div><div class="module-card-sub">1RM tracking & splits</div></div></div>
+          <div class="module-card"><div class="module-card-icon"><svg viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="1.6"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div><div class="module-card-text"><div class="module-card-name">FINANCES</div><div class="module-card-sub">Budget & ledger</div></div></div>
+          <div class="module-card"><div class="module-card-icon"><svg viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="1.6"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div><div class="module-card-text"><div class="module-card-name">HABITS</div><div class="module-card-sub">Streaks & momentum</div></div></div>
+          <div class="module-card"><div class="module-card-icon"><svg viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="1.6"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/></svg></div><div class="module-card-text"><div class="module-card-name">FOCUS</div><div class="module-card-sub">Deep work sessions</div></div></div>
+          <div class="module-card"><div class="module-card-icon"><svg viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="1.6"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg></div><div class="module-card-text"><div class="module-card-name">WEEKLY</div><div class="module-card-sub">Time architecture</div></div></div>
+          <div class="module-card"><div class="module-card-icon"><svg viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="1.6"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div><div class="module-card-text"><div class="module-card-name">RUNWAY</div><div class="module-card-sub">Goals & trajectory</div></div></div>
+          <div class="module-card"><div class="module-card-icon"><svg viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="1.6"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div><div class="module-card-text"><div class="module-card-name">RESUME</div><div class="module-card-sub">Skills & projects</div></div></div>
         </div>
 
         <div class="demo-banner">
@@ -4776,6 +4848,14 @@ html, body {
   <!-- ══ MAIN ════════════════════════════════════════ -->
   <main id="main">
 
+    <!-- Time Machine bar — sticky at the top of whatever page is open -->
+    <div id="timeTravelBar" style="display:none">
+      <svg viewBox="0 0 24 24" width="13" height="13" stroke="currentColor" fill="none" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      <span id="timeTravelLabel">VIEWING STATE AS OF —</span>
+      <span id="timeTravelNote" style="display:none">· NOT TRACKED HISTORICALLY, ALWAYS SHOWS CURRENT STATE</span>
+      <button onclick="exitTimeTravel()">RETURN TO NOW</button>
+    </div>
+
     <!-- ── HOME ──────────────────────────────────────── -->
     <div class="page active" id="page-home">
       <div class="hv-wrap">
@@ -4812,9 +4892,8 @@ html, body {
               </div>
             </div>
 
-            <div class="hv-acts">
-              <button class="hv-btn primary" id="hvCta" onclick="hvRunCta()">OPEN DAILY CONSOLE</button>
-              <button class="hv-btn ghost" onclick="dcOpen()">LOG TODAY</button>
+            <div class="hv-acts" id="hvHabitShortcuts" style="display:flex; flex-wrap:wrap; gap:8px;">
+              <!-- Javascript will render habit quick-log buttons here -->
             </div>
           </div>
         </div>
@@ -4831,35 +4910,10 @@ html, body {
         <!-- ZONE 3 · STATUS -->
         <div class="hv-status">
           <div class="hv-card hv-heat" onclick="navigate('habits')" style="cursor:pointer">
-            <div class="hv-chead"><span class="hv-ct">THE GRID</span><span class="hv-cm">LAST 12 WEEKS</span></div>
+            <div class="hv-chead"><span class="hv-ct">THE GRID</span><span class="hv-cm">FULL YEAR</span></div>
             <div id="hvHeatWall"></div>
           </div>
-          <div class="hv-k">
-            <div class="hv-tile" onclick="navigate('habits')">
-              <div class="hv-tl">HABITS</div><div class="hv-tv" id="hvKHab">—</div>
-              <div class="hv-ts" id="hvKHabS"></div><div class="hv-bar" id="hvKHabB"><div style="width:0%"></div></div>
-            </div>
-            <div class="hv-tile" onclick="navigate('finances')">
-              <div class="hv-tl">SPEND</div><div class="hv-tv" id="hvKFin">—</div>
-              <div class="hv-ts" id="hvKFinS"></div><div class="hv-bar" id="hvKFinB"><div style="width:0%"></div></div>
-            </div>
-            <div class="hv-tile" onclick="navigate('work')">
-              <div class="hv-tl">FOCUS</div><div class="hv-tv" id="hvKFoc">—</div>
-              <div class="hv-ts" id="hvKFocS"></div>
-            </div>
-            <div class="hv-tile" onclick="navigate('workout')">
-              <div class="hv-tl">GYM</div><div class="hv-tv" id="hvKGym">—</div>
-              <div class="hv-ts" id="hvKGymS"></div>
-            </div>
-            <div class="hv-tile" onclick="navigate('weekly')">
-              <div class="hv-tl">TASKS</div><div class="hv-tv" id="hvKTask">—</div>
-              <div class="hv-ts" id="hvKTaskS"></div><div class="hv-bar" id="hvKTaskB"><div style="width:0%"></div></div>
-            </div>
-            <div class="hv-tile" onclick="navigate('runway')">
-              <div class="hv-tl">PROJECTS</div><div class="hv-tv" id="hvKProj">—</div>
-              <div class="hv-ts" id="hvKProjS"></div>
-            </div>
-          </div>
+
         </div>
 
       </div><!-- /hv-wrap -->
@@ -5097,21 +5151,7 @@ html, body {
               <span class="hb-leg-dot" style="background:var(--green)"></span><span>COMPLETION % BY WEEK</span>
             </div>
           </div>
-          <div id="momentumChart" style="width:100%;height:240px"></div>
-        </div>
-
-        <!-- Right: per-habit completion rings -->
-        <div class="hb-chart-card">
-          <div class="hb-chart-head">
-            <div class="hb-matrix-title" style="font-size:13px">COMPLETION_RINGS</div>
-            <div class="hb-legend">
-              <span class="hb-leg-dot" style="background:var(--green)"></span><span>DAYS DONE / DAYS ELAPSED</span>
-            </div>
-          </div>
-          <div style="display:flex;align-items:center;gap:16px;">
-            <div id="habitRings" style="width:230px;height:230px;flex-shrink:0"></div>
-            <div id="habitRingLegend" style="flex:1;display:flex;flex-direction:column;gap:9px;min-width:0"></div>
-          </div>
+          <div id="momentumChart" style="width:100%;height:260px"></div>
         </div>
 
       </div>
@@ -5122,9 +5162,7 @@ html, body {
           <div class="hb-matrix-title" style="font-size:13px">ACTIVITY_GRID</div>
           <div class="hb-legend" id="hmLegend"></div>
         </div>
-        <div style="overflow-x:auto;padding-bottom:4px;">
-          <div id="activityHeatmap" style="min-width:760px"></div>
-        </div>
+        <div id="activityHeatmap" style="width:100%;"></div>
         <div id="hmSummary" style="font-size:9px;letter-spacing:1.2px;color:var(--text-muted);padding-top:8px;"></div>
       </div>
 
@@ -5136,7 +5174,6 @@ html, body {
       <!-- Header -->
       <div class="page-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
         <div>
-          <div class="page-title">THE LEDGER</div>
           <div class="page-subtitle">
             <span class="dot" style="background: var(--pink);"></span>
             Personal Asset Management and Sector Budgets
@@ -5144,22 +5181,11 @@ html, body {
         </div>
       </div>
 
-      <!-- 4 stat cards -->
-      <div class="fin-stat-row">
+      <!-- Stat card -->
+      <div class="fin-stat-row" style="grid-template-columns: 1fr;">
         <div class="fin-stat-card" onclick="editStat('assets')">
           <div class="fin-stat-label">LIQUID ASSETS</div>
           <div class="fin-stat-val" id="fStatAssets">—</div>
-          <div class="fin-stat-edit"><svg viewBox="0 0 24 24" width="10" height="10" stroke="currentColor" fill="none" stroke-width="2" style="vertical-align:-1px"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></div>
-        </div>
-
-        <div class="fin-stat-card" onclick="editStat('budget')">
-          <div class="fin-stat-label">MONTHLY BUDGETED</div>
-          <div class="fin-stat-val" id="fStatBudget">—</div>
-          <div class="fin-stat-edit"><svg viewBox="0 0 24 24" width="10" height="10" stroke="currentColor" fill="none" stroke-width="2" style="vertical-align:-1px"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></div>
-        </div>
-        <div class="fin-stat-card" onclick="editStat('spent')">
-          <div class="fin-stat-label">ACTUAL SPENT</div>
-          <div class="fin-stat-val" id="fStatSpent">—</div>
           <div class="fin-stat-edit"><svg viewBox="0 0 24 24" width="10" height="10" stroke="currentColor" fill="none" stroke-width="2" style="vertical-align:-1px"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></div>
         </div>
       </div>
@@ -5897,6 +5923,17 @@ html, body {
             <button class="mg-viewtab active" id="mgTabGraph" onclick="mgSetView('graph')">GRAPH</button>
             <button class="mg-viewtab" id="mgTabSun" onclick="mgSetView('sunburst')">SUNBURST</button>
           </div>
+
+          <!-- Search: finds a named node, OR reads as a date/period and offers
+               a jump into that state (see mgSearchInput / mgSearchResolve). -->
+          <div class="mg-search-wrap">
+            <svg viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" fill="none" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input id="mgSearchBox" type="text" placeholder="Search a node, or a date/month/week to view past state…"
+                   oninput="mgSearchInput(this.value)" onkeydown="if(event.key==='Escape') mgSearchClose()"
+                   onfocusout="setTimeout(() => { if (!document.activeElement || !document.activeElement.closest('.mg-search-wrap')) mgSearchClose(); }, 150)">
+            <button id="mgSearchClear" onclick="mgSearchClose()" style="display:none" aria-label="Clear">&times;</button>
+            <div id="mgSearchResults"></div>
+          </div>
         </div>
         <div class="mg-stat">NODES <b id="mgN">0</b> · EDGES <b id="mgE">0</b></div>
         <div class="mg-tip" id="mgTip"></div>
@@ -5969,7 +6006,7 @@ html, body {
           <div class="rs-panels" style="grid-template-columns:1fr;">
             <div class="rs-panel">
               <div class="rs-panel-hdr" style="display:flex; justify-content:space-between; align-items:center;">
-                <span class="rs-panel-hdr-title">TECHNICAL STACK DISTRIBUTION</span>
+                <span class="rs-panel-hdr-title">SKILL NODES</span>
                 <span style="display:flex; align-items:center; gap:8px;">
                   <button class="fin-modify-btn" style="padding:2px 8px; font-size:9px;" onclick="openAddSkillModal()">ADD_SKILL</button>
                   <span class="rs-panel-hdr-right">UNIT: TOTAL_HOURS_LOGGED</span>
@@ -6353,40 +6390,566 @@ html, body {
 </div>
 
 <script>
+function seedDemoData() {
+  const today = new Date();
+  const fmtDate = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+
+  console.log('[seeder] Seeding rich years-long demo history...');
+
+  // 1. Gym logs (generate 2 years of workout data with progression)
+  const gymLogs = [];
+  const exerciseDefs = {
+    'BENCH PRESS': { baseWeight: 60, progressRate: 0.15, reps: 8, split: 'PUSH A' },
+    'OHP PRESS': { baseWeight: 35, progressRate: 0.10, reps: 8, split: 'PUSH A' },
+    'LATERAL RAISES': { baseWeight: 10, progressRate: 0.04, reps: 12, split: 'PUSH A' },
+    'TRICEP PUSH': { baseWeight: 20, progressRate: 0.08, reps: 10, split: 'PUSH A' },
+    
+    'DEADLIFT': { baseWeight: 100, progressRate: 0.35, reps: 5, split: 'PULL A' },
+    'PULL UPS': { baseWeight: 0, progressRate: 0.05, reps: 8, split: 'PULL A' },
+    'SEATED ROW': { baseWeight: 45, progressRate: 0.12, reps: 10, split: 'PULL A' },
+    'FACE PULLS': { baseWeight: 15, progressRate: 0.05, reps: 15, split: 'PULL A' },
+    
+    'SQUATS': { baseWeight: 80, progressRate: 0.25, reps: 6, split: 'LEGS A' },
+    'LUNGES': { baseWeight: 16, progressRate: 0.06, reps: 10, split: 'LEGS A' },
+    'LEG CURLS': { baseWeight: 30, progressRate: 0.08, reps: 12, split: 'LEGS A' },
+    'CALF RAISES': { baseWeight: 40, progressRate: 0.15, reps: 15, split: 'LEGS A' },
+    
+    'DB INCLINE': { baseWeight: 20, progressRate: 0.10, reps: 8, split: 'PUSH B' },
+    'ARNOLD PRESS': { baseWeight: 14, progressRate: 0.06, reps: 10, split: 'PUSH B' },
+    'DIPS': { baseWeight: 0, progressRate: 0.10, reps: 10, split: 'PUSH B' },
+    
+    'BB ROWS': { baseWeight: 50, progressRate: 0.15, reps: 8, split: 'PULL B' },
+    'LAT PULLS': { baseWeight: 45, progressRate: 0.10, reps: 10, split: 'PULL B' },
+    'HAMMER CURL': { baseWeight: 12, progressRate: 0.05, reps: 10, split: 'PULL B' }
+  };
+
+  const startDate = new Date(today.getTime() - 2 * 365 * 24 * 60 * 60 * 1000); // 2 years ago
+  
+  const splitDays = [
+    { dayOffset: 0, title: 'PUSH A' }, // Monday
+    { dayOffset: 1, title: 'PULL A' }, // Tuesday
+    { dayOffset: 2, title: 'LEGS A' }, // Wednesday
+    { dayOffset: 4, title: 'PUSH B' }, // Friday
+    { dayOffset: 5, title: 'PULL B' }  // Saturday
+  ];
+  
+  let currentDate = new Date(startDate);
+  while(currentDate.getDay() !== 1) { // Roll to next Monday
+    currentDate.setDate(currentDate.getDate() + 1);
+  }
+  
+  let weekIndex = 0;
+  while (currentDate <= today) {
+    splitDays.forEach(sd => {
+      const workoutDate = new Date(currentDate.getTime() + sd.dayOffset * 24 * 60 * 60 * 1000);
+      if (workoutDate > today) return;
+      
+      const dateStr = fmtDate(workoutDate);
+      const session = {
+        date: dateStr,
+        splitName: sd.title,
+        exercises: [],
+        durationMin: 45 + Math.floor(Math.random() * 25),
+        notes: `Progressive resistance cycle - week ${weekIndex + 1}`
+      };
+      
+      Object.keys(exerciseDefs).forEach(name => {
+        const def = exerciseDefs[name];
+        if (def.split !== sd.title) return;
+        
+        const factor = weekIndex + (Math.sin(weekIndex * 0.1) * 2);
+        let weight = def.baseWeight + def.progressRate * factor;
+        weight = Math.round(weight * 2) / 2; // round to nearest 0.5kg
+        
+        const sets = [];
+        for (let s = 0; s < 3; s++) {
+          const reps = def.reps + (s === 0 ? 2 : (s === 2 ? -1 : 0));
+          const orm = parseFloat((weight * (1 + reps / 30)).toFixed(1));
+          sets.push({ weight, reps, orm });
+        }
+        
+        const sessionMax1RM = sets.reduce((max, s) => Math.max(max, s.orm), 0);
+        session.exercises.push({
+          name,
+          sets,
+          sessionMax1RM,
+          isPR: weekIndex > 0 && weekIndex % 6 === 0 // flag some PRs
+        });
+      });
+      
+      gymLogs.push(session);
+    });
+    
+    currentDate.setDate(currentDate.getDate() + 7);
+    weekIndex++;
+  }
+  
+  // Save gymLogs (most recent first)
+  localStorage.setItem('gymLogs', JSON.stringify(gymLogs.reverse()));
+
+  // 2. Gym Exercise Registry
+  const gymExerciseRegistry = {
+    CHEST: { exercises: [
+      { name: 'BENCH PRESS', badge: 'STRENGTH', target: 'CHEST', pr: '95.0', orm: '120.3', delta: '+25.2% VS FIRST', bars: [80, 85, 90, 92, 95, 98, 102, 105] },
+      { name: 'DB INCLINE', badge: 'VOLUME', target: 'CHEST', pr: '32.0', orm: '40.5', delta: '+18.5% VS FIRST', bars: [28, 30, 32, 34, 35, 36, 38, 38] }
+    ] },
+    BACK: { exercises: [
+      { name: 'DEADLIFT', badge: 'POWER', target: 'BACK', pr: '175.0', orm: '204.2', delta: '+30.4% VS FIRST', bars: [120, 130, 140, 150, 155, 160, 165, 170] },
+      { name: 'PULL UPS', badge: 'VOLUME', target: 'BACK', pr: '15.0', orm: '25.0', delta: '+15.0% VS FIRST', bars: [10, 12, 14, 15, 16, 18, 20, 20] },
+      { name: 'SEATED ROW', badge: 'VOLUME', target: 'BACK', pr: '72.0', orm: '96.0', delta: '+20.0% VS FIRST', bars: [55, 60, 62, 65, 68, 70, 72, 75] },
+      { name: 'FACE PULLS', badge: 'RECOVERY', target: 'BACK', pr: '22.0', orm: '33.0', delta: '+10.0% VS FIRST', bars: [18, 20, 20, 22, 22, 24, 25, 25] }
+    ] },
+    LEGS: { exercises: [
+      { name: 'SQUATS', badge: 'STRENGTH', target: 'LEGS', pr: '130.0', orm: '156.0', delta: '+28.0% VS FIRST', bars: [95, 105, 110, 115, 120, 125, 130, 135] },
+      { name: 'LUNGES', badge: 'VOLUME', target: 'LEGS', pr: '28.0', orm: '37.3', delta: '+12.0% VS FIRST', bars: [22, 24, 25, 26, 28, 28, 30, 30] },
+      { name: 'LEG CURLS', badge: 'VOLUME', target: 'LEGS', pr: '48.0', orm: '67.2', delta: '+15.0% VS FIRST', bars: [38, 40, 42, 44, 45, 48, 50, 50] },
+      { name: 'CALF RAISES', badge: 'VOLUME', target: 'LEGS', pr: '78.0', orm: '117.0', delta: '+22.0% VS FIRST', bars: [60, 65, 68, 70, 72, 75, 80, 80] }
+    ] },
+    SHOULDERS: { exercises: [
+      { name: 'OHP PRESS', badge: 'STRENGTH', target: 'SHOULDERS', pr: '55.0', orm: '69.7', delta: '+22.0% VS FIRST', bars: [45, 48, 50, 52, 53, 55, 56, 58] },
+      { name: 'LATERAL RAISES', badge: 'VOLUME', target: 'SHOULDERS', pr: '14.0', orm: '19.6', delta: '+15.0% VS FIRST', bars: [12, 12, 13, 14, 14, 15, 16, 16] },
+      { name: 'ARNOLD PRESS', badge: 'VOLUME', target: 'SHOULDERS', pr: '22.0', orm: '29.3', delta: '+10.0% VS FIRST', bars: [18, 18, 20, 20, 22, 22, 24, 24] }
+    ] },
+    BICEPS: { exercises: [
+      { name: 'HAMMER CURL', badge: 'VOLUME', target: 'BICEPS', pr: '20.0', orm: '26.7', delta: '+18.0% VS FIRST', bars: [16, 16, 18, 18, 20, 20, 22, 22] }
+    ] },
+    TRICEPS: { exercises: [
+      { name: 'TRICEP PUSH', badge: 'VOLUME', target: 'TRICEPS', pr: '36.0', orm: '48.0', delta: '+25.0% VS FIRST', bars: [28, 30, 32, 32, 34, 35, 38, 38] },
+      { name: 'DIPS', badge: 'STRENGTH', target: 'TRICEPS', pr: '28.0', orm: '37.3', delta: '+15.0% VS FIRST', bars: [20, 22, 24, 25, 26, 28, 30, 30] }
+    ] },
+    ABS: { exercises: [] },
+    FOREARMS: { exercises: [] }
+  };
+  localStorage.setItem('gymExerciseRegistry', JSON.stringify(gymExerciseRegistry));
+
+  // 3. Gym Muscle Groups
+  const gymMuscleGroups = [
+    { name:'CHEST',     growth:'+25.2%', muscles:'Upper, Middle and Lower Chest',         id:'001', bars:[30,42,35,50,45,60,55,70,65,80] },
+    { name:'BACK',      growth:'+30.4%', muscles:'Upper back, Lats, Middle Back, Lower Back, Traps',    id:'002', bars:[25,35,40,50,45,65,60,72,70,85] },
+    { name:'LEGS',      growth:'+28.0%', muscles:'Quads, Hamstrings, Glutes, Adductors, Calfs',   id:'003', bars:[40,40,45,42,50,50,55,52,60,58] },
+    { name:'SHOULDERS', growth:'+22.0%', muscles:'Front, Lateral And Rear Delt',          id:'004', bars:[20,30,28,40,38,50,48,60,58,72] },
+    { name:'BICEPS',    growth:'+18.0%', muscles:'Long and Short Head, Brachialis',            id:'005', bars:[30,35,32,42,40,50,48,55,60,68] },
+    { name:'TRICEPS',   growth:'+25.0%', muscles:'Long, Medial and Short Head',           id:'006', bars:[25,32,35,45,42,55,52,62,65,78] },
+    { name:'ABS',       growth:'+0.0%',  muscles:'Upper, Lower, Obliques',          id:'007', bars:[0,0,0,0,0,0,0,0,0,0] },
+    { name:'FOREARMS',  growth:'+0.0%',  muscles:'Brachioradialis And Extensor',           id:'008', bars:[0,0,0,0,0,0,0,0,0,0] },
+  ];
+  localStorage.setItem('gymMuscleGroups', JSON.stringify(gymMuscleGroups));
+  
+  const defaultSplit = {
+    title: "HYPERTROPHY 2.0",
+    sub: "Cycle duration: 7 Days | Optimization target: Strength-to-Mass Ratio",
+    days: [
+      { day: 'MON', title: 'PUSH A', status: 'planned', duration: '65 MIN', icon: '', rest: false, exercises: [
+        { name: 'BENCH PRESS', sets: '4 x 8-10' },
+        { name: 'OHP PRESS', sets: '3 x 10-12' },
+        { name: 'LATERAL RAISES', sets: '4 x 15' },
+        { name: 'TRICEP PUSH', sets: '3 x 12-15' }
+      ]},
+      { day: 'TUE', title: 'PULL A', status: 'queued', duration: '75 MIN', icon: '', rest: false, exercises: [
+        { name: 'DEADLIFT', sets: '3 x 5' },
+        { name: 'PULL UPS', sets: '3 x AMRAP' },
+        { name: 'SEATED ROW', sets: '3 x 10-12' },
+        { name: 'FACE PULLS', sets: '3 x 20' }
+      ]},
+      { day: 'WED', title: 'LEGS A', status: 'queued', duration: '60 MIN', icon: '', rest: false, exercises: [
+        { name: 'SQUATS', sets: '4 x 6-8' },
+        { name: 'LUNGES', sets: '3 x 12/leg' },
+        { name: 'LEG CURLS', sets: '3 x 15' },
+        { name: 'CALF RAISES', sets: '4 x 20' }
+      ]},
+      { day: 'THU', title: 'STASIS', status: 'idle', duration: '24 HRS', icon: '', rest: true, exercises: [] },
+      { day: 'FRI', title: 'PUSH B', status: 'queued', duration: '55 MIN', icon: '', rest: false, exercises: [
+        { name: 'DB INCLINE', sets: '3 x 10' },
+        { name: 'ARNOLD PRESS', sets: '3 x 12' },
+        { name: 'DIPS', sets: '3 x 12-15' }
+      ]},
+      { day: 'SAT', title: 'PULL B', status: 'queued', duration: '60 MIN', icon: '〰', rest: false, exercises: [
+        { name: 'BB ROWS', sets: '4 x 8' },
+        { name: 'LAT PULLS', sets: '3 x 10-12' },
+        { name: 'HAMMER CURL', sets: '3 x 12' }
+      ]},
+      { day: 'SUN', title: 'BIO-REC', status: 'recovery', duration: '50 MIN', icon: '', rest: false, exercises: [
+        { name: 'MOBILITY FLOW', sets: '20 MIN' },
+        { name: 'ZONE 2 CARDIO', sets: '30 MIN' }
+      ]}
+    ]
+  };
+  localStorage.setItem('gymSplitData', JSON.stringify(defaultSplit));
+  localStorage.setItem('gymDBVersion', '3.1');
+
+  // 4. Calendar Entries (gridEntries)
+  const gridEntries = {};
+  const calStart = new Date(today.getTime() - 180 * 24 * 60 * 60 * 1000);
+  let calCur = new Date(calStart);
+  const focusTopics = ['Deep Work: Refactoring Code', 'System Architecture Drafting', 'Database Migration', 'UI/UX Design Alignment', 'Writing Documentation'];
+  
+  while (calCur <= today) {
+    const dKey = fmtDate(calCur);
+    gridEntries[dKey] = [];
+    const day = calCur.getDay();
+    
+    if ([1, 2, 3, 5, 6].includes(day)) {
+      const splitName = day === 1 ? 'PUSH A' : day === 2 ? 'PULL A' : day === 3 ? 'LEGS A' : day === 5 ? 'PUSH B' : 'PULL B';
+      gridEntries[dKey].push({
+        type: 'ev',
+        title: `🏋️ Gym Session: ${splitName}`,
+        time: '08:00',
+        notes: 'Targeting strength progression.'
+      });
+    }
+    
+    if (day >= 1 && day <= 5) {
+      gridEntries[dKey].push({
+        type: 'cls',
+        title: `💻 ${focusTopics[day % focusTopics.length]}`,
+        time: '10:00',
+        notes: 'Logged via Focus block.'
+      });
+      if (Math.random() > 0.5) {
+        gridEntries[dKey].push({
+          type: 'cls',
+          title: '💻 Deep Work: Sprint Refactoring',
+          time: '14:30',
+          notes: 'High concentration block.'
+        });
+      }
+    }
+    
+    if (day === 0) {
+      gridEntries[dKey].push({
+        type: 'task',
+        title: '📝 Weekly Sprint Retrospective',
+        time: '19:00',
+        notes: 'Reflect on metrics and trajectory.'
+      });
+    }
+    
+    calCur.setDate(calCur.getDate() + 1);
+  }
+  localStorage.setItem('gridEntries', JSON.stringify(gridEntries));
+
+  // 5. Habits (for the heatmap matrix and homepage rings)
+  const currentMonthDays = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+  const checkedDays1 = [];
+  const checkedDays2 = [];
+  const checkedDays3 = [];
+  const checkedDays4 = [];
+  const checkedDays5 = [];
+  const checkedDays6 = [];
+  
+  for(let d = 1; d <= currentMonthDays; d++) {
+    const curDate = new Date(today.getFullYear(), today.getMonth(), d);
+    if (curDate > today) continue;
+    const day = curDate.getDay();
+    if (Math.random() < 0.90) checkedDays1.push(d); 
+    if (Math.random() < 0.65) checkedDays2.push(d);
+    if ([1,2,3,5,6].includes(day) && Math.random() < 0.85) checkedDays3.push(d); 
+    if (Math.random() < 0.75) checkedDays4.push(d);
+    if (day >= 1 && day <= 5 && Math.random() < 0.80) checkedDays5.push(d);
+    if (Math.random() < 0.95) checkedDays6.push(d);
+  }
+
+  const gridHabits = [
+    { name:'DEEP_WORK_4H',       pct:90, checked: checkedDays1 },
+    { name:'NEURAL_INPUT_READ',  pct:65, checked: checkedDays2 },
+    { name:'PHYSICAL_SYNC',      pct:84, checked: checkedDays3 },
+    { name:'BIO_REST_8H',        pct:75, checked: checkedDays4 },
+    { name:'CODE_REFACTOR',      pct:77, checked: checkedDays5 },
+    { name:'HYDRATION_3L',       pct:95, checked: checkedDays6 },
+  ];
+  localStorage.setItem('gridHabits', JSON.stringify(gridHabits));
+
+  // 6. Finances
+  const gridBudget = [
+    { sector: 'ACADEMIC',  planned: 2000, actual: 1850 },
+    { sector: 'HOUSING',   planned: 2500, actual: 2500 },
+    { sector: 'LOGISTICS', planned: 1500, actual: 1240 },
+    { sector: 'HARDWARE',  planned: 1000, actual: 950 },
+    { sector: 'OPERATIONS',planned: 1200, actual: 1100 }
+  ];
+  localStorage.setItem('gridBudget', JSON.stringify(gridBudget));
+
+  // 24 months of recurring + occasional one-off entries, newest first — real
+  // dated history (not just the last ~3 months) so time-travelling the ledger
+  // more than a season back actually has something to show.
+  const gridTxLog = [];
+  const txHash = () => '0x' + Math.random().toString(16).slice(2, 6) + '...' + Math.random().toString(16).slice(2, 5);
+  const txTs = (d, hh, mm) => String(d.getFullYear()).slice(2) + '.' + String(d.getMonth()+1).padStart(2,'0') + '.'
+             + String(d.getDate()).padStart(2,'0') + ' ' + String(hh).padStart(2,'0') + ':' + String(mm).padStart(2,'0');
+  for (let i = 0; i < 24; i++) {
+    const base = new Date(today.getFullYear(), today.getMonth() - i, 1);
+    if (base > today) continue;
+    const mk = (day, hh, mm, entity, sector, val) => {
+      const d = new Date(base.getFullYear(), base.getMonth(), day);
+      if (d > today) return;
+      gridTxLog.push({ ts: txTs(d, hh, mm), entity, sector, val, hash: txHash() });
+    };
+    mk(15, 10, 0, 'MONTHLY_STIPEND', 'REVENUE', 3000.00);
+    mk(5,  14, Math.min(59, 10 + i), 'SHARED_RENT_APARTMENT', 'HOUSING', -1200.00);
+    mk(Math.min(28, 22 + (i % 5)), 15, 30, 'AWS_CLOUD_SERVICES', 'OPERATIONS', -(340 + (i % 6) * 15));
+    if (i % 2 === 0) mk(10, 11, 15, 'INTERNET_FIBER_FEE', 'OPERATIONS', -60.00);
+    if (i % 3 === 0) mk(18, 16, 30, 'COFFEE_MIND_SYNC', 'LOGISTICS', -(10 + i % 8));
+    if (i % 4 === 1) mk(22, 18, 45, 'HARD_DRIVE_EXT_NVME', 'HARDWARE', -(180 + i % 5 * 24));
+    if (i % 4 === 2) mk(12, 12, 45, 'SEMINAR_BOOK_PRINT', 'ACADEMIC', -(60 + i % 6 * 5));
+    if (i % 5 === 0) mk(25, 9, 10, 'ACADEMIC_REBATE_V4', 'REVENUE', 900 + i % 4 * 100);
+  }
+  gridTxLog.sort((a, b) => b.ts.localeCompare(a.ts));   // newest first, matches how the ledger reads
+  localStorage.setItem('gridTxLog', JSON.stringify(gridTxLog));
+
+  const gridFinRecurItems = [
+    { id: 'REC_001', name: 'AWS_HOSTING', amount: '-$420/mo', cat: 'OPERATIONS', day: 28 },
+    { id: 'REC_002', name: 'APARTMENT_RENT', amount: '-$1200/mo', cat: 'HOUSING', day: 5 },
+    { id: 'REC_003', name: 'FIBER_INTERNET', amount: '-$60/mo', cat: 'OPERATIONS', day: 10 }
+  ];
+  localStorage.setItem('gridFinRecurItems', JSON.stringify(gridFinRecurItems));
+
+  // Shape MUST match renderDebtList(): amount/rate/remaining are NUMBERS
+  // (rate.toFixed(1), amount.toLocaleString()) — the old {amount:'$15000', cat,
+  // progress:'12% paid'} shape had no `rate` field at all, so `d.rate.toFixed(1)`
+  // threw and killed initFinances() before it reached the budget table, the
+  // ledger or the donut chart. That single throw is why "finance in demo
+  // wasn't working" — everything after the crash silently never rendered.
+  const gridFinDebtItems = [
+    { name: 'ACADEMIC_LOAN',    due: '2026-12-01', amount: 15000, rate: 4.5, remaining: 62, payoffYear: 2028 },
+    { name: 'EQUIPMENT_CREDIT', due: '2026-08-01', amount: 2400,  rate: 0.0, remaining: 18, payoffYear: 2026 }
+  ];
+  localStorage.setItem('gridFinDebtItems', JSON.stringify(gridFinDebtItems));
+
+  // 7. Focus & Study logs
+  const gridFocusLogs = [];
+  const gridStudyLogs = [];
+  const focusProjects = ['Architectural Drafting', 'Terminal Debugging', 'System Architecture Review', 'Code Refactoring', 'Sunburst Chart Integration'];
+  const focusCats = ['development', 'engineering', 'research', 'design', 'admin'];
+  
+  const fStart = new Date(today.getTime() - 90 * 24 * 60 * 60 * 1000);
+  let fCur = new Date(fStart);
+  let fCount = 800;
+  
+  while (fCur <= today) {
+    if (fCur.getDay() >= 1 && fCur.getDay() <= 5) {
+      const numSessions = Math.random() > 0.4 ? 2 : 1;
+      for (let s = 0; s < numSessions; s++) {
+        const dateStr = fmtDate(fCur);
+        const minutes = 30 + Math.floor(Math.random() * 90);
+        const name = focusProjects[s % focusProjects.length];
+        const cat = focusCats[s % focusCats.length];
+        const hr = 9 + s * 4 + Math.floor(Math.random() * 2);
+        const timeStr = `${String(hr).padStart(2,'0')}:00`;
+        const efficiency = 75 + Math.floor(Math.random() * 23);
+        
+        gridFocusLogs.unshift({
+          id: `SESSION_${fCount}`,
+          date: dateStr,
+          time: timeStr,
+          name: name,
+          minutes: minutes,
+          meta: `Efficiency: ${efficiency}% | Duration: ${minutes}m`,
+          isErr: false
+        });
+        
+        gridStudyLogs.unshift({
+          id: `ST_${Date.now()}_${fCount}`,
+          date: dateStr,
+          time: timeStr,
+          minutes: minutes,
+          category: cat,
+          note: `Completed focus block on ${name}.`
+        });
+        
+        fCount++;
+      }
+    }
+    fCur.setDate(fCur.getDate() + 1);
+  }
+  localStorage.setItem('gridFocusLogs', JSON.stringify(gridFocusLogs));
+  localStorage.setItem('gridStudyLogs', JSON.stringify(gridStudyLogs));
+  localStorage.setItem('gridWorkProjectsList', JSON.stringify(focusProjects));
+
+  // 8. Runway Projects
+  const rwProjects = [
+    { id: 'PROJ_001', name: 'SYNCHRONIZE_DB_09', cat: 'RESOURCE_LIMIT', progress: 88, deadline: '2026-08-15', priority: 'critical', status: 'running' },
+    { id: 'PROJ_002', name: 'REFINE_LLM_WEIGHTS', cat: 'CAREER_SYNC', progress: 62, deadline: '2026-09-20', priority: 'high', status: 'running' },
+    { id: 'PROJ_003', name: 'ARCHIVE_Q3_DOCS', cat: 'RESOURCE_LIMIT', progress: 100, deadline: '2026-06-01', priority: 'medium', status: 'completed' },
+    { id: 'PROJ_004', name: 'NEURO_QUERY_ENGINE', cat: 'CAREER_SYNC', progress: 78, deadline: '2026-08-10', priority: 'high', status: 'running' },
+    { id: 'PROJ_005', name: 'HYPERTROPHY_BLOCK', cat: 'PERSONAL_OPT', progress: 85, deadline: '2026-09-30', priority: 'medium', status: 'running' },
+    { id: 'PROJ_006', name: 'DISTRIBUTED_LOG_CORE', cat: 'ACADEMIC_TRACK', progress: 95, deadline: '2026-05-30', priority: 'high', status: 'completed' }
+  ];
+  localStorage.setItem('rwProjects', JSON.stringify(rwProjects));
+
+  // 9. Kanban Tasks
+  const gridKanbanTasks = [
+    [
+      { name: 'Review system log buffers', type: 'development', done: true, status: 'completed' },
+      { name: 'Bench Press heavy session', type: 'gym', done: true, status: 'completed' },
+      { name: 'Prepare AWS cost report', type: 'finance', done: false, status: 'running' }
+    ],
+    [
+      { name: 'Refine vector search indices', type: 'development', done: true, status: 'completed' },
+      { name: 'Deadlift heavy triples', type: 'gym', done: true, status: 'completed' }
+    ],
+    [
+      { name: 'Squats intensity protocol', type: 'gym', done: false, status: 'pending' },
+      { name: 'Fix memory leaks in web view', type: 'development', done: false, status: 'pending' }
+    ],
+    [
+      { name: 'Draft research outline', type: 'research', done: false, status: 'pending' }
+    ],
+    [
+      { name: 'Push workout B', type: 'gym', done: false, status: 'pending' },
+      { name: 'Approve pull requests', type: 'development', done: false, status: 'pending' }
+    ],
+    [
+      { name: 'Saturday cardio & recovery', type: 'gym', done: false, status: 'pending' }
+    ],
+    [
+      { name: 'Sunday weekly retro', type: 'admin', done: false, status: 'pending' }
+    ]
+  ];
+  localStorage.setItem('gridKanbanTasks', JSON.stringify(gridKanbanTasks));
+
+  // 10. Portfolio Resume Data (rsTabData) — keys MUST match what renderRsContent
+  // and the Overview stat counts (rsTabData[key].length) actually read:
+  // projects / internships / positions / courses / research / achievements.
+  const rsTabData = {
+    projects: [
+      { badge:'completed',  badgeLabel:'COMPLETED',  date:'Q3_2023',  name:'AEON NEURAL ENGINE',   desc:'Developed a high-frequency trading simulation using C++ and WebAssembly. Optimized throughput by 40% using custom memory allocators.', fullDesc: 'Designed and engineered a full trading simulation using C++20 standard libraries and WebAssembly for browser deployment. Implemented lock-free concurrent ring buffers and custom slab allocators to achieve optimal latency. Connected to a Kafka messaging stream for real-time order book updates.', tags:['C++20','WASM','KAFKA'] },
+      { badge:'active-proj',badgeLabel:'ACTIVE',     date:'PRESENT',  name:'ETHOS_OS KERNEL',      desc:'Designing a productivity-first desktop interface focusing on information density and keyboard-driven workflows for researchers.', fullDesc: 'Designing a productivity-oriented shell using React, SQLite, and custom flex grid rules. Focused on high information density, completely keyboard-driven navigation, and zero-overhead workspace layouts for academic research and software developers.', tags:['REACT','TAILWIND','SQLITE'] },
+      { badge:'completed',  badgeLabel:'COMPLETED',  date:'Q1_2023',  name:'DISTRIBUTED LOG ENGINE',desc:'Built a fault-tolerant distributed logging system handling 50k events/sec using Kafka streams and Redis caching.', fullDesc: 'Built a fault-tolerant distributed logging system handling 50k events/sec using Kafka streams and Redis caching. Achieved sub-5ms replication delays and robust partition recovery under heavy simulation stress testing.', tags:['KAFKA','REDIS','GO'] },
+      { badge:'completed',  badgeLabel:'COMPLETED',  date:'Q4_2022',  name:'ML INFERENCE CLUSTER', desc:'Deployed a multi-node PyTorch inference cluster with dynamic batching, reducing P99 latency from 840ms to 120ms.', fullDesc: 'Deployed a multi-node PyTorch inference cluster with dynamic batching, reducing P99 latency from 840ms to 120ms. Engineered custom request queue scheduling and warm cache strategies to ensure reliable service under surge workloads.', tags:['PYTORCH','CUDA','K8S'] },
+      { badge:'active-proj',badgeLabel:'ACTIVE',     date:'PRESENT',  name:'NEURO_QUERY ENGINE',   desc:'Designing an LLM-powered natural language to SQL pipeline with context-aware schema introspection and query validation.', fullDesc: 'Designing an LLM-powered natural language to SQL pipeline with context-aware schema introspection and query validation. Developed semantic vector lookup structures to dynamically inject matching database schema contexts into prompt generation phases.', tags:['PYTHON','POSTGRES','GPT-4'] },
+      { badge:'completed',  badgeLabel:'COMPLETED',  date:'Q1_2024',  name:'THE GRID PERSONAL OS', desc:'Single-file vanilla-JS operating system for habits, gym, finances and deep work, with a full offline-first sync layer.', fullDesc: 'Built a single-file vanilla-JS personal operating system spanning habits, gym, finances, calendar and deep work, backed by an Express + Prisma API and an offline write queue that replays once connectivity returns.', tags:['VANILLA_JS','ECHARTS','OFFLINE_CACHE'] }
+    ],
+    internships: [
+      { badge:'internship', badgeLabel:'INTERNSHIP', date:'Q3_2024',  name:'VERTEX SYSTEMS',        desc:'Backend Engineering Intern. Built microservice mesh with gRPC, reducing inter-service latency by 32% across 12 services.', fullDesc: 'Backend Engineering Intern. Built microservice mesh with gRPC, reducing inter-service latency by 32% across 12 services. Created automated protocol buffer compiler workflows to enforce structural API schema validation on commit phases.', tags:['GRPC','GO','KUBERNETES'] },
+      { badge:'internship', badgeLabel:'INTERNSHIP', date:'Q1_2024',  name:'NOVA ANALYTICS',        desc:'Data Engineering Intern. Designed ELT pipelines ingesting 2TB/day from 8 external APIs into a Snowflake data warehouse.', fullDesc: 'Data Engineering Intern. Designed ELT pipelines ingesting 2TB/day from 8 external APIs into a Snowflake data warehouse. Built custom robust retry-logic layers and schema drift alarm monitors inside Apache Airflow orchestrators.', tags:['PYTHON','SNOWFLAKE','AIRFLOW'] },
+      { badge:'internship', badgeLabel:'INTERNSHIP', date:'Q2_2023',  name:'CYBER_DYNAMICS CORP',   desc:'Systems Security Intern. Implemented OAuth2.0 authentication flows and performed penetration testing on legacy nodes.', fullDesc: 'Systems Security Intern. Implemented OAuth2.0 authentication flows and performed penetration testing on legacy nodes. Conducted automated and manual code audits, cataloged CVEs, and patched memory leakage issues across production servers.', tags:['SECURITY','PYTHON','DOCKER'] },
+      { badge:'internship', badgeLabel:'INTERNSHIP', date:'Q4_2022',  name:'AXIOM ROBOTICS',        desc:'Embedded Systems Intern. Wrote firmware for motor controllers in C, achieving sub-millisecond PID control loops on ARM Cortex-M4.', fullDesc: 'Embedded Systems Intern. Wrote firmware for motor controllers in C, achieving sub-millisecond PID control loops on ARM Cortex-M4 boards. Calibrated direct-memory-access (DMA) operations to maximize telemetry capture speeds.', tags:['C','ARM','RTOS'] },
+      { badge:'internship', badgeLabel:'INTERNSHIP', date:'Q3_2022',  name:'HELIX CLOUD',           desc:'Platform Engineering Intern. Automated cloud provisioning with Terraform, cutting environment spin-up time from 45 minutes to 4 minutes.', fullDesc: 'Platform Engineering Intern. Automated cloud provisioning with Terraform, cutting environment spin-up time from 45 minutes to 4 minutes. Standardized reusable platform infrastructure modules utilized across 8 engineering teams.', tags:['TERRAFORM','AWS','BASH'] }
+    ],
+    positions: [
+      { badge:'position', badgeLabel:'POSITION', date:'2024—NOW',  name:'TECHNICAL LEAD — ETHOS_OS', desc:'Leading a 4-person team developing a research-grade productivity OS. Owning architecture decisions, code review, and sprint planning.', fullDesc: 'Leading a 4-person team developing a research-grade productivity OS. Owning architecture decisions, code review, and sprint planning. Standardized code quality criteria, reducing staging build failures by 68%.', tags:['LEADERSHIP','SYSTEM_DESIGN','REACT'] },
+      { badge:'position', badgeLabel:'POSITION', date:'2023—2024', name:'RESEARCH ASSISTANT — SYSTEMS LAB', desc:'Assisted on distributed consensus algorithms. Contributed to 2 papers on Raft optimizations for geo-distributed clusters.', fullDesc: 'Assisted on distributed consensus algorithms. Contributed to 2 papers on Raft optimizations for geo-distributed clusters. Programmed a customized simulation grid inside C++ to test partition tolerances.', tags:['DISTRIBUTED_SYS','C++','RESEARCH'] },
+      { badge:'position', badgeLabel:'POSITION', date:'2023—2024', name:'COMPETITIVE PROG. CLUB LEAD', desc:'Led university competitive programming club. Organized 6 inter-university contests, growing membership from 18 to 94 students.', fullDesc: 'Led university competitive programming club. Organized 6 inter-university contests, growing membership from 18 to 94 students. Created customized scoring servers and trained members on algorithms and paradigms.', tags:['ALGORITHMS','TEACHING','CPP'] },
+      { badge:'position', badgeLabel:'POSITION', date:'2022—2023', name:'TEACHING ASSISTANT — OS COURSE', desc:'Assisted in grading, weekly office hours, and designing lab assignments for 120-student Operating Systems course.', fullDesc: 'Assisted in grading, weekly office hours, and designing lab assignments for 120-student Operating Systems course. Directed lab sessions covering custom Linux system call compilation and multi-threaded programming concepts.', tags:['LINUX','C','EDUCATION'] }
+    ],
+    courses: [
+      { badge:'course', badgeLabel:'B.TECH', date:'2021—2025', name:'COMPUTER SCIENCE & ENGINEERING', desc:'Specialization in Systems & Distributed Computing. Core coursework: OS, Compilers, Networks, Distributed Systems, ML, Algorithms.', fullDesc: 'Specialization in Systems & Distributed Computing. Core coursework: OS, Compilers, Networks, Distributed Systems, ML, Algorithms. Completed capstone project focused on multi-threaded network sockets.', tags:['GPA: 9.1','HONORS','SYSTEMS'] },
+      { badge:'course', badgeLabel:'CERT',   date:'2024',      name:'ADVANCED DISTRIBUTED SYSTEMS', desc:'MIT OpenCourseWare — 6.824. Covered Raft, Spanner, MapReduce, and Zookeeper. Completed all labs with full test-suite passes.', fullDesc: 'MIT OpenCourseWare — 6.824. Covered Raft, Spanner, MapReduce, and Zookeeper. Completed all labs with full test-suite passes. Wrote custom consensus engines in Go to pass partition and network loss checks.', tags:['MIT','DISTRIBUTED','RAFT'] },
+      { badge:'course', badgeLabel:'CERT',   date:'2023',      name:'CUDA PARALLEL PROGRAMMING',   desc:'NVIDIA Deep Learning Institute. GPU architecture, warp scheduling, shared memory optimization. Final kernel 18x faster than CPU baseline.', fullDesc: 'NVIDIA Deep Learning Institute. GPU architecture, warp scheduling, shared memory optimization. Final kernel 18x faster than CPU baseline. Analyzed profiling outputs to resolve memory coalescing bottlenecks.', tags:['CUDA','GPU','NVIDIA'] },
+      { badge:'course', badgeLabel:'CERT',   date:'2023',      name:'CLOUD NATIVE ARCHITECTURE',   desc:'Linux Foundation — LFS158x. Kubernetes internals, Helm charts, service meshes, and production-grade CI/CD pipeline design.', fullDesc: 'Linux Foundation — LFS158x. Kubernetes internals, Helm charts, service meshes, and production-grade CI/CD pipeline design. Gained hands-on expertise building declarative cluster automation.', tags:['KUBERNETES','HELM','LINUX'] }
+    ],
+    research: [
+      { badge:'research', badgeLabel:'PUBLISHED', date:'2024',       name:'RAFT OPTIMIZATIONS FOR GEO-DISTRIBUTED NODES', desc:'Co-authored paper proposing adaptive heartbeat intervals in Raft consensus to reduce cross-region election timeouts by 41%. Published in IEEE PDCA.', fullDesc: 'Co-authored paper proposing adaptive heartbeat intervals in Raft consensus to reduce cross-region election timeouts by 41%. Published in IEEE PDCA. Conducted latency analysis over simulated cross-region cluster bounds.', tags:['IEEE','DISTRIBUTED','CONSENSUS'] },
+      { badge:'research', badgeLabel:'PENDING',   date:'2024',       name:'LOW-LATENCY INFERENCE SCHEDULING UNDER SLA CONSTRAINTS', desc:'Investigating preemptive GPU kernel scheduling for multi-tenant inference workloads. Submitted to USENIX ATC — peer review pending.', fullDesc: 'Investigating preemptive GPU kernel scheduling for multi-tenant inference workloads. Submitted to USENIX ATC — peer review pending. Developed a customized simulation scheduler in Python to test scheduling SLA goals.', tags:['USENIX','GPU','INFERENCE'] },
+      { badge:'research', badgeLabel:'WIP',       date:'2025',       name:'LLM-ASSISTED QUERY PLAN OPTIMIZATION',         desc:'Exploring LLM-generated query hints as alternatives to traditional cost-based optimizers in Postgres. Preliminary results show 28% improvement on TPC-H.', fullDesc: 'Exploring LLM-generated query hints as alternatives to traditional cost-based optimizers in Postgres. Preliminary results show 28% improvement on TPC-H. Standardizing model fine-tuning templates with query trees.', tags:['LLM','POSTGRES','QUERY_OPT'] }
+    ],
+    achievements: [
+      { badge:'completed', badgeLabel:'WINNER',   date:'2024',  name:'ICPC REGIONAL FINALIST',        desc:'Ranked 3rd in ICPC Asia Regional — solved 8/12 problems in 5 hours. Advanced to national qualifier.', fullDesc: 'Ranked 3rd in ICPC Asia Regional — solved 8/12 problems in 5 hours. Advanced to national qualifier. Focused on graph algorithms, segment trees, and dynamic programming tasks.', tags:['ICPC','ALGORITHMS','CP'] },
+      { badge:'completed', badgeLabel:'WINNER',   date:'2023',  name:'NATIONAL HACKATHON — 1ST PLACE',desc:'Won national-level hackathon (300+ teams). Built a real-time satellite telemetry dashboard with WebGL globe and live NORAD feed.', fullDesc: 'Won national-level hackathon (300+ teams). Built a real-time satellite telemetry dashboard with WebGL globe and live NORAD feed. Handled front-end pipeline performance and high-frequency socket updates.', tags:['HACKATHON','REACT','WEBGL'] },
+      { badge:'completed', badgeLabel:'SCHOLAR',  date:'2021',  name:'MERIT SCHOLARSHIP — FULL RIDE', desc:'Awarded full-tuition merit scholarship based on entrance rank: top 0.3% nationally among 400,000+ candidates.', fullDesc: 'Awarded full-tuition merit scholarship based on entrance rank: top 0.3% nationally among 400,000+ candidates. Ranked in top tier among highly competitive national testing bounds.', tags:['SCHOLARSHIP','TOP_0.3%','MERIT'] },
+      { badge:'completed', badgeLabel:'HONOR',    date:'2024',  name:'DEAN\'S LIST — 4 CONSECUTIVE SEMESTERS', desc:'Maintained CGPA above 9.0 for four consecutive semesters, qualifying for Dean\'s List recognition each time.', fullDesc: 'Maintained CGPA above 9.0 for four consecutive semesters, qualifying for Dean\'s List recognition each time. Honored with university award for academic excellence and semester consistency.', tags:['ACADEMIC','CGPA_9+','CONSISTENT'] }
+    ]
+  };
+  localStorage.setItem('rsTabData', JSON.stringify(rsTabData));
+  // Overview's CUMULATIVE CGPA card reads this separate self-reported key —
+  // rsTabData has no gpa field, so it was left blank even with the seed above.
+  localStorage.setItem('gridCgpa', '9.1');
+
+  // 11. Sleep config
+  const gridSleepData = [
+    {start:23, end:7}, {start:23, end:7}, {start:23, end:7},
+    {start:23, end:7}, {start:23, end:7}, {start:23, end:8},
+    {start:23, end:9}
+  ];
+  localStorage.setItem('gridSleepData', JSON.stringify(gridSleepData));
+
+  // 12. Queue Items
+  const gridQueueItems = {
+    cycle: [
+      { task: 'Finalize DB migration scripts', status: 'running' },
+      { task: 'Set up CDN caching layer', status: 'queued' }
+    ],
+    day: [
+      { task: 'Complete Push workout session', status: 'running' },
+      { task: 'Review pull requests', status: 'queued' }
+    ],
+    annual: [
+      { task: 'Prisma client upgrade debug', status: 'stalled' }
+    ]
+  };
+  localStorage.setItem('gridQueueItems', JSON.stringify(gridQueueItems));
+
+  // Timetable
+  const TT_DEFAULT = [
+    { 2:'SLEEP',6:'MAINT',8:'DEEP_WORK',10:'ALGOS_LAB',12:'BREAK',14:'RESEARCH' },
+    { 2:'SLEEP',6:'MAINT',8:'IDLE',10:'PHYSICS_SIM',12:'BREAK',14:'SYNC' },
+    { 2:'SLEEP',6:'MAINT',8:'DEEP_WORK',10:'ALGOS_LAB',12:'BREAK',14:'RESEARCH' },
+    { 2:'SLEEP',6:'MAINT',8:'DEEP_CODE',10:'OS_STRUCT',12:'BREAK',14:'RESEARCH' },
+    { 2:'SLEEP',6:'MAINT',8:'SYSTEM_AUDIT',10:'PHYSICS_SIM',12:'BREAK',14:'LOGISTICS' },
+    { 3:'SLEEP',6:'MAINT',8:'RECOVERY',11:'IDLE',14:'SOCIAL' },
+    { 3:'SLEEP',6:'MAINT',8:'RECOVERY',11:'IDLE',14:'SOCIAL' },
+  ];
+  localStorage.setItem('gridTimetable', JSON.stringify(TT_DEFAULT));
+
+  // 13. Finance Telemetry (stat cards)
+  const gridFinTelemetry = {
+    assets: '₹12,45,000',
+    budget: '₹8,200',
+    spent: '₹7,640'
+  };
+  localStorage.setItem('gridFinTelemetry', JSON.stringify(gridFinTelemetry));
+
+  // 14. Resume Stack Data (skill nodes)
+  const gridRsStackData = [
+    { name: 'JAVASCRIPT', hrs: 1240 },
+    { name: 'PYTHON', hrs: 980 },
+    { name: 'GO', hrs: 560 },
+    { name: 'REACT', hrs: 720 },
+    { name: 'NODE.JS', hrs: 890 },
+    { name: 'PYTORCH', hrs: 340 },
+    { name: 'SQL', hrs: 480 },
+    { name: 'DOCKER', hrs: 290 },
+    { name: 'KUBERNETES', hrs: 180 },
+    { name: 'C++', hrs: 420 },
+    { name: 'RUST', hrs: 150 },
+    { name: 'FIGMA', hrs: 210 }
+  ];
+  localStorage.setItem('gridRsStackData', JSON.stringify(gridRsStackData));
+
+  console.log('[seeder] Demo data successfully seeded!');
+}
+
 // ── AUTH CHECK & DATA SEEDING WORKFLOW ─────────────
 (function() {
   const sessionUser = sessionStorage.getItem('gridUser') || localStorage.getItem('gridUser');
   const gridMode = sessionStorage.getItem('gridMode') || (new URLSearchParams(window.location.search)).get('mode') || localStorage.getItem('gridActiveMode');
   
-  if (!sessionUser && gridMode !== 'demo') {
-    // SPA: Do not redirect, just let checkSPAAuth handle mounting the access gate
-    return;
-  }
-
-  // Handle data-seeding based on mode
   if (gridMode === 'demo') {
-    if (localStorage.getItem('gridActiveMode') !== 'demo') {
-      localStorage.setItem('gridActiveMode', 'demo');
-      // Wipe keys so the top-level JS fallback initializers re-seed demo presets
-      localStorage.removeItem('gymDBVersion');
-      localStorage.removeItem('gymSplitData');
-      localStorage.removeItem('gymExerciseRegistry');
-      localStorage.removeItem('gymMuscleGroups');
-      localStorage.removeItem('gymLogs');
-      localStorage.removeItem('rwProjects');
-      localStorage.removeItem('rsTabData');
-      localStorage.removeItem('gridEntries');
-      localStorage.removeItem('gridHabits');
-      localStorage.removeItem('gridBudget');
-      localStorage.removeItem('gridTxLog');
-      localStorage.removeItem('gridFinTelemetry');
-      localStorage.removeItem('gridFinRecurItems');
-      localStorage.removeItem('gridFinDebtItems');
-      localStorage.removeItem('gridQueueItems');
-      localStorage.removeItem('gridRsStackData');
-      localStorage.removeItem('gridFocusLogs');
-      localStorage.removeItem('gridWorkProjectsList');
-    }
+    localStorage.setItem('gridActiveMode', 'demo');
+    // Always wipe and reseed demo data to ensure a rich, populated experience
+    localStorage.removeItem('gymDBVersion');
+    localStorage.removeItem('gymSplitData');
+    localStorage.removeItem('gymExerciseRegistry');
+    localStorage.removeItem('gymMuscleGroups');
+    localStorage.removeItem('gymLogs');
+    localStorage.removeItem('rwProjects');
+    localStorage.removeItem('rsTabData');
+    localStorage.removeItem('gridEntries');
+    localStorage.removeItem('gridHabits');
+    localStorage.removeItem('gridBudget');
+    localStorage.removeItem('gridTxLog');
+    localStorage.removeItem('gridFinTelemetry');
+    localStorage.removeItem('gridFinRecurItems');
+    localStorage.removeItem('gridFinDebtItems');
+    localStorage.removeItem('gridQueueItems');
+    localStorage.removeItem('gridRsStackData');
+    localStorage.removeItem('gridFocusLogs');
+    localStorage.removeItem('gridWorkProjectsList');
+    localStorage.removeItem('gridKanbanTasks');
+    localStorage.removeItem('gridStudyLogs');
+    localStorage.removeItem('gridTimetable');
+    localStorage.removeItem('gridSleepData');
+    seedDemoData();
   } else {
     // User Mode: If we transitioned to user, load the gorgeous populated presets initially
     if (localStorage.getItem('gridActiveMode') !== 'user') {
@@ -6411,6 +6974,11 @@ html, body {
       localStorage.removeItem('gridFocusLogs');
       localStorage.removeItem('gridWorkProjectsList');
     }
+  }
+
+  if (!sessionUser && gridMode !== 'demo') {
+    // SPA: Do not redirect, just let checkSPAAuth handle mounting the access gate
+    return;
   }
 })();
 
@@ -6479,6 +7047,85 @@ function syncModeUI() {
     pill.classList.toggle('exiting', isDemo);
   }
   if (label) label.textContent = isDemo ? 'EXIT DEMO' : 'DEMO';
+}
+
+/* ══ TIME MACHINE ═══════════════════════════════════════════════════════════
+   Viewing a past state, not editing one. Gym, Finances and both activity grids
+   already keep every record timestamped, so "state as of a date" is just those
+   same records filtered to date <= asOf and re-rendered — no separate snapshot
+   store needed. Habits, Resume and Weekly have no per-period history in the
+   current data model (the habit matrix only ever stores the CURRENT month's
+   checked days, résumé/projects are cumulative, not date-versioned), so those
+   pages stay honest about it instead of faking a reconstruction: see
+   TIME_TRAVEL_UNSUPPORTED below.
+   In-memory only (not persisted) — it is a viewing mode for this tab, not data. */
+const TimeMachine = { active: false, asOf: null, label: '' };
+const TIME_TRAVEL_UNSUPPORTED = { habits: true, resume: true, weekly: true, runway: true };
+
+/** Every "what is today" read in a time-travelable chart should go through this. */
+function gridNow() { return TimeMachine.active ? new Date(TimeMachine.asOf) : new Date(); }
+
+/** Keep only records at or before the viewed date. dateOf extracts a 'YYYY-MM-DD'-ish string. */
+function gridAsOf(list, dateOf) {
+  if (!TimeMachine.active) return list;
+  const cutoff = TimeMachine.asOf;
+  return (list || []).filter(item => {
+    const d = dateOf(item);
+    return d && d.slice(0, 10) <= cutoff;
+  });
+}
+
+function enterTimeTravel(dateStr, label) {
+  TimeMachine.active = true;
+  TimeMachine.asOf = dateStr;
+  TimeMachine.label = label || dateStr;
+  renderTimeTravelBar();
+  refreshTimeTravelablePages();
+}
+
+/** Guard for every write action — editing a past view would silently log
+ * under today's REAL date while looking like it belongs to the viewed one. */
+function gridBlockWriteIfTimeTraveling() {
+  if (!TimeMachine.active) return false;
+  alert('You are viewing a past state (' + TimeMachine.label + ').\n\n'
+      + 'Return to now before logging or editing anything.');
+  return true;
+}
+
+function exitTimeTravel() {
+  TimeMachine.active = false;
+  TimeMachine.asOf = null;
+  TimeMachine.label = '';
+  renderTimeTravelBar();
+  refreshTimeTravelablePages();
+}
+
+function renderTimeTravelBar() {
+  const bar = document.getElementById('timeTravelBar');
+  if (!bar) return;
+  bar.style.display = TimeMachine.active ? 'flex' : 'none';
+  const lbl = document.getElementById('timeTravelLabel');
+  if (lbl) lbl.textContent = 'VIEWING STATE AS OF ' + TimeMachine.label.toUpperCase();
+  const curPage = document.querySelector('.page.active');
+  const unsupported = curPage && TIME_TRAVEL_UNSUPPORTED[curPage.id.replace('page-', '')];
+  const note = document.getElementById('timeTravelNote');
+  if (note) note.style.display = TimeMachine.active && unsupported ? 'inline' : 'none';
+}
+
+/** Re-render whatever's on screen (and the two cross-module grids) with the new cutoff. */
+function refreshTimeTravelablePages() {
+  const id = (document.querySelector('.page.active') || {}).id || '';
+  try {
+    if (id === 'page-workout') {
+      initGymData(); initGymChart();
+      try { renderGymRadar(); } catch (e) {}
+      try { renderLogDiary(); } catch (e) {}
+    }
+    if (id === 'page-finances') initFinances();
+    if (id === 'page-habits') renderActivityHeatmap();   // matrix/momentum stay current-month, not time-travelable
+    if (id === 'page-home') { try { hvRenderHeat(); } catch (e) {} }
+  } catch (e) { console.warn('time travel refresh:', e); }
+  renderTimeTravelBar();
 }
 
 function exitDemoMode() {
@@ -6628,29 +7275,9 @@ function handleSPAGoogle() {
 
 async function launchDemo() {
   const btn = document.querySelector('.btn-demo');
-  if (btn) { btn.disabled = true; btn.textContent = 'CREATING DEMO…'; }
+  if (btn) { btn.disabled = true; btn.textContent = 'LOADING DEMO…'; }
 
-  // Preferred path: a real seeded sandbox ACCOUNT on the server. A sandbox is an
-  // ordinary authenticated account, so every feature runs the normal API path —
-  // no isDemo branching, and the data survives if the user later claims it.
-  try {
-    const r = await gridFetch('/api/auth/sandbox', { method: 'POST' });
-    if (r && r.user) {
-      sessionStorage.setItem('gridMode', 'user');       // it IS a real session
-      localStorage.setItem('gridActiveMode', 'user');
-      sessionStorage.setItem('gridUser', r.user.email);
-      sessionStorage.setItem('gridUserId', r.user.id);
-      sessionStorage.setItem('gridUserName', r.user.name || 'Demo User');
-      sessionStorage.setItem('gridIsSandbox', '1');
-      location.reload();
-      return;
-    }
-  } catch (e) {
-    // Endpoint not deployed yet (migration pending) or offline — fall through.
-    console.info('[demo] sandbox unavailable, using local demo:', e && e.message);
-  }
-
-  if (btn) { btn.disabled = false; btn.textContent = 'VIEW DEMO →'; }
+  // Go straight to the rich local demo with years of seeded data
   launchLocalDemo();
 }
 
@@ -7227,15 +7854,20 @@ const defaultSplit = {
 
 const initialLogs = [];
 
+// Group NAMES are a taxonomy (like the sector list on Finances), not activity —
+// keeping them lets a new user log a bench press on day one without first
+// having to invent muscle-group categories from scratch. growth/bars are real
+// history though, and shipped fake ("+2%", 10 weeks of volume) for anyone who
+// has never logged a single set — zeroed out here so the chart reads blank.
 let muscleGroups = JSON.parse(localStorage.getItem('gymMuscleGroups') || JSON.stringify([
-  { name:'CHEST',     growth:'+2%',  muscles:'Upper, Middle and Lower Chest',         id:'001', bars:[30,42,35,50,45,60,55,70,65,80] },
-  { name:'BACK',      growth:'+4%',  muscles:'Upper back, Lats, Middle Back, Lower Back, Traps',    id:'002', bars:[25,35,40,50,45,65,60,72,70,85] },
-  { name:'LEGS',      growth:'+1%',  muscles:'Quads, Hamstrings, Glutes, Adductors, Calfs',   id:'003', bars:[40,40,45,42,50,50,55,52,60,58] },
-  { name:'SHOULDERS', growth:'+3%',  muscles:'Front, Lateral And Rear Delt',          id:'004', bars:[20,30,28,40,38,50,48,60,58,72] },
-  { name:'BICEPS',    growth:'+1.5%',muscles:'Long and Short Head, Brachialis',            id:'005', bars:[30,35,32,42,40,50,48,55,60,68] },
-  { name:'TRICEPS',   growth:'+2.8%',muscles:'Long, Medial and Short Head',           id:'006', bars:[25,32,35,45,42,55,52,62,65,78] },
-  { name:'ABS',       growth:'+0.5%',muscles:'Upper, Lower, Obliques',          id:'007', bars:[35,35,40,38,45,42,50,48,52,55] },
-  { name:'FOREARMS',  growth:'+5%',  muscles:'Brachioradialis And Extensor',           id:'008', bars:[15,20,22,30,28,40,42,55,60,75] },
+  { name:'CHEST',     growth:'+0%', muscles:'Upper, Middle and Lower Chest',                    id:'001', bars:[0,0,0,0,0,0,0,0,0,0] },
+  { name:'BACK',      growth:'+0%', muscles:'Upper back, Lats, Middle Back, Lower Back, Traps', id:'002', bars:[0,0,0,0,0,0,0,0,0,0] },
+  { name:'LEGS',      growth:'+0%', muscles:'Quads, Hamstrings, Glutes, Adductors, Calfs',      id:'003', bars:[0,0,0,0,0,0,0,0,0,0] },
+  { name:'SHOULDERS', growth:'+0%', muscles:'Front, Lateral And Rear Delt',                     id:'004', bars:[0,0,0,0,0,0,0,0,0,0] },
+  { name:'BICEPS',    growth:'+0%', muscles:'Long and Short Head, Brachialis',                  id:'005', bars:[0,0,0,0,0,0,0,0,0,0] },
+  { name:'TRICEPS',   growth:'+0%', muscles:'Long, Medial and Short Head',                      id:'006', bars:[0,0,0,0,0,0,0,0,0,0] },
+  { name:'ABS',       growth:'+0%', muscles:'Upper, Lower, Obliques',                           id:'007', bars:[0,0,0,0,0,0,0,0,0,0] },
+  { name:'FOREARMS',  growth:'+0%', muscles:'Brachioradialis And Extensor',                     id:'008', bars:[0,0,0,0,0,0,0,0,0,0] },
 ]));
 
 let exerciseRegistry = JSON.parse(localStorage.getItem('gymExerciseRegistry') || JSON.stringify({
@@ -7736,8 +8368,8 @@ function getPrecedingMondayStr(dateStr) {
 }
 
 function getWeeklyStrengthTrend() {
-  const logs = JSON.parse(localStorage.getItem('gymLogs') || '[]');
-  
+  const logs = gridAsOf(JSON.parse(localStorage.getItem('gymLogs') || '[]'), l => l.date || l.workoutDate);
+
   const weeks = {};
   logs.forEach(log => {
     const monday = getPrecedingMondayStr(log.date);
@@ -8001,6 +8633,7 @@ function recomputeGymProgression() {
 }
 
 function commitWorkoutLog() {
+  if (gridBlockWriteIfTimeTraveling()) return;
   const select = document.getElementById('loggerDaySelect');
   if (!select) return;
   const dayIdx = parseInt(select.value);
@@ -8205,7 +8838,7 @@ async function renderLogDiary(reset = true) {
   if (reset) logDiaryShown = 4;
   initGymData();
   const isDemo = sessionStorage.getItem('gridMode') === 'demo';
-  let logs = JSON.parse(localStorage.getItem('gymLogs') || '[]');
+  let logs = gridAsOf(JSON.parse(localStorage.getItem('gymLogs') || '[]'), l => l.date || l.workoutDate);
 
   if (!isDemo) {
     try {
@@ -8222,6 +8855,7 @@ async function renderLogDiary(reset = true) {
         logs = mapped;
       }
     } catch(e) { console.warn('Gym logs API load failed:', e); }
+    logs = gridAsOf(logs, l => l.date || l.workoutDate);
   }
 
   const countEl = document.getElementById('logDiaryCount');
@@ -8373,23 +9007,16 @@ let nlCsIntervalId = null;
 let nlCs = 0; // centiseconds
 let nlSessionCount = 822;
 
-let focusLogs = JSON.parse(localStorage.getItem('gridFocusLogs') || JSON.stringify([
-  { id: 'SESSION_821', time: '14:30', name: 'Architectural Drafting', meta: 'Efficiency: 92% | Duration: 45m', isErr: false },
-  { id: 'SESSION_820', time: '12:15', name: 'Terminal Debugging', meta: 'Efficiency: 74% | Duration: 20m', isErr: false },
-  { id: 'SESSION_819', time: '09:00', name: 'System Architecture Review', meta: 'Efficiency: 98% | Duration: 120m', isErr: false },
-  { id: 'ERR_BREAKDOWN', time: '08:45', name: 'External Interruption', meta: 'Loss: 15min Cognitive Momentum', isErr: true }
-]));
+let focusLogs = JSON.parse(localStorage.getItem('gridFocusLogs') || '[]');
 
 function saveFocusLogs() {
   localStorage.setItem('gridFocusLogs', JSON.stringify(focusLogs));
 }
 
-let workProjectsList = JSON.parse(localStorage.getItem('gridWorkProjectsList') || JSON.stringify([
-  'Architectural Drafting',
-  'Terminal Debugging',
-  'System Architecture Review',
-  'Code Refactoring'
-]));
+// Real users add their own via nlManageProjectOptions() below, which pushes
+// into this array — starting with someone else's project names is exactly
+// the fake-history problem the blank slate is meant to avoid.
+let workProjectsList = JSON.parse(localStorage.getItem('gridWorkProjectsList') || '[]');
 
 function saveWorkProjectsList() {
   localStorage.setItem('gridWorkProjectsList', JSON.stringify(workProjectsList));
@@ -8682,9 +9309,7 @@ function saveTimetable() {
 }
 
 // Weekly kanban tasks — persisted in localStorage
-let kanbanTasks = JSON.parse(localStorage.getItem('gridKanbanTasks') || JSON.stringify([
-  [], [], [], [], [], [], []
-]));
+let kanbanTasks = JSON.parse(localStorage.getItem('gridKanbanTasks') || '[[], [], [], [], [], [], []]');
 
 function saveKanbanTasks() {
   localStorage.setItem('gridKanbanTasks', JSON.stringify(kanbanTasks));
@@ -9105,7 +9730,7 @@ async function initHabits() {
 
   if (isDemo) {
     habits = JSON.parse(localStorage.getItem('gridHabits') || JSON.stringify(_DEMO_HABITS));
-    buildHabitMatrix(); initMomentumChart(); renderHabitRings(); renderActivityHeatmap(); buildHabitRanks();
+    buildHabitMatrix(); initMomentumChart(); renderActivityHeatmap(); buildHabitRanks();
     return;
   }
 
@@ -9135,7 +9760,7 @@ async function initHabits() {
     habits = JSON.parse(localStorage.getItem('gridHabits') || '[]');
   }
 
-  buildHabitMatrix(); initMomentumChart(); renderHabitRings(); renderActivityHeatmap(); buildHabitRanks();
+  buildHabitMatrix(); initMomentumChart(); renderActivityHeatmap(); buildHabitRanks();
 }
 
 function buildHabitRanks() {
@@ -9242,6 +9867,7 @@ function editHabitNode(idx) {
 }
 
 function toggleHabitDay(e) {
+  if (gridBlockWriteIfTimeTraveling()) return;
   const cb    = e.currentTarget;
   const hi    = +cb.dataset.habit;
   const d     = +cb.dataset.day;
@@ -9268,60 +9894,11 @@ function toggleHabitDay(e) {
   term.scrollTop = term.scrollHeight;
 
   saveHabits(); // localStorage cache
-  renderHabitRings();          // rings track the matrix, so they move with every tick
-  renderActivityHeatmap();     // and so does the cross-module grid
+  renderActivityHeatmap();     // cross-module grid moves with every tick
 
   // Persist to API
   if (h.id) {
     gridSync(`/api/habits/${h.id}/log`, { date: _habitDateStr(d), completed: completing });
-  }
-}
-
-/* ══ HABIT COMPLETION RINGS ═════════════════════════════════════════════════
-   One ring per habit: days completed against days ELAPSED, not days in the
-   month. Measuring against the full month would score every habit as failing
-   until the 31st, which reads as discouraging noise rather than signal.       */
-const RING_COLORS = ['#76b372', '#a5f79e', '#4ea3d1', '#e0709a', '#d9a441', '#8b7fd4'];
-
-function renderHabitRings() {
-  const el  = document.getElementById('habitRings');
-  const leg = document.getElementById('habitRingLegend');
-  if (!el) return;
-
-  const hs = (typeof habits !== 'undefined' && Array.isArray(habits)) ? habits : [];
-  if (!hs.length) {
-    el.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;'
-                 + 'font-size:11px;color:var(--text-muted);letter-spacing:1px;text-align:center">NO HABITS YET</div>';
-    if (leg) leg.innerHTML = '';
-    return;
-  }
-
-  const now     = new Date();
-  const elapsed = Math.max(1, now.getDate());   // day-of-month so far
-
-  const rows = hs.slice(0, 6).map((h, i) => ({
-    label:    h.name || ('HABIT ' + (i + 1)),
-    value:    (h.checked || []).filter(d => d <= elapsed).length,
-    maxValue: elapsed,
-    color:    RING_COLORS[i % RING_COLORS.length],
-  }));
-
-  gridRingChart(el, rows, { defaultLabel: 'THIS MONTH', strokeWidth: 11, ringGap: 7, baseInnerRadius: 36 });
-
-  if (leg) {
-    leg.innerHTML = rows.map(r => {
-      const pct = Math.round(r.value / r.maxValue * 100);
-      return '<div>'
-        + '<div style="display:flex;align-items:center;gap:6px;font-size:10px;letter-spacing:0.8px;margin-bottom:4px;">'
-          + '<span style="width:7px;height:7px;border-radius:50%;background:' + r.color + ';flex-shrink:0"></span>'
-          + '<span style="color:var(--text-dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + escHtml(r.label) + '</span>'
-          + '<span style="margin-left:auto;color:var(--text-muted);white-space:nowrap">' + r.value + '/' + r.maxValue + '</span>'
-        + '</div>'
-        + '<div style="height:3px;background:var(--carbon-3);border-radius:3px;overflow:hidden;">'
-          + '<div style="height:100%;width:' + pct + '%;background:' + r.color + ';border-radius:3px;"></div>'
-        + '</div>'
-      + '</div>';
-    }).join('');
   }
 }
 
@@ -9340,21 +9917,25 @@ function hmLevel(n) { return n <= 0 ? 0 : n <= 1 ? 1 : n <= 3 ? 2 : n <= 5 ? 3 :
 function hmCollect() {
   const day = {};                                   // 'YYYY-MM-DD' -> count
   const bump = (d, n) => { if (d) day[d] = (day[d] || 0) + (n || 1); };
-  const now = new Date(), y = now.getFullYear(), m = now.getMonth();
+  const now = gridNow(), y = now.getFullYear(), m = now.getMonth();
   const iso = (yy, mm, dd) => yy + '-' + String(mm + 1).padStart(2, '0') + '-' + String(dd).padStart(2, '0');
 
-  // Habits — checked days are day-of-month within the CURRENT month only.
+  // Habits — checked days are day-of-month within the CURRENT month only, and
+  // only meaningful when gridNow() IS the real current month (time-travelling
+  // to an earlier month has no historical habit matrix to draw from).
   try {
-    (habits || []).forEach(h => (h.checked || []).forEach(d => bump(iso(y, m, d))));
+    if (!TimeMachine.active || (y === new Date().getFullYear() && m === new Date().getMonth())) {
+      (habits || []).forEach(h => (h.checked || []).forEach(d => bump(iso(y, m, d))));
+    }
   } catch (e) {}
   // Gym — one point per logged session.
   try {
-    JSON.parse(localStorage.getItem('gymLogs') || '[]')
+    gridAsOf(JSON.parse(localStorage.getItem('gymLogs') || '[]'), l => l.date || l.workoutDate)
       .forEach(l => bump(l.date || l.workoutDate));
   } catch (e) {}
   // Study — one point per 45 minutes, so a long session outweighs a token one.
   try {
-    JSON.parse(localStorage.getItem('gridFocusLogs') || '[]')
+    gridAsOf(JSON.parse(localStorage.getItem('gridFocusLogs') || '[]'), l => l.date)
       .forEach(l => bump(l.date, Math.max(1, Math.round((+l.minutes || 0) / 45))));
   } catch (e) {}
   return day;
@@ -9367,36 +9948,46 @@ function renderActivityHeatmap() {
   const sumEl = document.getElementById('hmSummary');
 
   const counts = hmCollect();
-  const CELL = 11, GAP = 3, WEEKS = 53, TOP = 20, LEFT = 26;
+  const CELL = 13, GAP = 3, TOP = 20, LEFT = 26;
 
-  // Grid ends on the most recent Saturday-completed week so columns stay whole.
-  const end = new Date(); end.setHours(0, 0, 0, 0);
-  end.setDate(end.getDate() + (6 - end.getDay()));
-  const start = new Date(end); start.setDate(start.getDate() - (WEEKS * 7 - 1));
+  // Calendar year, Jan 1 - Dec 31, so months always run left-to-right in order
+  // instead of a rolling 53-week window (which could open mid-year and read
+  // as "jumbled" since July could land before January).
+  const now = gridNow(), YEAR = now.getFullYear();
+  const yearStart = new Date(YEAR, 0, 1), yearEnd = new Date(YEAR, 11, 31);
+  const gridStart = new Date(yearStart); gridStart.setDate(gridStart.getDate() - gridStart.getDay());        // back to Sunday
+  const gridEnd   = new Date(yearEnd);   gridEnd.setDate(gridEnd.getDate() + (6 - gridEnd.getDay()));         // forward to Saturday
+  const WEEKS = Math.round((gridEnd - gridStart) / (7 * 86400000)) + 1;
 
   const NS = 'http://www.w3.org/2000/svg';
   const mk = (t, a) => { const n = document.createElementNS(NS, t);
                          for (const k in a) if (a[k] != null) n.setAttribute(k, a[k]); return n; };
   const W = LEFT + WEEKS * (CELL + GAP), H = TOP + 7 * (CELL + GAP);
-  const svg = mk('svg', { width: W, height: H, viewBox: `0 0 ${W} ${H}`,
-                          style: 'display:block;overflow:visible' });
+  // width:100% + height:auto with a viewBox scales the whole grid uniformly to
+  // fill whatever container it sits in — cells stay square (no per-axis
+  // stretch), the grid just gets bigger or smaller together with its card.
+  const svg = mk('svg', { viewBox: `0 0 ${W} ${H}`,
+                          style: 'display:block;width:100%;height:auto' });
 
   const fmt = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0')
                  + '-' + String(d.getDate()).padStart(2, '0');
   const MON = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
-  const today = fmt(new Date());
+  const today = fmt(now);   // rings the VIEWED date while time-travelling, not real today
 
   let total = 0, activeDays = 0, lastMonth = -1;
   for (let w = 0; w < WEEKS; w++) {
     for (let d = 0; d < 7; d++) {
-      const cur = new Date(start);
-      cur.setDate(start.getDate() + w * 7 + d);
-      if (cur > end) continue;
-      const key = fmt(cur), n = counts[key] || 0;
-      if (n > 0) { total += n; activeDays++; }
+      const cur = new Date(gridStart);
+      cur.setDate(gridStart.getDate() + w * 7 + d);
+
+      // Padding cells from the previous/next year (to complete the first and
+      // last weeks) render blank — no data bleeding across the year boundary.
+      const inYear = cur >= yearStart && cur <= yearEnd;
+      const key = fmt(cur), n = inYear ? (counts[key] || 0) : 0;
+      if (inYear && n > 0) { total += n; activeDays++; }
 
       // Month label above the column where a new month first appears.
-      if (d === 0 && cur.getMonth() !== lastMonth) {
+      if (inYear && d === 0 && cur.getMonth() !== lastMonth) {
         lastMonth = cur.getMonth();
         const t = mk('text', { x: LEFT + w * (CELL + GAP), y: TOP - 8,
           fill: 'var(--text-muted)', 'font-family': "'Space Mono',monospace", 'font-size': 8,
@@ -9408,16 +9999,18 @@ function renderActivityHeatmap() {
       const rect = mk('rect', {
         x: LEFT + w * (CELL + GAP), y: TOP + d * (CELL + GAP),
         width: CELL, height: CELL, rx: 2,
-        fill: HM_LEVELS[hmLevel(n)],
-        stroke: key === today ? 'var(--green)' : 'none',
-        'stroke-width': key === today ? 1.2 : 0,
+        fill: inYear ? HM_LEVELS[hmLevel(n)] : 'transparent',
+        stroke: inYear && key === today ? 'var(--green)' : 'none',
+        'stroke-width': inYear && key === today ? 1.2 : 0,
         style: 'transition:opacity .12s',
       });
-      const title = mk('title');
-      title.textContent = n
-        ? `${n} activit${n === 1 ? 'y' : 'ies'} on ${key}`
-        : `No activity on ${key}`;
-      rect.appendChild(title);
+      if (inYear) {
+        const title = mk('title');
+        title.textContent = n
+          ? `${n} activit${n === 1 ? 'y' : 'ies'} on ${key}`
+          : `No activity on ${key}`;
+        rect.appendChild(title);
+      }
       svg.appendChild(rect);
     }
   }
@@ -9766,14 +10359,7 @@ function initRwDonut() {
 }
 
 // Project database CRUD routines
-let rwProjects = JSON.parse(localStorage.getItem('rwProjects') || JSON.stringify([
-  { id: 'PROJ_001', name: 'SYNCHRONIZE_DB_09', cat: 'RESOURCE_LIMIT', progress: 88, deadline: '2026-06-15', priority: 'critical', status: 'running' },
-  { id: 'PROJ_002', name: 'REFINE_LLM_WEIGHTS', cat: 'CAREER_SYNC', progress: 42, deadline: '2026-07-20', priority: 'low', status: 'queued' },
-  { id: 'PROJ_003', name: 'ARCHIVE_Q3_DOCS', cat: 'RESOURCE_LIMIT', progress: 12, deadline: '2026-06-01', priority: 'medium', status: 'stalled' },
-  { id: 'PROJ_004', name: 'NEURO_QUERY_ENGINE', cat: 'CAREER_SYNC', progress: 78, deadline: '2026-08-10', priority: 'high', status: 'running' },
-  { id: 'PROJ_005', name: 'HYPERTROPHY_BLOCK', cat: 'PERSONAL_OPT', progress: 85, deadline: '2026-06-30', priority: 'medium', status: 'running' },
-  { id: 'PROJ_006', name: 'DISTRIBUTED_LOG_CORE', cat: 'ACADEMIC_TRACK', progress: 95, deadline: '2026-05-30', priority: 'high', status: 'completed' }
-]));
+let rwProjects = JSON.parse(localStorage.getItem('rwProjects') || '[]');
 
 function saveRwProjects() {
   localStorage.setItem('rwProjects', JSON.stringify(rwProjects));
@@ -9943,18 +10529,9 @@ function qTab(el, tab) {
 // FINANCES
 // ═══════════════════════════════════════════════════
 
-let budgetData = JSON.parse(localStorage.getItem('gridBudget') || JSON.stringify([
-  { sector: 'ACADEMIC',  planned: 2000, actual: 1200 },
-  { sector: 'HOUSING',   planned: 2500, actual: 2500 },
-  { sector: 'LOGISTICS', planned: 1500, actual: 1800 },
-]));
+let budgetData = JSON.parse(localStorage.getItem('gridBudget') || '[]');
 
-let txLog = JSON.parse(localStorage.getItem('gridTxLog') || JSON.stringify([
-  { ts: '24.08.15 14:32', entity: 'AWS_CLOUD_SERVICES',   sector: 'OPERATIONS', val: -4200.00,  hash: '0x8a02...f21' },
-  { ts: '24.08.14 09:10', entity: 'ACADEMIC_REBATE_V4',   sector: 'REVENUE',    val: +12150.00, hash: '0x01e4...d34' },
-  { ts: '24.08.12 18:45', entity: 'HARD_DRIVE_EXT_NVME',  sector: 'HARDWARE',   val: -8499.00,  hash: '0x5f2b...a92' },
-  { ts: '24.08.10 11:20', entity: 'LLM_API_USAGE_CREDIT', sector: 'OPERATIONS', val: -1240.00,  hash: '0x2d1a...c88' },
-]));
+let txLog = JSON.parse(localStorage.getItem('gridTxLog') || '[]');
 
 /**
  * Commit a transaction from the New Entry terminal. This was wired to the
@@ -9962,6 +10539,7 @@ let txLog = JSON.parse(localStorage.getItem('gridTxLog') || JSON.stringify([
  * a ReferenceError and silently did nothing.
  */
 function commitTransaction() {
+  if (gridBlockWriteIfTimeTraveling()) return;
   const labelEl  = document.getElementById('txLabel');
   const amountEl = document.getElementById('txAmount');
   const sectorEl = document.getElementById('txSector');
@@ -10020,10 +10598,7 @@ function saveFinRecurItems() {
   localStorage.setItem('gridFinRecurItems', JSON.stringify(finRecurItems));
 }
 
-let finDebtItems = JSON.parse(localStorage.getItem('gridFinDebtItems') || JSON.stringify([
-  { name:'STUDENT_LOAN_S_A', due:'2026-12-01', amount: 12000, rate: 4.2, remaining: 75, payoffYear: 2026 },
-  { name:'EQUIPMENT_CREDIT', due:'2024-06-01', amount: 845.22, rate: 0.0, remaining: 30, payoffYear: 2024 }
-]));
+let finDebtItems = JSON.parse(localStorage.getItem('gridFinDebtItems') || '[]');
 
 function saveFinDebtItems() {
   localStorage.setItem('gridFinDebtItems', JSON.stringify(finDebtItems));
@@ -10365,9 +10940,16 @@ function editSectorActual(idx) {
   editBudgetSectorNode(idx);
 }
 
+/** ts is 'YY.MM.DD HH:MM' — reshape to 'YYYY-MM-DD' so gridAsOf can compare it. */
+function _txDateIso(ts) {
+  const m = /^(\d{2})\.(\d{2})\.(\d{2})/.exec(ts || '');
+  return m ? '20' + m[1] + '-' + m[2] + '-' + m[3] : null;
+}
+
 function renderTxLog() {
   const tbody = document.getElementById('txLogBody');
-  const shown = finShowAllTx ? txLog : txLog.slice(0, 5);
+  const visible = gridAsOf(txLog, t => _txDateIso(t.ts));
+  const shown = finShowAllTx ? visible : visible.slice(0, 5);
   tbody.innerHTML = shown.map(t => {
     const cls = t.val < 0 ? 'tx-neg' : 'tx-pos';
     const sign = t.val < 0 ? '-' : '+';
@@ -10520,47 +11102,10 @@ function saveRsStackData() {
   localStorage.setItem('gridRsStackData', JSON.stringify(rsStackData));
 }
 
-let rsTabData = JSON.parse(localStorage.getItem('rsTabData')) || {
-  projects: [
-    { badge:'completed',  badgeLabel:'COMPLETED',  date:'Q3_2023',  name:'AEON NEURAL ENGINE',   desc:'Developed a high-frequency trading simulation using C++ and WebAssembly. Optimized throughput by 40% using custom memory allocators.', fullDesc: 'Designed and engineered a full trading simulation using C++20 standard libraries and WebAssembly for browser deployment. Implemented lock-free concurrent ring buffers and custom slab allocators to achieve optimal latency. Connected to a Kafka messaging stream for real-time order book updates.', tags:['C++20','WASM','KAFKA'] },
-    { badge:'active-proj',badgeLabel:'ACTIVE',     date:'PRESENT',  name:'ETHOS_OS KERNEL',      desc:'Designing a productivity-first desktop interface focusing on information density and keyboard-driven workflows for researchers.', fullDesc: 'Designing a productivity-oriented shell using React, SQLite, and custom flex grid rules. Focused on high information density, completely keyboard-driven navigation, and zero-overhead workspace layouts for academic research and software developers.', tags:['REACT','TAILWIND','SQLITE'] },
-    { badge:'internship', badgeLabel:'INTERNSHIP', date:'Q2_2023',  name:'CYBER_DYNAMICS CORP',  desc:'Systems Security Intern. Implemented OAuth2.0 authentication flows and performed penetration testing on legacy nodes.', fullDesc: 'Systems Security Intern. Implemented OAuth2.0 authentication flows and performed penetration testing on legacy nodes. Conducted automated and manual code audits, cataloged CVEs, and patched memory leakage issues across production servers.', tags:['SECURITY','PYTHON','DOCKER'] },
-    { badge:'completed',  badgeLabel:'COMPLETED',  date:'Q1_2023',  name:'DISTRIBUTED LOG ENGINE',desc:'Built a fault-tolerant distributed logging system handling 50k events/sec using Kafka streams and Redis caching.', fullDesc: 'Built a fault-tolerant distributed logging system handling 50k events/sec using Kafka streams and Redis caching. Achieved sub-5ms replication delays and robust partition recovery under heavy simulation stress testing.', tags:['KAFKA','REDIS','GO'] },
-    { badge:'completed',  badgeLabel:'COMPLETED',  date:'Q4_2022',  name:'ML INFERENCE CLUSTER', desc:'Deployed a multi-node PyTorch inference cluster with dynamic batching, reducing P99 latency from 840ms to 120ms.', fullDesc: 'Deployed a multi-node PyTorch inference cluster with dynamic batching, reducing P99 latency from 840ms to 120ms. Engineered custom request queue scheduling and warm cache strategies to ensure reliable service under surge workloads.', tags:['PYTORCH','CUDA','K8S'] },
-    { badge:'active-proj',badgeLabel:'ACTIVE',     date:'PRESENT',  name:'NEURO_QUERY ENGINE',   desc:'Designing an LLM-powered natural language to SQL pipeline with context-aware schema introspection and query validation.', fullDesc: 'Designing an LLM-powered natural language to SQL pipeline with context-aware schema introspection and query validation. Developed semantic vector lookup structures to dynamically inject matching database schema contexts into prompt generation phases.', tags:['PYTHON','POSTGRES','GPT-4'] }
-  ],
-  internships: [
-    { badge:'internship', badgeLabel:'INTERNSHIP', date:'Q3_2024',  name:'VERTEX SYSTEMS',        desc:'Backend Engineering Intern. Built microservice mesh with gRPC, reducing inter-service latency by 32% across 12 services.', fullDesc: 'Backend Engineering Intern. Built microservice mesh with gRPC, reducing inter-service latency by 32% across 12 services. Created automated protocol buffer compiler workflows to enforce structural API schema validation on commit phases.', tags:['GRPC','GO','KUBERNETES'] },
-    { badge:'internship', badgeLabel:'INTERNSHIP', date:'Q1_2024',  name:'NOVA ANALYTICS',        desc:'Data Engineering Intern. Designed ELT pipelines ingesting 2TB/day from 8 external APIs into a Snowflake data warehouse.', fullDesc: 'Data Engineering Intern. Designed ELT pipelines ingesting 2TB/day from 8 external APIs into a Snowflake data warehouse. Built custom robust retry-logic layers and schema drift alarm monitors inside Apache Airflow orchestrators.', tags:['PYTHON','SNOWFLAKE','AIRFLOW'] },
-    { badge:'internship', badgeLabel:'INTERNSHIP', date:'Q2_2023',  name:'CYBER_DYNAMICS CORP',   desc:'Systems Security Intern. Implemented OAuth2.0 authentication flows and performed penetration testing on legacy nodes.', fullDesc: 'Systems Security Intern. Implemented OAuth2.0 authentication flows and performed penetration testing on legacy nodes. Conducted automated and manual code audits, cataloged CVEs, and patched memory leakage issues across production servers.', tags:['SECURITY','PYTHON','DOCKER'] },
-    { badge:'internship', badgeLabel:'INTERNSHIP', date:'Q4_2022',  name:'AXIOM ROBOTICS',        desc:'Embedded Systems Intern. Wrote firmware for motor controllers in C, achieving sub-millisecond PID control loops on ARM Cortex-M4.', fullDesc: 'Embedded Systems Intern. Wrote firmware for motor controllers in C, achieving sub-millisecond PID control loops on ARM Cortex-M4 boards. Calibrated direct-memory-access (DMA) operations to maximize telemetry capture speeds.', tags:['C','ARM','RTOS'] },
-    { badge:'internship', badgeLabel:'INTERNSHIP', date:'Q3_2022',  name:'HELIX CLOUD',           desc:'Platform Engineering Intern. Automated cloud provisioning with Terraform, cutting environment spin-up time from 45 minutes to 4 minutes.', fullDesc: 'Platform Engineering Intern. Automated cloud provisioning with Terraform, cutting environment spin-up time from 45 minutes to 4 minutes. Standardized reusable platform infrastructure modules utilized across 8 engineering teams.', tags:['TERRAFORM','AWS','BASH'] },
-    { badge:'internship', badgeLabel:'INTERNSHIP', date:'Q1_2022',  name:'MERIDIAN AI',           desc:'ML Research Intern. Fine-tuned BERT-based classifiers on domain-specific corpora, achieving 94.2% F1 on named entity recognition tasks.', fullDesc: 'ML Research Intern. Fine-tuned BERT-based classifiers on domain-specific corpora, achieving 94.2% F1 on named entity recognition tasks. Reduced overall inference parameters by 30% using model distillation and quantization.', tags:['PYTORCH','BERT','NLP'] }
-  ],
-  positions: [
-    { badge:'position', badgeLabel:'POSITION', date:'2024—NOW',  name:'TECHNICAL LEAD — ETHOS_OS', desc:'Leading a 4-person team developing a research-grade productivity OS. Owning architecture decisions, code review, and sprint planning.', fullDesc: 'Leading a 4-person team developing a research-grade productivity OS. Owning architecture decisions, code review, and sprint planning. Standardized code quality criteria, reducing staging build failures by 68%.', tags:['LEADERSHIP','SYSTEM_DESIGN','REACT'] },
-    { badge:'position', badgeLabel:'POSITION', date:'2023—2024', name:'RESEARCH ASSISTANT — SYSTEMS LAB', desc:'Assisted Prof. Zhang on distributed consensus algorithms. Contributed to 2 papers on Raft optimizations for geo-distributed clusters.', fullDesc: 'Assisted Prof. Zhang on distributed consensus algorithms. Contributed to 2 papers on Raft optimizations for geo-distributed clusters. Programmed a customized simulation grid inside C++ to test partition tolerances.', tags:['DISTRIBUTED_SYS','C++','RESEARCH'] },
-    { badge:'position', badgeLabel:'POSITION', date:'2023—2024', name:'COMPETITIVE PROG. CLUB LEAD', desc:'Led university competitive programming club. Organized 6 inter-university contests, growing membership from 18 to 94 students.', fullDesc: 'Led university competitive programming club. Organized 6 inter-university contests, growing membership from 18 to 94 students. Created customized scoring servers and trained members on algorithms and paradigms.', tags:['ALGORITHMS','TEACHING','CPP'] },
-    { badge:'position', badgeLabel:'POSITION', date:'2022—2023', name:'TEACHING ASSISTANT — OS COURSE', desc:'Assisted in grading, weekly office hours, and designing lab assignments for 120-student Operating Systems course.', fullDesc: 'Assisted in grading, weekly office hours, and designing lab assignments for 120-student Operating Systems course. Directed lab sessions covering custom Linux system call compilation and multi-threaded programming concepts.', tags:['LINUX','C','EDUCATION'] }
-  ],
-  courses: [
-    { badge:'course', badgeLabel:'B.TECH', date:'2021—2025', name:'COMPUTER SCIENCE & ENGINEERING', desc:'Specialization in Systems & Distributed Computing. Core coursework: OS, Compilers, Networks, Distributed Systems, ML, Algorithms.', fullDesc: 'Specialization in Systems & Distributed Computing. Core coursework: OS, Compilers, Networks, Distributed Systems, ML, Algorithms. Completed capstone project focused on multi-threaded network sockets.', tags:['GPA: 9.1','HONORS','SYSTEMS'] },
-    { badge:'course', badgeLabel:'CERT',   date:'2024',      name:'ADVANCED DISTRIBUTED SYSTEMS', desc:'MIT OpenCourseWare — 6.824. Covered Raft, Spanner, MapReduce, and Zookeeper. Completed all labs with full test-suite passes.', fullDesc: 'MIT OpenCourseWare — 6.824. Covered Raft, Spanner, MapReduce, and Zookeeper. Completed all labs with full test-suite passes. Wrote custom consensus engines in Go to pass partition and network loss checks.', tags:['MIT','DISTRIBUTED','RAFT'] },
-    { badge:'course', badgeLabel:'CERT',   date:'2023',      name:'CUDA PARALLEL PROGRAMMING',   desc:'NVIDIA Deep Learning Institute. GPU architecture, warp scheduling, shared memory optimization. Final kernel 18× faster than CPU baseline.', fullDesc: 'NVIDIA Deep Learning Institute. GPU architecture, warp scheduling, shared memory optimization. Final kernel 18× faster than CPU baseline. Analyzed profiling outputs to resolve memory coalescing bottlenecks.', tags:['CUDA','GPU','NVIDIA'] },
-    { badge:'course', badgeLabel:'CERT',   date:'2023',      name:'CLOUD NATIVE ARCHITECTURE',   desc:'Linux Foundation — LFS158x. Kubernetes internals, Helm charts, service meshes, and production-grade CI/CD pipeline design.', fullDesc: 'Linux Foundation — LFS158x. Kubernetes internals, Helm charts, service meshes, and production-grade CI/CD pipeline design. Gained hands-on expertise building declarative cluster automation.', tags:['KUBERNETES','HELM','LINUX'] }
-  ],
-  research: [
-    { badge:'research', badgeLabel:'PUBLISHED', date:'2024',       name:'RAFT OPTIMIZATIONS FOR GEO-DISTRIBUTED NODES', desc:'Co-authored paper proposing adaptive heartbeat intervals in Raft consensus to reduce cross-region election timeouts by 41%. Published in IEEE PDCA.', fullDesc: 'Co-authored paper proposing adaptive heartbeat intervals in Raft consensus to reduce cross-region election timeouts by 41%. Published in IEEE PDCA. Conducted latency analysis over simulated cross-region cluster bounds.', tags:['IEEE','DISTRIBUTED','CONSENSUS'] },
-    { badge:'research', badgeLabel:'PENDING',   date:'2024',       name:'LOW-LATENCY INFERENCE SCHEDULING UNDER SLA CONSTRAINTS', desc:'Investigating preemptive GPU kernel scheduling for multi-tenant inference workloads. Submitted to USENIX ATC — peer review pending.', fullDesc: 'Investigating preemptive GPU kernel scheduling for multi-tenant inference workloads. Submitted to USENIX ATC — peer review pending. Developed a customized simulation scheduler in Python to test scheduling SLA goals.', tags:['USENIX','GPU','INFERENCE'] },
-    { badge:'research', badgeLabel:'WIP',       date:'2025',       name:'LLM-ASSISTED QUERY PLAN OPTIMIZATION',         desc:'Exploring LLM-generated query hints as alternatives to traditional cost-based optimizers in Postgres. Preliminary results show 28% improvement on TPC-H.', fullDesc: 'Exploring LLM-generated query hints as alternatives to traditional cost-based optimizers in Postgres. Preliminary results show 28% improvement on TPC-H. Standardizing model fine-tuning templates with query trees.', tags:['LLM','POSTGRES','QUERY_OPT'] }
-  ],
-  achievements: [
-    { badge:'completed', badgeLabel:'WINNER',   date:'2024',  name:'ICPC REGIONAL FINALIST',        desc:'Ranked 3rd in ICPC Asia Regional — solved 8/12 problems in 5 hours. Advanced to national qualifier.', fullDesc: 'Ranked 3rd in ICPC Asia Regional — solved 8/12 problems in 5 hours. Advanced to national qualifier. Focused on graph algorithms, segment trees, and dynamic programming tasks.', tags:['ICPC','ALGORITHMS','CP'] },
-    { badge:'completed', badgeLabel:'WINNER',   date:'2023',  name:'NATIONAL HACKATHON — 1ST PLACE',desc:'Won national-level hackathon (300+ teams). Built a real-time satellite telemetry dashboard with WebGL globe and live NORAD feed.', fullDesc: 'Won national-level hackathon (300+ teams). Built a real-time satellite telemetry dashboard with WebGL globe and live NORAD feed. Handled front-end pipeline performance and high-frequency socket updates.', tags:['HACKATHON','REACT','WEBGL'] },
-    { badge:'completed', badgeLabel:'SCHOLAR',  date:'2021',  name:'MERIT SCHOLARSHIP — FULL RIDE', desc:'Awarded full-tuition merit scholarship based on entrance rank: top 0.3% nationally among 400,000+ candidates.', fullDesc: 'Awarded full-tuition merit scholarship based on entrance rank: top 0.3% nationally among 400,000+ candidates. Ranked in top tier among highly competitive national testing bounds.', tags:['SCHOLARSHIP','TOP_0.3%','MERIT'] },
-    { badge:'completed', badgeLabel:'HONOR',    date:'2024',  name:'DEAN\'S LIST — 4 CONSECUTIVE SEMESTERS', desc:'Maintained CGPA above 9.0 for four consecutive semesters, qualifying for Dean\'s List recognition each time.', fullDesc: 'Maintained CGPA above 9.0 for four consecutive semesters, qualifying for Dean\'s List recognition each time. Honored with university award for academic excellence and semester consistency.', tags:['ACADEMIC','CGPA_9+','CONSISTENT'] }
-  ]
-};
+// A brand-new real account has written NOTHING here yet — every tab (and the
+// PROJECTS / INTERNSHIPS / RESEARCH PAPERS counts on Overview, which are just
+// rsTabData[key].length) must read as genuinely empty, not a stranger's résumé.
+let rsTabData = JSON.parse(localStorage.getItem('rsTabData') || '{}');
 
 async function initResume() {
   renderRsStack();
@@ -10590,18 +11135,25 @@ function _syncResumeToAPI() {
 function renderRsStack() {
   const container = document.getElementById('rsStackBars');
   if (!container) return;
-  const maxHrs = Math.max(...rsStackData.map(s => s.hrs), 10);
+  
+  container.style.display = 'flex';
+  container.style.flexWrap = 'wrap';
+  container.style.gap = '8px';
+  container.style.padding = '15px 0';
+  container.style.justifyContent = 'center';
+  
   container.innerHTML = rsStackData.map((s, idx) => `
-    <div onclick="editRsSkillNode(${idx})" style="cursor:pointer;" title="Click to edit or delete skill node">
-      <div class="rs-stack-meta">
-        <span class="rs-stack-name">${s.name} <span style="font-size:9px;color:var(--text-muted);opacity:0.6;"><svg viewBox="0 0 24 24" width="10" height="10" stroke="currentColor" fill="none" stroke-width="2" style="vertical-align:-1px"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></span></span>
-        <span class="rs-stack-hrs">${s.hrs} hrs</span>
-      </div>
-      <div class="rs-stack-track">
-        <div class="rs-stack-fill" style="width:${Math.round(s.hrs/maxHrs*100)}%"></div>
-      </div>
+    <div onclick="editRsSkillNode(${idx})" title="Click to edit or delete skill node" style="cursor:pointer; background:var(--carbon-2); border:1px solid var(--carbon-4); border-radius:15px; padding:6px 14px; display:inline-flex; align-items:center; gap:8px; transition:border-color 0.2s;" onmouseover="this.style.borderColor='var(--sig-500)'" onmouseout="this.style.borderColor='var(--carbon-4)'">
+      <span style="font-size:12px; color:var(--text); letter-spacing:1px; font-family:'Bebas Neue',var(--font);">${s.name}</span>
+      <span style="font-size:10px; color:var(--sig-500); font-variant-numeric:tabular-nums;">${s.hrs}h</span>
     </div>
   `).join('');
+  
+  container.innerHTML += `
+    <div onclick="openAddSkillModal()" style="cursor:pointer; background:transparent; border:1px dashed var(--carbon-4); border-radius:15px; padding:6px 14px; display:inline-flex; align-items:center; transition:border-color 0.2s;" onmouseover="this.style.borderColor='var(--text-muted)'" onmouseout="this.style.borderColor='var(--carbon-4)'">
+      <span style="font-size:12px; color:var(--text-muted); letter-spacing:1px; font-family:'Bebas Neue',var(--font);">+ ADD NODE</span>
+    </div>
+  `;
 }
 
 function editRsSkillNode(idx) {
@@ -12382,6 +12934,7 @@ function dcToggle(idx) {
  * Returns true if the model now reflects the requested state.
  */
 function dcSetHabit(idx, day, on) {
+  if (gridBlockWriteIfTimeTraveling()) return false;
   const h = (typeof habits !== 'undefined' && habits) ? habits[idx] : null;
   if (!h) return false;
 
@@ -12828,34 +13381,55 @@ function hvRenderHeat() {
   const chart = ethosChart(el); if (!chart) return;
   chart.clear();
 
-  const hs = (typeof habits !== 'undefined' && Array.isArray(habits)) ? habits : [];
-  if (!hs.length) {
-    chart.setOption({ title: { text: 'NO DATA YET', subtext: 'Log a habit to start the wall',
+  const now = gridNow(), y = now.getFullYear(), m = now.getMonth();
+  const end = y + '-12-31';
+  const start = y + '-01-01';
+  const data = [], cur = new Date(start + 'T00:00:00'), stop = new Date(end + 'T00:00:00');
+
+  const volumes = {};
+  const rec = (d) => { if(d) volumes[d] = (volumes[d] || 0) + 1; };
+
+  try { gridAsOf(JSON.parse(localStorage.getItem('gymLogs')||'[]'), x => x.date || x.workoutDate)
+    .forEach(x => { if(x.date) rec(x.date.slice(0,10)); if(x.workoutDate) rec(x.workoutDate.slice(0,10)); }); }catch(e){}
+  try { gridAsOf(JSON.parse(localStorage.getItem('gridStudyLogs')||'[]'), x => x.date)
+    .forEach(x => { if(x.date) rec(x.date.slice(0,10)); }); }catch(e){}
+  // ts is 'YY.MM.DD HH:MM', not ISO — _txDateIso reshapes it so this actually matches rows.
+  try { gridAsOf(JSON.parse(localStorage.getItem('gridTxLog')||'[]'), x => _txDateIso(x.ts))
+    .forEach(x => { const d = _txDateIso(x.ts); if (d) rec(d); }); }catch(e){}
+  try { gridAsOf(Object.entries(JSON.parse(localStorage.getItem('gridEntries')||'{}')), ([k]) => k)
+    .forEach(([k, arr]) => arr.forEach(()=>rec(k))); }catch(e){}
+  try {
+    // Habits only have a CURRENT-month checked array — meaningless for a past
+    // month while time-travelling, so skip them unless we're viewing this month.
+    if (!TimeMachine.active || (y === new Date().getFullYear() && m === new Date().getMonth())) {
+      const hs = (typeof habits !== 'undefined' && Array.isArray(habits)) ? habits : [];
+      hs.forEach(h => (h.checked||[]).forEach(d => rec(y + '-' + String(m+1).padStart(2,'0') + '-' + String(d).padStart(2,'0'))));
+    }
+  } catch(e) {}
+  
+  let maxVol = 1;
+  Object.values(volumes).forEach(v => { if(v > maxVol) maxVol = v; });
+
+  while (cur <= stop) {
+    const k = cur.toISOString().slice(0, 10);
+    data.push([k, (volumes[k] || 0)]);
+    cur.setDate(cur.getDate() + 1);
+  }
+  
+  if (Object.keys(volumes).length === 0) {
+    chart.setOption({ title: { text: 'NO DATA YET', subtext: 'Log activity to start the wall',
       left: 'center', top: 'center', textStyle: { fontSize: 12, color: '#5c6963' },
       subtextStyle: { fontSize: 9, color: '#3c4641' } } });
     return;
   }
-  const now = new Date(), y = now.getFullYear(), m = now.getMonth(), dim = new Date(y, m + 1, 0).getDate();
-  const byDate = {};
-  for (let d = 1; d <= dim; d++) {
-    const hit = hs.filter(h => (h.checked || []).indexOf(d) !== -1).length;
-    byDate[y + '-' + String(m + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0')] = hit / hs.length;
-  }
-  const end = hvToday(), sd = new Date(end + 'T00:00:00'); sd.setDate(sd.getDate() - 83);
-  const start = sd.toISOString().slice(0, 10);
-  const data = [], cur = new Date(start + 'T00:00:00'), stop = new Date(end + 'T00:00:00');
-  while (cur <= stop) {
-    const k = cur.toISOString().slice(0, 10);
-    data.push([k, +((byDate[k] || 0)).toFixed(3)]);
-    cur.setDate(cur.getDate() + 1);
-  }
+
   chart.setOption({
-    tooltip: { formatter: p => p.value[0] + '  ·  ' + Math.round(p.value[1] * 100) + '%' },
-    visualMap: { min: 0, max: 1, show: false, type: 'piecewise',
-      pieces: [{ min: 0, max: 0.001, color: '#141a17' }, { min: 0.001, max: 0.34, color: '#1f3b28' },
-               { min: 0.34, max: 0.67, color: '#3b6839' }, { min: 0.67, max: 0.99, color: '#76b372' },
-               { min: 0.99, max: 1.5, color: '#a5f79e' }] },
-    calendar: { top: 24, left: 34, right: 8, bottom: 6, cellSize: ['auto', 15], range: [start, end],
+    tooltip: { formatter: p => p.value[0] + '  ·  ' + p.value[1] + ' actions' },
+    visualMap: { min: 0, max: Math.max(maxVol, 4), show: false, type: 'piecewise',
+      pieces: [{ min: 0, max: 0.1, color: '#141a17' }, { min: 0.1, max: maxVol*0.25, color: '#1f3b28' },
+               { min: maxVol*0.25, max: maxVol*0.5, color: '#3b6839' }, { min: maxVol*0.5, max: maxVol*0.75, color: '#76b372' },
+               { min: maxVol*0.75, max: 9999, color: '#a5f79e' }] },
+    calendar: { top: 24, left: 34, right: 8, bottom: 6, cellSize: ['auto', 12], range: [start, end],
       splitLine: { show: false }, itemStyle: { color: '#0f0f0f', borderColor: '#141414', borderWidth: 2 },
       dayLabel: { color: '#5c6963', fontFamily: "'Space Mono',monospace", fontSize: 8, firstDay: 1 },
       monthLabel: { color: '#9ba8a2', fontFamily: "'Space Mono',monospace", fontSize: 9 },
@@ -12877,16 +13451,53 @@ async function hvEnsureHabits() {
   return Array.isArray(habits) && habits.length > 0;
 }
 
+function hvRenderShortcuts() {
+  const container = document.getElementById('hvHabitShortcuts');
+  if (!container) return;
+  const hs = (typeof habits !== 'undefined' && Array.isArray(habits)) ? habits : [];
+  const day = new Date().getDate();
+  if (!hs.length) {
+    container.innerHTML = '<span style="color:#5c6963;font-size:10px;">NO HABITS TRACKED YET</span>';
+    return;
+  }
+  let html = '';
+  hs.forEach((h, i) => {
+    const isDone = (h.checked || []).indexOf(day) !== -1;
+    html += `<button class="hv-btn ${isDone ? 'ghost' : 'primary'}" style="padding: 4px 8px; font-size: 9px; flex: 1 1 auto;" onclick="logHabitToday(${i})">${(h.name || '').replace(/_/g, ' ')} ${isDone ? '✓' : ''}</button>`;
+  });
+  container.innerHTML = html;
+}
+
+window.logHabitToday = function(hi) {
+  const h = habits[hi];
+  if(!h) return;
+  const d = new Date().getDate();
+  if (!h.checked) h.checked = [];
+  const idx = h.checked.indexOf(d);
+  const completing = idx < 0;
+  if (completing) {
+    h.checked.push(d);
+  } else {
+    h.checked.splice(idx, 1);
+  }
+  h.pct = Math.round((h.checked.length / new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate()) * 100);
+  if(typeof saveHabits === 'function') saveHabits();
+  if (h.id && typeof gridSync === 'function') gridSync(`/api/habits/${h.id}/log`, { date: new Date().getFullYear() + '-' + String(new Date().getMonth() + 1).padStart(2,'0') + '-' + String(d).padStart(2,'0'), completed: completing });
+  hvRenderShortcuts();
+  if(typeof hvRenderStatus === 'function') hvRenderStatus();
+  if(typeof hvRenderHeat === 'function') hvRenderHeat();
+}
+
 function renderConsole() {
   // hvRenderChips intentionally omitted: the NOW card no longer carries habit
   // chips — one-tap logging lives in the Daily Console (LOG TODAY / ⌘K).
-  [hvRenderHead, hvRenderNow, hvRenderAttention, hvRenderStatus, hvRenderHeat]
+  [hvRenderHead, hvRenderNow, hvRenderAttention, hvRenderStatus, hvRenderHeat, hvRenderShortcuts]
     .forEach(fn => { try { fn(); } catch (e) { console.warn('home ' + fn.name + ':', e); } });
 
   // Pull habit data if this is a cold landing on Home, then repaint what uses it.
   hvEnsureHabits().then(loaded => {
     if (!loaded) return;
-    [hvRenderHead, hvRenderAttention, hvRenderStatus, hvRenderHeat]
+    [hvRenderHead, hvRenderAttention, hvRenderStatus, hvRenderHeat, hvRenderShortcuts]
       .forEach(fn => { try { fn(); } catch (e) {} });
   });
   hvStartClock();
@@ -13770,6 +14381,145 @@ function mgOpenDos(n) {
 }
 function mgCloseDos() { const d = document.getElementById('mgDos'); if (d) d.classList.remove('open'); }
 
+/* ══ MINDGRAPH SEARCH ═══════════════════════════════════════════════════════
+   Two things live in one box, because they're the same gesture: "find this
+   thing I remember." A name → open its dossier, same as clicking the node
+   in the graph. A date/month/week → jump the Time Machine there so Gym,
+   Finances and the two activity grids repaint as of that point (see the
+   Time Machine block above gridIsPreview() for what is and isn't
+   reconstructable). The mindgraph itself does not change on time travel —
+   it is a memory of named things across ALL time, not a per-date snapshot. */
+const MG_MONTHS = ['january','february','march','april','may','june','july',
+                    'august','september','october','november','december'];
+
+function _mgPad(n) { return String(n).padStart(2, '0'); }
+
+function mgParsePeriod(raw) {
+  const q = (raw || '').trim().toLowerCase();
+  if (!q) return null;
+  const today = new Date();
+
+  // "N days/weeks/months ago"
+  let m = /^(\d+)\s*(day|week|month)s?\s*ago$/.exec(q);
+  if (m) {
+    const n = parseInt(m[1], 10);
+    const d = new Date(today);
+    if (m[2] === 'day') d.setDate(d.getDate() - n);
+    else if (m[2] === 'week') d.setDate(d.getDate() - n * 7);
+    else d.setMonth(d.getMonth() - n);
+    return { date: d.getFullYear() + '-' + _mgPad(d.getMonth() + 1) + '-' + _mgPad(d.getDate()),
+             label: d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) };
+  }
+  if (q === 'yesterday') {
+    const d = new Date(today); d.setDate(d.getDate() - 1);
+    return { date: d.getFullYear() + '-' + _mgPad(d.getMonth()+1) + '-' + _mgPad(d.getDate()), label: 'YESTERDAY' };
+  }
+  if (q === 'last week') {
+    const d = new Date(today); d.setDate(d.getDate() - 7);
+    return { date: d.getFullYear() + '-' + _mgPad(d.getMonth()+1) + '-' + _mgPad(d.getDate()), label: 'A WEEK AGO' };
+  }
+  if (q === 'last month' || q === 'previous month') {
+    const d = new Date(today.getFullYear(), today.getMonth(), 0);   // last day of prior month
+    return { date: d.getFullYear() + '-' + _mgPad(d.getMonth()+1) + '-' + _mgPad(d.getDate()),
+             label: d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }).toUpperCase() };
+  }
+  // 'YYYY-MM' or 'YYYY-MM-DD'
+  m = /^(\d{4})-(\d{2})(?:-(\d{2}))?$/.exec(q);
+  if (m) {
+    const y = +m[1], mo = +m[2] - 1;
+    const day = m[3] ? +m[3] : new Date(y, mo + 1, 0).getDate();   // end of month if no day given
+    const d = new Date(y, mo, day);
+    if (isNaN(d)) return null;
+    return { date: y + '-' + _mgPad(mo+1) + '-' + _mgPad(day),
+             label: d.toLocaleDateString('en-US', { month: 'long', day: m[3] ? 'numeric' : undefined, year: 'numeric' }).toUpperCase() };
+  }
+  // 'march', 'march 2026', 'mar 25'
+  m = /^([a-z]+)\.?\s*(\d{2,4})?$/.exec(q);
+  if (m) {
+    const monthIdx = MG_MONTHS.findIndex(mn => mn.startsWith(m[1]));
+    if (monthIdx >= 0) {
+      let y = m[2] ? parseInt(m[2], 10) : today.getFullYear();
+      if (y < 100) y += 2000;
+      const d = new Date(y, monthIdx + 1, 0);   // last day of that month
+      return { date: y + '-' + _mgPad(monthIdx+1) + '-' + _mgPad(d.getDate()),
+               label: MG_MONTHS[monthIdx].toUpperCase() + ' ' + y };
+    }
+  }
+  // bare 4-digit year
+  m = /^(\d{4})$/.exec(q);
+  if (m) {
+    const y = +m[1];
+    if (y > 1900 && y < 2100) return { date: y + '-12-31', label: 'END OF ' + y };
+  }
+  return null;
+}
+
+function mgSearchClose() {
+  const box = document.getElementById('mgSearchBox');
+  const res = document.getElementById('mgSearchResults');
+  const clr = document.getElementById('mgSearchClear');
+  if (box) box.value = '';
+  if (res) { res.classList.remove('open'); res.innerHTML = ''; }
+  if (clr) clr.style.display = 'none';
+}
+
+function mgSearchInput(value) {
+  const res = document.getElementById('mgSearchResults');
+  const clr = document.getElementById('mgSearchClear');
+  if (!res) return;
+  const q = (value || '').trim();
+  if (clr) clr.style.display = q ? 'block' : 'none';
+  if (!q) { res.classList.remove('open'); res.innerHTML = ''; return; }
+
+  const period = mgParsePeriod(q);
+  const named = mgCollect();
+  const ql = q.toLowerCase();
+  const matches = Object.keys(named)
+    .filter(label => label.toLowerCase().includes(ql))
+    .slice(0, 8)
+    .map(label => ({ label, cat: named[label].cat, facts: named[label].facts }));
+
+  let html = '';
+  if (period) {
+    html += '<div class="mg-sr-group-label">TIME TRAVEL</div>'
+      + '<div class="mg-sr-item" onclick=\'mgSearchJumpTime("' + period.date + '", "' + period.label.replace(/"/g, '') + '")\'>'
+      + '<span class="mg-sr-dot" style="background:var(--pink)"></span>'
+      + 'VIEW STATE AS OF ' + escHtml(period.label)
+      + '<span class="mg-sr-sub">GYM · FINANCES · HOME</span></div>';
+  }
+  if (matches.length) {
+    html += '<div class="mg-sr-group-label">NODES</div>'
+      + matches.map((n, i) => {
+          const col = MG_COLORS[n.cat] || '#76b372';
+          return '<div class="mg-sr-item" onclick="mgSearchOpenNode(' + i + ')">'
+            + '<span class="mg-sr-dot" style="background:' + col + '"></span>'
+            + escHtml(n.label)
+            + '<span class="mg-sr-sub">' + (MG_LABELS[n.cat] || n.cat).toUpperCase() + '</span></div>';
+        }).join('');
+  }
+  if (!period && !matches.length) {
+    html = '<div class="mg-sr-empty">NO MATCHING NODES — TRY A NAME, A MONTH ("MARCH 2026"), OR "LAST WEEK"</div>';
+  }
+  res.innerHTML = html;
+  res.classList.add('open');
+  _mgSearchMatches = matches;   // so mgSearchOpenNode(i) can find what was clicked
+}
+
+let _mgSearchMatches = [];
+function mgSearchOpenNode(i) {
+  const n = _mgSearchMatches[i];
+  if (!n) return;
+  mgOpenDos(n);
+  mgSearchClose();
+}
+
+function mgSearchJumpTime(date, label) {
+  enterTimeTravel(date, label);
+  mgSearchClose();
+  const hint = document.getElementById('mgHeadHint');
+  if (hint) hint.textContent = 'TIME TRAVEL ACTIVE — VISIT GYM, FINANCES OR HOME TO SEE THAT STATE';
+}
+
 /* ── Boot / lifecycle ── */
 function mgBindOnce() {
   if (mgBindOnce._done) return;
@@ -13958,7 +14708,7 @@ function gymVolumeByGroup(fromStr, toStr) {
 }
 
 function gymMonthWindow(offset) {
-  const now = new Date();
+  const now = gridNow();
   const start = new Date(now.getFullYear(), now.getMonth() - (offset || 0), 1);
   const end   = new Date(now.getFullYear(), now.getMonth() - (offset || 0) + 1, 0);
   const fmt = d => d.toISOString().slice(0, 10);
