@@ -4200,8 +4200,12 @@ html, body {
 
 /* ── ZONE 3 · STATUS ── */
 .hv-status { flex:1; display:grid; grid-template-columns:repeat(12,1fr); grid-auto-rows:minmax(88px,auto); gap:13px; }
-.hv-heat { grid-column:1/-1; grid-row:span 2; }
-.hv-heat #hvHeatWall { flex:1; width:100%; min-height:170px; }
+/* grid-row was span 2 — a leftover from when this card shared the zone with
+   other status tiles that have since moved elsewhere. Square, fixed-size
+   cells no longer need (or want) that forced extra height: it just left a
+   dead gap below a much shorter chart. */
+.hv-heat { grid-column:1/-1; grid-row:span 1; }
+.hv-heat #hvHeatWall { width:100%; }
 .hv-k { grid-column:span 5; display:grid; grid-template-columns:1fr 1fr; grid-auto-rows:1fr; gap:13px; grid-row:span 2; }
 .hv-tile { background:var(--carbon-1); border:1px solid var(--carbon-4); border-radius:14px; padding:14px 16px;
   display:flex; flex-direction:column; cursor:pointer; transition:all .18s; }
@@ -4970,7 +4974,7 @@ html, body {
         <div class="hv-status">
           <div class="hv-card hv-heat">
             <div class="hv-chead"><span class="hv-ct">THE GRID ACTIVITY HEATMAP</span><span class="hv-cm">FULL YEAR</span></div>
-            <div id="hvHeatWall" style="min-height:160px;"></div>
+            <div id="hvHeatWall"></div>
           </div>
 
         </div>
@@ -13383,10 +13387,29 @@ function hvRenderStatus() {
 function hvRenderHeat() {
   const el = document.getElementById('hvHeatWall');
   if (!el || typeof echarts === 'undefined') return;
+
+  const now0 = gridNow();
+  const end0 = new Date(now0.getFullYear(), 11, 31);
+  const start0 = new Date(now0.getFullYear(), 0, 1);
+
+  // Fixed cellSize keeps the cells square (see the note on `calendar` below),
+  // but a FIXED number left the box tiny in a corner of a much wider card.
+  // Compute it from the container's actual width instead, so the wall still
+  // fills the box the way it did before — just with real squares now. Height
+  // has to be set BEFORE echarts inits against this element, since a bare
+  // div with no content and no explicit height measures as 0px tall and
+  // ECharts would size its canvas to that.
+  const TOP_OFFSET = 24, LEFT_INSET = 34, RIGHT_MARGIN = 8;
+  const weeksSpan = Math.ceil((end0 - start0) / (7 * 86400000)) + 2;
+  const boxW = el.clientWidth || el.getBoundingClientRect().width || 900;
+  const cell = Math.max(8, Math.min(15, Math.floor((boxW - LEFT_INSET - RIGHT_MARGIN) / weeksSpan)));
+  el.style.height = (TOP_OFFSET + 7 * cell + 16) + 'px';
+
   const chart = ethosChart(el); if (!chart) return;
+  chart.resize();
   chart.clear();
 
-  const now = gridNow(), y = now.getFullYear(), m = now.getMonth();
+  const y = now0.getFullYear(), m = now0.getMonth();
   const end = y + '-12-31';
   const start = y + '-01-01';
   const data = [], cur = new Date(start + 'T00:00:00'), stop = new Date(end + 'T00:00:00');
@@ -13442,7 +13465,7 @@ function hvRenderHeat() {
     // cellSize back to 'auto' — confirmed via convertToPixel, not just
     // getOption() (which reports the same wrong 'auto' either way). Anchor
     // with top+left only and let cellSize size the box for real.
-    calendar: { top: 24, left: 34, cellSize: [11, 11], range: [start, end],
+    calendar: { top: 24, left: LEFT_INSET, cellSize: [cell, cell], range: [start, end],
       splitLine: { show: false }, itemStyle: { color: '#0f0f0f', borderColor: '#141414', borderWidth: 2 },
       dayLabel: { color: '#5c6963', fontFamily: "'Space Mono',monospace", fontSize: 8, firstDay: 1 },
       monthLabel: { color: '#9ba8a2', fontFamily: "'Space Mono',monospace", fontSize: 9 },
