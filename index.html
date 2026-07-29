@@ -271,6 +271,11 @@ html, body {
 #demoPill svg { width: 12px; height: 12px; stroke: var(--green); fill: none; stroke-width: 2; flex-shrink: 0; }
 #demoPill:hover { background: var(--green); color: var(--bg); }
 #demoPill:hover svg { stroke: var(--bg); }
+/* In a preview session the pill is an exit, not an invitation — amber, not green. */
+#demoPill.exiting { border-color: rgba(249,115,22,0.4); color: var(--orange); }
+#demoPill.exiting svg { stroke: var(--orange); }
+#demoPill.exiting:hover { background: var(--orange); color: var(--bg); }
+#demoPill.exiting:hover svg { stroke: var(--bg); }
 
 /* Notification badge dot on bell */
 .notif-badge {
@@ -4221,10 +4226,10 @@ html, body {
   <header id="topbar">
     <div class="logo">THE GRID</div>
     <div class="top-icons">
-      <!-- Demo pill — only visible in user mode -->
-      <button id="demoPill" onclick="launchDemo()" title="Preview demo data">
+      <!-- Demo pill — flips to the exit once a preview session is running -->
+      <button id="demoPill" onclick="toggleGridMode()" title="Preview demo data">
         <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-        DEMO
+        <span id="demoPillLabel">DEMO</span>
       </button>
       <!-- Bell / Notifications -->
       <span id="bellWrapper" class="notif-badge" onclick="openNotifications()" title="Notifications" style="display:flex;align-items:center;cursor:pointer;">
@@ -4454,14 +4459,12 @@ html, body {
 
       <!-- Actions -->
       <div class="profile-actions" style="margin-top:16px;">
-        <button class="profile-btn demo-btn" id="profileDemoBtn" onclick="launchDemo()">
+        <!-- One button that flips with the mode, so there is always a way back. -->
+        <button class="profile-btn demo-btn" id="profileModeBtn" onclick="toggleGridMode()">
           ▶ &nbsp; SWITCH TO DEMO MODE
         </button>
         <button class="profile-btn signout-btn" id="profileSignoutBtn" onclick="handleLogout()">
           SIGN OUT
-        </button>
-        <button class="profile-btn signout-btn" id="profileExitDemoBtn" style="display:none" onclick="handleExitDemo()">
-          EXIT DEMO
         </button>
       </div>
     </div>
@@ -5076,18 +5079,23 @@ html, body {
               </div>
             </div>
 
-            <!-- Dynamic Log Diary Section -->
-            <div class="gym-telemetry" style="padding: 18px 20px;">
-              <div class="gym-tel-head" style="margin-bottom: 12px;">
-                <div style="display:flex;align-items:center;gap:8px">
-                  <svg viewBox="0 0 24 24" width="14" height="14" stroke="var(--green)" fill="none" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                  <span class="gym-tel-title">BIO-METRIX TRAINING LOG DIARY</span>
+            <!-- Session Logger — lives beside the split it logs against -->
+            <div class="gym-telemetry" style="padding: 20px; display:flex; flex-direction:column;">
+              <div style="margin-bottom:14px;">
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+                  <svg viewBox="0 0 24 24" width="14" height="14" stroke="var(--green)" fill="none" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="9" x2="15" y2="9"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/></svg>
+                  <span class="gym-tel-title">WORKOUT SESSION LOGGER</span>
                 </div>
-                <div class="gym-tel-sub" id="logDiaryCount">0 Sessions Logged</div>
+                <div style="display:flex;align-items:center;gap:10px;">
+                  <span style="font-size:9px;color:var(--text-muted);letter-spacing:1.5px;white-space:nowrap;">SELECT DAY</span>
+                  <select class="form-select" id="loggerDaySelect" onchange="renderLoggerPanel()" style="flex:1; font-size:10px; padding:4px 8px; height:28px; border-radius:4px;"></select>
+                </div>
               </div>
-              
-              <div id="logDiaryEntries" style="display:flex; flex-direction:column; gap:8px; max-height: 280px; overflow-y:auto; padding-right:4px;">
-                <!-- Dynamically rendered log ledger items -->
+              <div id="loggerExercisesContainer" style="flex:1; overflow-y:auto; max-height:none; padding-right:4px; display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:10px;">
+                <!-- Dynamically rendered inputs per exercise -->
+              </div>
+              <div id="loggerActionContainer" style="margin-top:14px;">
+                <button class="fin-commit-btn" id="commitWorkoutBtn" onclick="commitWorkoutLog()" style="width:100%; margin:0; padding:10px;">COMMIT SESSION LOG</button>
               </div>
             </div>
           </div>
@@ -5187,23 +5195,18 @@ html, body {
             </div>
           </div>
           
-          <!-- Right: Session Logger panel -->
-          <div class="gym-telemetry" style="padding: 20px; display:flex; flex-direction:column;">
-            <div style="margin-bottom:14px;">
-              <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
-                <svg viewBox="0 0 24 24" width="14" height="14" stroke="var(--green)" fill="none" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="9" x2="15" y2="9"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/></svg>
-                <span class="gym-tel-title">WORKOUT SESSION LOGGER</span>
+          <!-- Log Diary — the ledger of everything already committed -->
+          <div class="gym-telemetry" style="padding: 18px 20px;">
+            <div class="gym-tel-head" style="margin-bottom: 12px;">
+              <div style="display:flex;align-items:center;gap:8px">
+                <svg viewBox="0 0 24 24" width="14" height="14" stroke="var(--green)" fill="none" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                <span class="gym-tel-title">BIO-METRIX TRAINING LOG DIARY</span>
               </div>
-              <div style="display:flex;align-items:center;gap:10px;">
-                <span style="font-size:9px;color:var(--text-muted);letter-spacing:1.5px;white-space:nowrap;">SELECT DAY</span>
-                <select class="form-select" id="loggerDaySelect" onchange="renderLoggerPanel()" style="flex:1; font-size:10px; padding:4px 8px; height:28px; border-radius:4px;"></select>
-              </div>
+              <div class="gym-tel-sub" id="logDiaryCount">0 Sessions Logged</div>
             </div>
-            <div id="loggerExercisesContainer" style="flex:1; overflow-y:auto; max-height:none; padding-right:4px; display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:10px;">
-              <!-- Dynamically rendered inputs per exercise -->
-            </div>
-            <div id="loggerActionContainer" style="margin-top:14px;">
-              <button class="fin-commit-btn" id="commitWorkoutBtn" onclick="commitWorkoutLog()" style="width:100%; margin:0; padding:10px;">COMMIT SESSION LOG</button>
+
+            <div id="logDiaryEntries" style="display:flex; flex-direction:column; gap:8px; max-height: 280px; overflow-y:auto; padding-right:4px;">
+              <!-- Dynamically rendered log ledger items -->
             </div>
           </div>
         </div>
@@ -6123,16 +6126,77 @@ function handleLogout() {
   sessionStorage.removeItem('gridUserName');
   localStorage.removeItem('gridUser');
   sessionStorage.removeItem('gridMode');
+  sessionStorage.removeItem('gridIsSandbox');
   localStorage.removeItem('gridActiveMode');
   location.reload();
+}
+
+/**
+ * Are we in a preview session? Covers BOTH demo paths, which is the whole point:
+ * the sandbox path deliberately runs as a real 'user' session (so every feature
+ * takes the normal API route), which meant nothing in the UI could tell it was a
+ * demo and no exit button ever appeared.
+ */
+function gridIsPreview() {
+  if (sessionStorage.getItem('gridMode') === 'demo')     return true;
+  if (sessionStorage.getItem('gridIsSandbox') === '1')   return true;
+  // Authoritative fallback: the flag above is only set by sessions created since
+  // it was introduced, but the address is stamped by the server and can never
+  // belong to a real account (@sandbox.invalid is a reserved, undeliverable TLD).
+  return /@sandbox\.invalid$/i.test(sessionStorage.getItem('gridUser') || '');
+}
+
+function toggleGridMode() {
+  if (gridIsPreview()) exitDemoMode();
+  else                 launchDemo();
+}
+
+/**
+ * Single owner of every mode-dependent control. The top bar and the profile
+ * panel used to decide this independently, which let them disagree — the pill
+ * could read EXIT DEMO for a live user.
+ */
+function syncModeUI() {
+  const sessionUser = sessionStorage.getItem('gridUser');
+  const isDemo      = gridIsPreview();
+
+  // The pill stays visible in a preview session and becomes the way out of it —
+  // otherwise a sandbox user sees "DEMO" and clicking it spawns a second one.
+  const pill  = document.getElementById('demoPill');
+  const label = document.getElementById('demoPillLabel');
+  if (pill) {
+    pill.style.display = (sessionUser || isDemo) ? 'inline-flex' : 'none';
+    pill.title = isDemo ? 'Leave the demo' : 'Preview demo data';
+    pill.classList.toggle('exiting', isDemo);
+  }
+  if (label) label.textContent = isDemo ? 'EXIT DEMO' : 'DEMO';
+}
+
+function exitDemoMode() {
+  // Legacy local demo: the auth cookie was never touched, so the real account is
+  // still there — restore the backed-up data and drop straight back into it.
+  if (sessionStorage.getItem('gridMode') === 'demo') { handleExitDemo(); return; }
+
+  // Sandbox account: entering it replaced the httpOnly auth cookie, and JS can
+  // neither read nor restore that one. Getting back to your own data means
+  // signing in again — say so up front instead of silently dumping the user at
+  // a login screen and letting them think something broke.
+  const ok = confirm(
+    'Leaving the demo ends this sandbox session.\n\n' +
+    'You will need to sign in again to get back to your own account. Continue?'
+  );
+  if (!ok) return;
+  sessionStorage.removeItem('gridIsSandbox');
+  handleLogout();
 }
 
 function handleExitDemo() {
   const sessionUser = sessionStorage.getItem('gridUser') || localStorage.getItem('gridUser');
   if (sessionUser) {
     sessionStorage.setItem('gridMode', 'user');
+    sessionStorage.removeItem('gridIsSandbox');
     localStorage.setItem('gridActiveMode', 'user');
-    
+
     // Restore backup if exists
     const keysToRestore = [
       'gymDBVersion', 'gymSplitData', 'gymExerciseRegistry', 'gymMuscleGroups', 'gymLogs',
@@ -6915,7 +6979,7 @@ function initGymData() {
 function initGym() {
   initGymData();
   renderWeeklySplit();
-  renderLogDiary();
+  renderSessionLogger();   // logger is on the default (split) tab now
   updateVolumeTelemetry();
   buildMuscleGrid();
   updateRecalTimer();
@@ -6932,12 +6996,13 @@ function gymTab(el, tab) {
   
   if (tab === 'split') {
     renderWeeklySplit();
-    renderLogDiary();
+    renderSessionLogger();
     updateVolumeTelemetry();
   } else if (tab === 'muscle') {
     buildMuscleGrid();
   } else if (tab === 'log') {
     renderOverviewLog();
+    renderLogDiary();
     try { renderGymRadar(); } catch (e) { console.warn('gym radar:', e); }
   }
 }
@@ -7463,10 +7528,16 @@ function initGymChart() {
   });
 }
 
+// Overview tab: the charts and the diary. The logger now lives with the split.
 function renderOverviewLog() {
   initGymData();
   initGymChart();
-  
+}
+
+// Weekly Split tab: the logger, which sits beside the split it logs against.
+function renderSessionLogger() {
+  initGymData();
+
   // Fill dropdown for logger split selection
   const select = document.getElementById('loggerDaySelect');
   if (select) {
@@ -7474,13 +7545,13 @@ function renderOverviewLog() {
     select.innerHTML = split.days.map((d, i) => `
       <option value="${i}">${d.day} - ${d.title}</option>
     `).join('');
-    
+
     // Default select to today's DOW
     const jsDow = today.getDay(); // 0=Sun
     const gridDow = jsDow === 0 ? 6 : jsDow - 1; // Mon=0..Sun=6
     select.value = gridDow;
   }
-  
+
   renderLoggerPanel();
 }
 
@@ -11022,8 +11093,7 @@ async function openProfile() {
 
 function populateProfile() {
   const sessionUser = sessionStorage.getItem('gridUser');
-  const gridMode    = sessionStorage.getItem('gridMode');
-  const isDemo      = gridMode === 'demo';
+  const isDemo      = gridIsPreview();
 
   // Avatar initials
   let initials = '?';
@@ -11033,7 +11103,9 @@ function populateProfile() {
   if (isDemo) {
     initials    = 'DM';
     displayName = 'DEMO MODE';
-    emailDisplay = 'demo@grid.os';
+    // Never surface the raw sandbox-<uuid>@sandbox.invalid address — it is an
+    // internal handle, it is not a real inbox, and it reads like a broken login.
+    emailDisplay = 'SANDBOX PREVIEW — DATA IS TEMPORARY';
   } else if (sessionUser) {
     emailDisplay = sessionUser;
     if (sessionUser.includes('@')) {
@@ -11068,23 +11140,25 @@ function populateProfile() {
     document.getElementById('profileStatPRs').textContent      = prCount;
   } catch(e) {}
 
-  // Show/hide buttons based on mode
-  const demoBtnEl   = document.getElementById('profileDemoBtn');
-  const signoutBtn  = document.getElementById('profileSignoutBtn');
-  const exitDemoBtn = document.getElementById('profileExitDemoBtn');
-  const editBtn     = document.getElementById('profileEditBtn');
+  // The mode button always shows the way OUT of wherever you currently are.
+  const modeBtn    = document.getElementById('profileModeBtn');
+  const signoutBtn = document.getElementById('profileSignoutBtn');
+  const editBtn    = document.getElementById('profileEditBtn');
 
-  if (isDemo) {
-    if (demoBtnEl)   demoBtnEl.style.display   = 'none';
-    if (signoutBtn)  signoutBtn.style.display  = 'none';
-    if (exitDemoBtn) exitDemoBtn.style.display = 'block';
-    if (editBtn)     editBtn.style.display     = 'none'; // can't edit in demo
-  } else {
-    if (demoBtnEl)   demoBtnEl.style.display   = 'block';
-    if (signoutBtn)  signoutBtn.style.display  = 'block';
-    if (exitDemoBtn) exitDemoBtn.style.display = 'none';
-    if (editBtn)     editBtn.style.display     = 'block';
+  if (modeBtn) {
+    modeBtn.innerHTML = isDemo
+      ? '◀ &nbsp; SWITCH TO USER MODE'
+      : '▶ &nbsp; SWITCH TO DEMO MODE';
+    modeBtn.style.display = 'block';
+    modeBtn.title = isDemo
+      ? 'Leave the demo and return to your own account'
+      : 'Preview Grid with sample data — your own data is kept';
   }
+  // Signing out of a demo would strand you, so it is hidden there.
+  if (signoutBtn) signoutBtn.style.display = isDemo ? 'none' : 'block';
+  if (editBtn)    editBtn.style.display    = isDemo ? 'none' : 'block';
+
+  syncModeUI();   // keep the top-bar pill in step with this panel
 
   // If saved name exists, override displayName in hero
   const pd = JSON.parse(localStorage.getItem('gridUserProfile') || '{}');
@@ -11202,14 +11276,7 @@ function saveProfileDetails() {
 // Called once auth passes — wire up demo pill + bell badge visibility
 
 function initTopbar() {
-  const sessionUser = sessionStorage.getItem('gridUser');
-  const gridMode    = sessionStorage.getItem('gridMode');
-  const isDemo      = gridMode === 'demo';
-  const isUser      = sessionUser && !isDemo;
-
-  // Show demo pill only for signed-in (non-demo) users
-  const pill = document.getElementById('demoPill');
-  if (pill) pill.style.display = isUser ? 'inline-flex' : 'none';
+  syncModeUI();
 
   // Kick off notification badge check
   setTimeout(() => {
