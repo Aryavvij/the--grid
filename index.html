@@ -13599,8 +13599,17 @@ function hvRenderUpcoming() {
       return;
     }
 
+    let startIndex = events.findIndex(ev => ev.isNow);
+    if (startIndex === -1) {
+      startIndex = events.findIndex(ev => !ev.isPast);
+      if (startIndex === -1) {
+        startIndex = Math.max(0, events.length - 8);
+      }
+    }
+    const displayEvents = events.slice(startIndex, startIndex + 8);
+
     let foundNext = false;
-    el.innerHTML = events.map(ev => {
+    el.innerHTML = displayEvents.map(ev => {
       let slotLabel = '';
       if (ev.isNow) {
         slotLabel = 'NOW';
