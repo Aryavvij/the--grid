@@ -4961,14 +4961,6 @@ html, body {
           </div>
         </div>
 
-        <!-- ZONE 2 · ATTENTION (renders only when something is off-track) -->
-        <div class="hv-card hv-attn" id="hvAttn">
-          <div class="hv-chead">
-            <span class="hv-ct">NEEDS ATTENTION</span>
-            <span class="hv-cm" id="hvAttnCount"></span>
-          </div>
-          <div class="hv-alerts" id="hvAlerts"></div>
-        </div>
 
         <!-- ZONE 3 · THE GRID ACTIVITY HEATMAP -->
         <div class="hv-status">
@@ -13202,7 +13194,7 @@ function hvTap(i) {
   const day = new Date().getDate();
   const on = (h.checked || []).indexOf(day) === -1;
   if (typeof dcSetHabit === 'function') dcSetHabit(i, day, on);
-  hvRenderChips(); hvRenderHead(); hvRenderAttention(); hvRenderStatus(); hvRenderHeat();
+  hvRenderChips(); hvRenderHead(); hvRenderStatus(); hvRenderHeat();
   try { if (typeof buildHabitMatrix === 'function') buildHabitMatrix(); } catch (e) {}
   try { hydrateRealStats(); } catch (e) {}
   const el = document.querySelector('.hv-chip[data-i="' + i + '"]');
@@ -13392,17 +13384,19 @@ function hvRenderHeat() {
   const end0 = new Date(now0.getFullYear(), 11, 31);
   const start0 = new Date(now0.getFullYear(), 0, 1);
 
-  // Fixed cellSize keeps the cells square (see the note on `calendar` below),
-  // but a FIXED number left the box tiny in a corner of a much wider card.
-  // Compute it from the container's actual width instead, so the wall still
-  // fills the box the way it did before — just with real squares now. Height
-  // has to be set BEFORE echarts inits against this element, since a bare
-  // div with no content and no explicit height measures as 0px tall and
-  // ECharts would size its canvas to that.
+  // Fixed cellSize keeps the cells square (see the note on `calendar` below).
+  // Computed from the container's actual width so the wall spans the full
+  // card rather than sitting at some small fixed size in the corner — a
+  // 15px cap was still leaving most of a wide card empty. 40px is just a
+  // sanity ceiling for freak-wide monitors, not a real-world limit: at a
+  // normal desktop width this resolves to ~30-35px, genuinely filling it.
+  // Height necessarily grows with it — square cells spanning full width
+  // means a taller wall, not just a wider one; that's the actual shape of
+  // "span the entire length" honored, not a compromise around it.
   const TOP_OFFSET = 24, LEFT_INSET = 34, RIGHT_MARGIN = 8;
   const weeksSpan = Math.ceil((end0 - start0) / (7 * 86400000)) + 2;
   const boxW = el.clientWidth || el.getBoundingClientRect().width || 900;
-  const cell = Math.max(8, Math.min(15, Math.floor((boxW - LEFT_INSET - RIGHT_MARGIN) / weeksSpan)));
+  const cell = Math.max(8, Math.min(40, Math.floor((boxW - LEFT_INSET - RIGHT_MARGIN) / weeksSpan)));
   el.style.height = (TOP_OFFSET + 7 * cell + 16) + 'px';
 
   const chart = ethosChart(el); if (!chart) return;
@@ -13612,13 +13606,13 @@ function hvRenderUpcoming() {
 function renderConsole() {
   // hvRenderChips intentionally omitted: the NOW card no longer carries habit
   // chips — one-tap logging lives in the Daily Console (LOG TODAY / ⌘K).
-  [hvRenderHead, hvRenderNow, hvRenderAttention, hvRenderStatus, hvRenderHeat, hvRenderMiniWidgets, hvRenderUpcoming]
+  [hvRenderHead, hvRenderNow, hvRenderStatus, hvRenderHeat, hvRenderMiniWidgets, hvRenderUpcoming]
     .forEach(fn => { try { fn(); } catch (e) { console.warn('home ' + fn.name + ':', e); } });
 
   // Pull habit data if this is a cold landing on Home, then repaint what uses it.
   hvEnsureHabits().then(loaded => {
     if (!loaded) return;
-    [hvRenderHead, hvRenderAttention, hvRenderStatus, hvRenderHeat, hvRenderMiniWidgets, hvRenderUpcoming]
+    [hvRenderHead, hvRenderStatus, hvRenderHeat, hvRenderMiniWidgets, hvRenderUpcoming]
       .forEach(fn => { try { fn(); } catch (e) {} });
   });
   hvStartClock();
