@@ -5157,6 +5157,21 @@ html, body {
         <div class="gym-split-title" style="margin-bottom:6px">OVERVIEW &amp; LOG</div>
         <div class="gym-split-sub" style="margin-bottom:20px">Session history and biometric telemetry feed</div>
         
+        <!-- Muscle balance radar — new, sits alongside the existing charts -->
+        <div class="gym-telemetry" style="padding:20px; margin-bottom:14px;">
+          <div class="gym-tel-head">
+            <div style="display:flex;align-items:center;gap:8px">
+              <svg viewBox="0 0 24 24" width="14" height="14" stroke="var(--green)" fill="none" stroke-width="2"><polygon points="12 2 22 8.5 18 20 6 20 2 8.5"/></svg>
+              <span class="gym-tel-title">MUSCLE BALANCE</span>
+            </div>
+            <div class="gym-tel-sub">Training volume by group — this month against last</div>
+          </div>
+          <div style="display:grid; grid-template-columns: minmax(300px,420px) 1fr; gap:24px; align-items:center;">
+            <div id="gymRadar" style="width:100%; height:380px;"></div>
+            <div id="gymBalanceList" style="display:flex; flex-direction:column; gap:9px;"></div>
+          </div>
+        </div>
+
         <div class="gym-log-grid" style="display:grid; grid-template-columns: 1fr; gap: 14px; margin-bottom:14px;">
           <!-- Left: Strength progression chart -->
           <div class="gym-telemetry" style="padding: 20px;">
@@ -6923,6 +6938,7 @@ function gymTab(el, tab) {
     buildMuscleGrid();
   } else if (tab === 'log') {
     renderOverviewLog();
+    try { renderGymRadar(); } catch (e) { console.warn('gym radar:', e); }
   }
 }
 
@@ -7708,6 +7724,7 @@ function commitWorkoutLog() {
 
     initGymData();
     initGymChart();
+    try { renderGymRadar(); } catch (e) { console.warn('gym radar:', e); }
     renderLogDiary();
     updateVolumeTelemetry();
     renderLoggerPanel();
@@ -13097,6 +13114,151 @@ function pushStudySession(entry) {
     minutes: entry.minutes, category: entry.category || 'general',
     note: entry.note || null,
   });
+}
+
+
+/* ══ MUSCLE BALANCE RADAR ═══════════════════════════════════════════════════
+   Volume per muscle group, this month against last. Answers a question no
+   other chart in Grid does: which groups are being neglected relative to the
+   rest. Built in ECharts to match the Bklit radar look — polygonal grid, three
+   levels, perimeter labels, translucent overlapping areas.                   */
+
+/** Total logged sets per muscle group inside a date window. */
+function gymVolumeByGroup(fromStr, toStr) {
+  let logs = [];
+  try { logs = JSON.parse(localStorage.getItem('gymLogs') || '[]'); } catch (e) {}
+
+  // exercise name -> muscle group, from the registry
+  const owner = {};
+  Object.keys(exerciseRegistry || {}).forEach(mg =>
+    (exerciseRegistry[mg].exercises || []).forEach(ex => {
+      owner[String(ex.name).toUpperCase()] = mg;
+    }));
+
+  const totals = {};
+  Object.keys(exerciseRegistry || {}).forEach(mg => { totals[mg] = 0; });
+
+  logs.forEach(l => {
+    const d = l.date || l.workoutDate || '';
+    if (fromStr && d < fromStr) return;
+    if (toStr   && d > toStr)   return;
+    (l.exercises || []).forEach(ex => {
+      const mg = owner[String(ex.name || '').toUpperCase()];
+      if (!mg) return;
+      totals[mg] += (ex.sets || []).length || 1;
+    });
+  });
+  return totals;
+}
+
+function gymMonthWindow(offset) {
+  const now = new Date();
+  const start = new Date(now.getFullYear(), now.getMonth() - (offset || 0), 1);
+  const end   = new Date(now.getFullYear(), now.getMonth() - (offset || 0) + 1, 0);
+  const fmt = d => d.toISOString().slice(0, 10);
+  return { from: fmt(start), to: fmt(end) };
+}
+
+function renderGymRadar() {
+  const el = document.getElementById('gymRadar');
+  const listEl = document.getElementById('gymBalanceList');
+  if (!el || typeof echarts === 'undefined') return;
+  const chart = ethosChart(el);
+  if (!chart) return;
+  chart.clear();
+
+  const groups = Object.keys(exerciseRegistry || {});
+  if (!groups.length) {
+    chart.setOption({ title: { text: 'NO MUSCLE GROUPS', subtext: 'Register exercises to see balance',
+      left: 'center', top: 'center', textStyle: { fontSize: 12, color: '#5c6963' },
+      subtextStyle: { fontSize: 9, color: '#3c4641' } } });
+    if (listEl) listEl.innerHTML = '';
+    return;
+  }
+
+  const cur  = gymMonthWindow(0);
+  const prev = gymMonthWindow(1);
+  const nowT  = gymVolumeByGroup(cur.from, cur.to);
+  const prevT = gymVolumeByGroup(prev.from, prev.to);
+
+  const peak = Math.max(1, ...groups.map(g => Math.max(nowT[g] || 0, prevT[g] || 0)));
+  // Normalise to 0-100 like Bklit's data shape, keeping the axis honest.
+  const scale = v => Math.round(((v || 0) / peak) * 100);
+
+  const totalNow = groups.reduce((s, g) => s + (nowT[g] || 0), 0);
+  if (!totalNow && !groups.some(g => prevT[g])) {
+    chart.setOption({ title: { text: 'NO SESSIONS LOGGED', subtext: 'Commit a session to map your balance',
+      left: 'center', top: 'center', textStyle: { fontSize: 12, color: '#5c6963' },
+      subtextStyle: { fontSize: 9, color: '#3c4641' } } });
+    if (listEl) listEl.innerHTML = '';
+    return;
+  }
+
+  chart.setOption({
+    tooltip: {
+      trigger: 'item',
+      formatter: p => {
+        const rows = groups.map((g, i) =>
+          escHtml(g) + ': ' + (p.value[i] || 0) + '%').join('<br/>');
+        return '<b>' + escHtml(p.name) + '</b><br/>' + rows;
+      },
+    },
+    legend: {
+      data: ['THIS MONTH', 'LAST MONTH'], bottom: 0,
+      textStyle: { color: '#5c6963', fontSize: 9, fontFamily: "'Space Mono',monospace" },
+      icon: 'circle', itemWidth: 7, itemHeight: 7,
+    },
+    radar: {
+      shape: 'polygon',            // Bklit renders a polygon web, not circles
+      splitNumber: 3,              // levels={3}
+      center: ['50%', '46%'],
+      radius: '66%',
+      indicator: groups.map(g => ({ name: g, max: 100 })),
+      axisName: {
+        color: '#9ba8a2', fontSize: 10, fontFamily: "'Space Mono',monospace",
+        padding: [3, 5],
+      },
+      splitLine: { lineStyle: { color: 'rgba(255,255,255,0.07)', width: 1 } },
+      splitArea: { show: false },  // flat, like the reference
+      axisLine:  { lineStyle: { color: 'rgba(255,255,255,0.07)' } },
+    },
+    series: [{
+      type: 'radar',
+      symbol: 'none',              // showPoints={false}
+      data: [
+        { value: groups.map(g => scale(prevT[g])), name: 'LAST MONTH',
+          lineStyle: { color: 'rgba(240,240,240,0.28)', width: 1.5 },
+          areaStyle: { color: 'rgba(240,240,240,0.05)' },
+          itemStyle: { color: 'rgba(240,240,240,0.35)' } },
+        { value: groups.map(g => scale(nowT[g])), name: 'THIS MONTH',
+          lineStyle: { color: '#76b372', width: 2 },
+          areaStyle: { color: 'rgba(118,179,114,0.20)' },
+          itemStyle: { color: '#a5f79e' } },
+      ],
+    }],
+  });
+
+  // Ranked breakdown beside the chart — the radar shows shape, this shows numbers.
+  if (listEl) {
+    const rows = groups
+      .map(g => ({ g, now: nowT[g] || 0, prev: prevT[g] || 0 }))
+      .sort((a, b) => b.now - a.now);
+    const maxNow = Math.max(1, ...rows.map(r => r.now));
+    listEl.innerHTML = rows.map(r => {
+      const delta = r.now - r.prev;
+      const col = delta > 0 ? 'var(--sig-500)' : delta < 0 ? 'var(--orange)' : 'var(--text-muted)';
+      const sign = delta > 0 ? '+' : '';
+      return '<div>' +
+        '<div style="display:flex;justify-content:space-between;font-size:10px;letter-spacing:1px;margin-bottom:4px;">' +
+          '<span style="color:var(--text-dim)">' + escHtml(r.g) + '</span>' +
+          '<span style="color:var(--text-muted)">' + r.now + ' sets ' +
+            '<span style="color:' + col + '">' + sign + delta + '</span></span>' +
+        '</div>' +
+        '<div style="height:4px;background:var(--carbon-3);border-radius:3px;overflow:hidden;">' +
+          '<div style="height:100%;width:' + Math.round(r.now / maxNow * 100) + '%;background:var(--sig-500);border-radius:3px;"></div>' +
+        '</div></div>';
+    }).join('');
+  }
 }
 
 </script>
