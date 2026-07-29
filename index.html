@@ -7060,7 +7060,9 @@ function syncModeUI() {
    TIME_TRAVEL_UNSUPPORTED below.
    In-memory only (not persisted) — it is a viewing mode for this tab, not data. */
 const TimeMachine = { active: false, asOf: null, label: '' };
-const TIME_TRAVEL_UNSUPPORTED = { habits: true, resume: true, weekly: true, runway: true };
+// runway is left out on purpose: its Study tab now respects gridNow(), even
+// though Projects/Queue on the same page don't have a date dimension to move.
+const TIME_TRAVEL_UNSUPPORTED = { habits: true, resume: true, weekly: true };
 
 /** Every "what is today" read in a time-travelable chart should go through this. */
 function gridNow() { return TimeMachine.active ? new Date(TimeMachine.asOf) : new Date(); }
@@ -7124,6 +7126,8 @@ function refreshTimeTravelablePages() {
     if (id === 'page-finances') initFinances();
     if (id === 'page-habits') renderActivityHeatmap();   // matrix/momentum stay current-month, not time-travelable
     if (id === 'page-home') { try { hvRenderHeat(); } catch (e) {} }
+    if (id === 'page-work') initWork();   // now handles its own stat cards too
+    if (id === 'page-runway' && document.getElementById('rw-study')) { try { stRenderAll(); } catch (e) {} }
   } catch (e) { console.warn('time travel refresh:', e); }
   renderTimeTravelBar();
 }
@@ -9137,6 +9141,11 @@ function initWork() {
   initCogFlowChart();
   populateNlProjectsDropdown();
   renderFocusLogs();
+  // Was only ever updated by the periodic hydrateRealStats() sweep, so visiting
+  // this page fresh (or after navigating here while time-travelling) could show
+  // stale numbers until that timer next fired. Make the page's own bootstrap
+  // responsible for its own stat cards instead of depending on a side timer.
+  try { renderNlStats(); } catch (e) {}
 }
 
 function initCogFlowChart() {
@@ -9147,9 +9156,10 @@ function initCogFlowChart() {
 
   // Real data only. focusLogs entries carry duration inside `meta`
   // (e.g. "Efficiency: 92% | Duration: 45m"), so parse it out.
-  const sessions = (typeof focusLogs !== 'undefined' && Array.isArray(focusLogs))
-    ? focusLogs.filter(l => !l.isErr)
-    : [];
+  const sessions = gridAsOf(
+    (typeof focusLogs !== 'undefined' && Array.isArray(focusLogs)) ? focusLogs : [],
+    l => l.date
+  ).filter(l => !l.isErr);
 
   const parsed = sessions.map(l => {
     const m = /Duration:\s*(\d+)\s*m/i.exec(l.meta || '');
@@ -9221,6 +9231,7 @@ function nlToggleTimer() {
 }
 
 function nlStopLog() {
+  if (gridBlockWriteIfTimeTraveling()) return;
   clearInterval(nlIntervalId);
   clearInterval(nlCsIntervalId);
   nlRunning = false;
@@ -12496,7 +12507,10 @@ function renderHbStats() {
 
 // ── FOCUS ──
 function renderNlStats() {
-  const logs = (typeof focusLogs !== 'undefined' && Array.isArray(focusLogs)) ? focusLogs : [];
+  const logs = gridAsOf(
+    (typeof focusLogs !== 'undefined' && Array.isArray(focusLogs)) ? focusLogs : [],
+    l => l.date
+  );
   const real = logs.filter(l => !l.isErr);
   const mins = real.reduce((s, l) => {
     const m = /Duration:\s*(\d+)\s*m/i.exec(l.meta || '');
@@ -13545,6 +13559,7 @@ function stToggle() {
 }
 
 function stStopAndLog() {
+  if (gridBlockWriteIfTimeTraveling()) return;
   if (!_stElapsed) { alert('No time on the clock yet.'); return; }
   clearInterval(_stTimer); _stRunning = false;
   const cat  = (document.getElementById('stCat').value || 'general').trim().toLowerCase();
@@ -13615,10 +13630,11 @@ function stRange(el, days) {
 }
 
 function stInRange() {
-  if (!_stRangeDays) return studyLogs.slice();
-  const cut = new Date(); cut.setDate(cut.getDate() - _stRangeDays);
+  const rows = gridAsOf(studyLogs, l => l.date);   // never show sessions after the viewed date
+  if (!_stRangeDays) return rows.slice();
+  const cut = gridNow(); cut.setDate(cut.getDate() - _stRangeDays);
   const cutStr = cut.toISOString().slice(0, 10);
-  return studyLogs.filter(l => (l.date || '') >= cutStr);
+  return rows.filter(l => (l.date || '') >= cutStr);
 }
 
 function stRenderAll() {
@@ -14485,7 +14501,7 @@ function mgSearchInput(value) {
       + '<div class="mg-sr-item" onclick=\'mgSearchJumpTime("' + period.date + '", "' + period.label.replace(/"/g, '') + '")\'>'
       + '<span class="mg-sr-dot" style="background:var(--pink)"></span>'
       + 'VIEW STATE AS OF ' + escHtml(period.label)
-      + '<span class="mg-sr-sub">GYM · FINANCES · HOME</span></div>';
+      + '<span class="mg-sr-sub">GYM · FINANCES · WORK · HOME</span></div>';
   }
   if (matches.length) {
     html += '<div class="mg-sr-group-label">NODES</div>'
@@ -14517,7 +14533,7 @@ function mgSearchJumpTime(date, label) {
   enterTimeTravel(date, label);
   mgSearchClose();
   const hint = document.getElementById('mgHeadHint');
-  if (hint) hint.textContent = 'TIME TRAVEL ACTIVE — VISIT GYM, FINANCES OR HOME TO SEE THAT STATE';
+  if (hint) hint.textContent = 'TIME TRAVEL ACTIVE — VISIT GYM, FINANCES, WORK OR HOME TO SEE THAT STATE';
 }
 
 /* ── Boot / lifecycle ── */
