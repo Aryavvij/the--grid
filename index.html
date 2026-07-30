@@ -13639,9 +13639,12 @@ function hvRenderUpcoming() {
     if (startIndex === -1) {
       startIndex = events.findIndex(ev => !ev.isPast);
       if (startIndex === -1) {
-        startIndex = Math.max(0, events.length - 8);
+        startIndex = events.length; // Will be clamped below
       }
     }
+    
+    // Clamp so we always show 8 items if possible ("stop at the end")
+    startIndex = Math.min(startIndex, Math.max(0, events.length - 8));
     const displayEvents = events.slice(startIndex, startIndex + 8);
 
     let foundNext = false;
