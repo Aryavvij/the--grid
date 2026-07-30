@@ -6279,24 +6279,25 @@ html, body {
 <!-- ══ RUNWAY SECTOR BUDGET MODAL ═══════════════════ -->
 <div class="modal-overlay" id="runwaySectorModal">
   <div class="modal" style="width: 420px;">
-    <div class="modal-title">ADD BUDGET SECTOR NODE</div>
+    <div class="modal-title">SET BUDGET</div>
     <div class="form-group">
-      <label class="form-label">Sector Name</label>
-      <input class="form-input" id="rsecName" placeholder="e.g. CAREER_SYNC, PERSONAL_OPT" />
+      <label class="form-label">Planned Budget (₹)</label>
+      <input class="form-input" type="number" id="rsecPlanned" value="0" autofocus />
     </div>
-    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
-      <div class="form-group">
-        <label class="form-label">Planned Budget (₹)</label>
-        <input class="form-input" type="number" id="rsecPlanned" value="0" />
-      </div>
-      <div class="form-group">
-        <label class="form-label">Actual Spent (₹)</label>
-        <input class="form-input" type="number" id="rsecActual" value="0" />
-      </div>
+    <!-- Optional — most people never touch this. Leaving it blank tracks one
+         overall budget with no categories; naming a sector splits spend into
+         its own line in the matrix/donut instead, same number either way. -->
+    <div class="form-group" style="margin-bottom:0;">
+      <label class="form-label">Category (optional — leave blank for one overall budget)</label>
+      <input class="form-input" id="rsecName" placeholder="e.g. HOUSING, GROCERIES" />
+    </div>
+    <div style="font-size:9px;letter-spacing:0.6px;color:var(--text-muted);margin-top:10px;line-height:1.5;">
+      Actual spent isn't entered here — it fills in on its own from whatever you log
+      in the ledger below.
     </div>
     <div class="modal-actions">
       <button class="btn-cancel" onclick="closeBudgetModal()">CANCEL</button>
-      <button class="btn-save" onclick="saveBudgetModal()" style="background:var(--green-dim); border-color:var(--green); color:var(--green);">COMMIT SECTOR</button>
+      <button class="btn-save" onclick="saveBudgetModal()" style="background:var(--green-dim); border-color:var(--green); color:var(--green);">SAVE BUDGET</button>
     </div>
   </div>
 </div>
@@ -11100,17 +11101,30 @@ function closeFinStatModal() {
 function openBudgetModal() {
   document.getElementById('rsecName').value = '';
   document.getElementById('rsecPlanned').value = '0';
-  document.getElementById('rsecActual').value = '0';
   document.getElementById('runwaySectorModal').classList.add('open');
 }
 
+/**
+ * Actual is never entered here — it only ever comes from commitTransaction()
+ * rolling logged spend into the matching sector (see there). This is an
+ * upsert on sector name (default 'GENERAL' when left blank) rather than an
+ * unconditional push, specifically so re-opening this to bump the number
+ * updates the existing budget instead of quietly creating a second row with
+ * the same name — a near-certain outcome now that leaving the name blank is
+ * the expected path for someone who just wants one overall budget.
+ */
 async function saveBudgetModal() {
-  const name = document.getElementById('rsecName').value.trim().toUpperCase();
+  const name = (document.getElementById('rsecName').value.trim() || 'GENERAL').toUpperCase();
   const planned = parseFloat(document.getElementById('rsecPlanned').value) || 0;
-  const actual = parseFloat(document.getElementById('rsecActual').value) || 0;
-  if (!name) return;
-  const entry = { sector: name, planned, actual };
-  budgetData.push(entry);
+
+  let entry = budgetData.find(b => String(b.sector).toUpperCase() === name);
+  if (entry) {
+    entry.planned = planned;   // actual is untouched — it's real logged spend
+  } else {
+    entry = { sector: name, planned, actual: 0 };
+    budgetData.push(entry);
+  }
+
   saveFinanceData();
   populateTxSectorDropdown();
   renderBudgetTable();
