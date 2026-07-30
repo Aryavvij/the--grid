@@ -5296,7 +5296,12 @@ html, body {
               <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" fill="none" stroke-width="2"><path d="M12 2v4"/><path d="M4.9 4.9l2.9 2.9"/><path d="M2 12h4"/><path d="M19.1 4.9l-2.9 2.9"/><path d="M22 12h-4"/><path d="M12 12l5-3"/></svg>
               BUDGET CONSUMPTION
             </span>
-            <span class="fin-gauge-pace" id="finGaugePace">—</span>
+            <span style="display:flex;align-items:center;gap:8px">
+              <span class="fin-gauge-pace" id="finGaugePace">—</span>
+              <span class="fin-stat-edit" style="position:static;cursor:pointer;" onclick="openBudgetModal()" title="Set / add a budget sector">
+                <svg viewBox="0 0 24 24" width="10" height="10" stroke="currentColor" fill="none" stroke-width="2" style="vertical-align:-1px"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              </span>
+            </span>
           </div>
           <div id="finBudgetGauge" style="width:100%;height:210px"></div>
           <div id="finGaugeNote" style="text-align:center;font-size:9px;letter-spacing:1.2px;color:var(--text-muted);padding:0 12px 12px;"></div>
@@ -9336,7 +9341,18 @@ function saveKanbanTasks() {
   pushTasks();
 }
 
-const WEEK_DAYS = ['MON 07','TUE 08','WED 09','THU 10','FRI 11','SAT 12','SUN 13'];
+// Was a hardcoded 'MON 07'..'SUN 13' literal — always showed that same week
+// regardless of the actual date, which is why Thursday read "10" on the 30th.
+// Computed fresh from `today` so the header always matches the real week.
+const WEEK_DAY_ABBR = ['MON','TUE','WED','THU','FRI','SAT','SUN'];
+function getWeekDayLabels() {
+  const dow = today.getDay() === 0 ? 6 : today.getDay() - 1;   // Mon=0..Sun=6
+  const monday = new Date(today); monday.setDate(monday.getDate() - dow);
+  return WEEK_DAY_ABBR.map((abbr, i) => {
+    const d = new Date(monday); d.setDate(monday.getDate() + i);
+    return abbr + ' ' + String(d.getDate()).padStart(2, '0');
+  });
+}
 const HOURS = Array.from({length:24}, (_,i) => String(i).padStart(2,'0') + ':00'); // 00:00 - 23:00
 
 function initWeekly() {
@@ -9521,7 +9537,7 @@ function buildKanban() {
   const kanban = document.getElementById('arcKanban');
   kanban.innerHTML = '';
   const todayDow = today.getDay() === 0 ? 6 : today.getDay() - 1; // Mon=0
-  WEEK_DAYS.forEach((day, di) => {
+  getWeekDayLabels().forEach((day, di) => {
     const col = document.createElement('div');
     col.className = 'arc-kanban-col';
     const dayHead = document.createElement('div');
@@ -10883,8 +10899,14 @@ function renderBudgetGauge() {
   const actual  = budgetData.reduce((s, r) => s + (Number(r.actual)  || 0), 0);
 
   if (!planned) {
-    el.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;'
-                 + 'font-size:11px;color:var(--text-muted);letter-spacing:1px">NO BUDGET SET</div>';
+    // The empty state is the actual entry point for a real new account, so it
+    // has to be actionable, not just a label — this was previously plain text
+    // with no visible way to do anything about it.
+    el.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;'
+                 + 'height:100%;gap:8px;cursor:pointer;" onclick="openBudgetModal()">'
+                 + '<span style="font-size:11px;color:var(--text-muted);letter-spacing:1px">NO BUDGET SET</span>'
+                 + '<span style="font-size:9px;color:var(--green);letter-spacing:1.5px;text-decoration:underline;">+ SET BUDGET</span>'
+                 + '</div>';
     if (noteEl) noteEl.textContent = '';
     if (paceEl) { paceEl.textContent = '—'; paceEl.className = 'fin-gauge-pace'; }
     return;
