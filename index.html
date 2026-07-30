@@ -8261,6 +8261,16 @@ function saveSplitModal() {
       const newSplit = { title, sub, days: finalDays };
       localStorage.setItem('gymSplitData', JSON.stringify(newSplit));
 
+      // Auto-register any (MUSCLE GROUP)-tagged exercises so that group starts
+      // tracking them immediately — no separate "REGISTER EXERCISE" step needed.
+      exerciseRegistry = JSON.parse(localStorage.getItem('gymExerciseRegistry')) || exerciseRegistry;
+      finalDays.forEach(d => {
+        (d.exercises || []).forEach(ex => {
+          const { bareName, muscleGroup } = gymParseExerciseTag(ex.name);
+          if (muscleGroup) gymEnsureRegistered(bareName, muscleGroup);
+        });
+      });
+
       finalDays.forEach((d, idx) => { gymDaySplits[idx] = d.title; });
 
       // Sync to API
@@ -8496,6 +8506,41 @@ function getExerciseInfoFromRegistry(exName) {
   return null;
 }
 
+/** Split exercise lines can end with a "(MUSCLE GROUP)" tag, e.g. "BENCH PRESS (CHEST)".
+ *  Strips it and returns the bare name plus the matched group (null if untagged/unrecognized). */
+function gymParseExerciseTag(raw) {
+  const str = String(raw || '').trim();
+  const m = str.match(/^(.*)\(([A-Za-z\s]+)\)\s*$/);
+  if (m && m[1].trim()) {
+    const tag = m[2].trim().toUpperCase();
+    if (Object.keys(exerciseRegistry).includes(tag)) {
+      return { bareName: m[1].trim().toUpperCase(), muscleGroup: tag };
+    }
+  }
+  return { bareName: str.toUpperCase(), muscleGroup: null };
+}
+
+/** Auto-create a registry entry for a bracket-tagged exercise so its muscle
+ *  group starts tracking it immediately, without a separate manual
+ *  "REGISTER EXERCISE" step. No-op if it's already registered anywhere. */
+function gymEnsureRegistered(bareName, muscleGroup) {
+  if (!muscleGroup) return;
+  if (getExerciseInfoFromRegistry(bareName)) return;
+  if (!exerciseRegistry[muscleGroup]) exerciseRegistry[muscleGroup] = { exercises: [] };
+  exerciseRegistry[muscleGroup].exercises.push({
+    name: bareName.toUpperCase(),
+    badge: '',
+    pr: '0.0',
+    orm: '0.0',
+    prDate: '',
+    delta: 'NEW ENTRY',
+    target: muscleGroup,
+    bars: [0,0,0,0,0,0,0,0,0,0],
+    segs: [50, 30, 20]
+  });
+  localStorage.setItem('gymExerciseRegistry', JSON.stringify(exerciseRegistry));
+}
+
 function renderLoggerPanel() {
   const select = document.getElementById('loggerDaySelect');
   if (!select) return;
@@ -8528,7 +8573,7 @@ function renderLoggerPanel() {
   
   container.innerHTML = d.exercises.map(ex => {
     const sets = parseSetCount(ex.sets);
-    const regEx = getExerciseInfoFromRegistry(ex.name);
+    const regEx = getExerciseInfoFromRegistry(gymParseExerciseTag(ex.name).bareName);
     
     // Set guided defaults
     const defaultWt = regEx ? regEx.pr : "30";
@@ -8668,8 +8713,12 @@ function commitWorkoutLog() {
     });
     
     if (sets.length > 0) {
+      // Split exercise names may carry a "(MUSCLE GROUP)" tag — store the bare
+      // name in the log so history lines up with registry entries either way.
+      const { bareName, muscleGroup: taggedGroup } = gymParseExerciseTag(ex.name);
+
       // Push exercise entry (isPR added below if applicable)
-      const logEntry = { name: ex.name, sets, sessionMax1RM: maxSession1RM, isPR: false };
+      const logEntry = { name: bareName, sets, sessionMax1RM: maxSession1RM, isPR: false };
       sessionLog.exercises.push(logEntry);
 
       // Check PR updating in registry
@@ -8677,8 +8726,16 @@ function commitWorkoutLog() {
       let exMuscleGroup = '';
 
       for (const mg in reg) {
-        const found = reg[mg].exercises.find(e => e.name.toUpperCase() === ex.name.toUpperCase());
+        const found = reg[mg].exercises.find(e => e.name.toUpperCase() === bareName);
         if (found) { exInRegistry = found; exMuscleGroup = mg; break; }
+      }
+
+      // Not registered yet but the split tagged a muscle group — auto-register
+      // so this very session already counts toward that muscle's progression.
+      if (!exInRegistry && taggedGroup) {
+        gymEnsureRegistered(bareName, taggedGroup);
+        exInRegistry = reg[taggedGroup].exercises.find(e => e.name.toUpperCase() === bareName);
+        exMuscleGroup = taggedGroup;
       }
 
       if (exInRegistry) {
@@ -8709,7 +8766,7 @@ function commitWorkoutLog() {
           // LOGGED" toast right after this loop shares the same banner
           // element and would immediately overwrite it, so a real user
           // never actually saw this even though the code "showed" it.
-          prsBroken.push({ name: ex.name, weight: maxWeight, orm: maxSession1RM });
+          prsBroken.push({ name: bareName, weight: maxWeight, orm: maxSession1RM });
         }
       }
     }
