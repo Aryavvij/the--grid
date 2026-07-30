@@ -6184,10 +6184,6 @@ html, body {
       <label class="form-label">Exercise Name</label>
       <input class="form-input" id="gexName" placeholder="e.g. INCLINE DB PRESS" />
     </div>
-    <div class="form-group">
-      <label class="form-label">Badge Type</label>
-      <input class="form-input" id="gexBadge" placeholder="e.g. COMPOUND_HEAVY" />
-    </div>
     <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
       <div class="form-group">
         <label class="form-label">Target Muscle</label>
@@ -8022,7 +8018,6 @@ function editExerciseNode(mg, idx) {
 
   document.getElementById('gymExerciseModalTitle').textContent = `EDIT EXERCISE: ${ex.name}`;
   document.getElementById('gexName').value = ex.name;
-  document.getElementById('gexBadge').value = ex.badge || '';
   document.getElementById('gexTarget').value = ex.target || mg;
   document.getElementById('gexPRDate').value = ex.prDate || '';
   document.getElementById('gexPRWeight').value = parseFloat(ex.pr) || 0;
@@ -8076,7 +8071,7 @@ function gymShowRegistry(name, id) {
     return `
       <div class="gym-ex-card" onclick="editExerciseNode('${name}', ${idx})" style="cursor:pointer;" title="Click to edit or delete exercise">
         <div class="gym-ex-card-head">
-          <span class="gym-ex-badge">${ex.badge}</span>
+          ${ex.badge ? `<span class="gym-ex-badge">${ex.badge}</span>` : '<span></span>'}
           <span style="font-size:9px;color:var(--text-muted);opacity:0.6;"><svg viewBox="0 0 24 24" width="10" height="10" stroke="currentColor" fill="none" stroke-width="2" style="vertical-align:-1px"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> EDIT</span>
         </div>
         <div class="gym-ex-title">${ex.name}</div>
@@ -8938,7 +8933,6 @@ function gymOpenAddExerciseModal() {
   document.getElementById('gymExerciseModalTitle').textContent = 'REGISTER EXERCISE NODE';
   document.getElementById('gexDeleteBtn').style.display = 'none';
   document.getElementById('gexName').value = '';
-  document.getElementById('gexBadge').value = '';
   document.getElementById('gexTarget').value = activeGymGroup;
 
   const todayDate = new Date().toLocaleDateString('en-GB', {day:'2-digit',month:'short',year:'numeric'}).toUpperCase();
@@ -8952,7 +8946,6 @@ function gymOpenAddExerciseModal() {
 
 function saveExerciseModal() {
   const name    = document.getElementById('gexName').value.trim().toUpperCase();
-  const badge   = document.getElementById('gexBadge').value.trim().toUpperCase() || 'COMPOUND_HEAVY';
   const target  = document.getElementById('gexTarget').value.trim().toUpperCase();
   const prDate  = document.getElementById('gexPRDate').value.trim().toUpperCase();
   const prWt    = parseFloat(document.getElementById('gexPRWeight').value) || 0.0;
@@ -8977,7 +8970,7 @@ function saveExerciseModal() {
 
     const prevORM = parseFloat(ex.orm) || 0;
     ex.name   = name;
-    ex.badge  = badge;
+    // badge is no longer editable here — whatever it already was stays as-is.
     ex.target = target || mg;
     ex.prDate = prDate || todayStr;
     ex.pr     = prWt.toFixed(1);
@@ -8996,10 +8989,11 @@ function saveExerciseModal() {
     gymShowRegistry(mg, (JSON.parse(localStorage.getItem('gymMuscleGroups')) || muscleGroups).find(m => m.name === mg)?.id || '000');
   } else {
     // ── ADD MODE: push new exercise ──────────────────
+    // No badge type entered — the card just skips that pill (see gymShowRegistry).
     if (!reg[activeGymGroup]) reg[activeGymGroup] = { exercises: [] };
     reg[activeGymGroup].exercises.push({
       name:   name,
-      badge:  badge,
+      badge:  '',
       pr:     prWt.toFixed(1),
       orm:    calculatedORM.toFixed(1),
       prDate: prDate || todayStr,
