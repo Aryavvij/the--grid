@@ -2034,7 +2034,7 @@ html, body {
 .arc-tab.active { color: var(--green); border-bottom-color: var(--green); }
 
 /* Timetable */
-.arc-tt-scroll { overflow-x: auto; overflow-y: auto; max-height: 65vh; }
+.arc-tt-scroll { overflow-x: auto; overflow-y: visible; }
 .arc-tt-table { border-collapse: collapse; min-width: 100%; white-space: nowrap; }
 .arc-tt-table th {
   font-size: 10px;
@@ -5284,10 +5284,12 @@ html, body {
             </span>
             <button class="fin-modify-btn" onclick="openBudgetModal()">MODIFY_PLAN</button>
           </div>
-          <table class="fin-budget-table" id="budgetTable">
-            <thead><tr><th>SECTOR</th><th>PLANNED</th><th>ACTUAL</th><th>REMAINING</th></tr></thead>
-            <tbody id="budgetBody"></tbody>
-          </table>
+          <div id="budgetTableWrap">
+            <table class="fin-budget-table" id="budgetTable">
+              <thead><tr><th>SECTOR</th><th>PLANNED</th><th>ACTUAL</th><th>REMAINING</th></tr></thead>
+              <tbody id="budgetBody"></tbody>
+            </table>
+          </div>
         </div>
 
         <div class="fin-section">
@@ -5706,12 +5708,13 @@ html, body {
             
             <div class="form-group" style="margin-bottom:12px;">
               <label class="form-label">CATEGORY TRACK</label>
-              <select class="form-select" id="rwProjCat">
-                <option value="ACADEMIC_TRACK">ACADEMIC TRACK</option>
-                <option value="CAREER_SYNC">CAREER SYNC</option>
-                <option value="PERSONAL_OPT">PERSONAL OPTIMIZATION</option>
-                <option value="RESOURCE_LIMIT">RESOURCE LIMITS</option>
-              </select>
+              <input class="form-input" id="rwProjCat" list="rwProjCatOptions" placeholder="E.g. ACADEMIC_TRACK" />
+              <datalist id="rwProjCatOptions">
+                <option value="ACADEMIC_TRACK">
+                <option value="CAREER_SYNC">
+                <option value="PERSONAL_OPT">
+                <option value="RESOURCE_LIMIT">
+              </datalist>
             </div>
             
             <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-bottom:12px;">
@@ -6661,46 +6664,7 @@ function seedDemoData() {
   const focusProjects = ['Architectural Drafting', 'Terminal Debugging', 'System Architecture Review', 'Code Refactoring', 'Sunburst Chart Integration'];
   const focusCats = ['development', 'engineering', 'research', 'design', 'admin'];
   
-  const fStart = new Date(today.getTime() - 90 * 24 * 60 * 60 * 1000);
-  let fCur = new Date(fStart);
-  let fCount = 800;
-  
-  while (fCur <= today) {
-    if (fCur.getDay() >= 1 && fCur.getDay() <= 5) {
-      const numSessions = Math.random() > 0.4 ? 2 : 1;
-      for (let s = 0; s < numSessions; s++) {
-        const dateStr = fmtDate(fCur);
-        const minutes = 30 + Math.floor(Math.random() * 90);
-        const name = focusProjects[s % focusProjects.length];
-        const cat = focusCats[s % focusCats.length];
-        const hr = 9 + s * 4 + Math.floor(Math.random() * 2);
-        const timeStr = `${String(hr).padStart(2,'0')}:00`;
-        const efficiency = 75 + Math.floor(Math.random() * 23);
-        
-        gridFocusLogs.unshift({
-          id: `SESSION_${fCount}`,
-          date: dateStr,
-          time: timeStr,
-          name: name,
-          minutes: minutes,
-          meta: `Efficiency: ${efficiency}% | Duration: ${minutes}m`,
-          isErr: false
-        });
-        
-        gridStudyLogs.unshift({
-          id: `ST_${Date.now()}_${fCount}`,
-          date: dateStr,
-          time: timeStr,
-          minutes: minutes,
-          category: cat,
-          note: `Completed focus block on ${name}.`
-        });
-        
-        fCount++;
-      }
-    }
-    fCur.setDate(fCur.getDate() + 1);
-  }
+  // Demo focus and study logs have been removed to start fresh
   localStorage.setItem('gridFocusLogs', JSON.stringify(gridFocusLogs));
   localStorage.setItem('gridStudyLogs', JSON.stringify(gridStudyLogs));
   localStorage.setItem('gridWorkProjectsList', JSON.stringify(focusProjects));
@@ -6717,34 +6681,7 @@ function seedDemoData() {
   localStorage.setItem('rwProjects', JSON.stringify(rwProjects));
 
   // 9. Kanban Tasks
-  const gridKanbanTasks = [
-    [
-      { name: 'Review system log buffers', type: 'development', done: true, status: 'completed' },
-      { name: 'Bench Press heavy session', type: 'gym', done: true, status: 'completed' },
-      { name: 'Prepare AWS cost report', type: 'finance', done: false, status: 'running' }
-    ],
-    [
-      { name: 'Refine vector search indices', type: 'development', done: true, status: 'completed' },
-      { name: 'Deadlift heavy triples', type: 'gym', done: true, status: 'completed' }
-    ],
-    [
-      { name: 'Squats intensity protocol', type: 'gym', done: false, status: 'pending' },
-      { name: 'Fix memory leaks in web view', type: 'development', done: false, status: 'pending' }
-    ],
-    [
-      { name: 'Draft research outline', type: 'research', done: false, status: 'pending' }
-    ],
-    [
-      { name: 'Push workout B', type: 'gym', done: false, status: 'pending' },
-      { name: 'Approve pull requests', type: 'development', done: false, status: 'pending' }
-    ],
-    [
-      { name: 'Saturday cardio & recovery', type: 'gym', done: false, status: 'pending' }
-    ],
-    [
-      { name: 'Sunday weekly retro', type: 'admin', done: false, status: 'pending' }
-    ]
-  ];
+  const gridKanbanTasks = [[], [], [], [], [], [], []];
   localStorage.setItem('gridKanbanTasks', JSON.stringify(gridKanbanTasks));
 
   // 10. Portfolio Resume Data (rsTabData) — keys MUST match what renderRsContent
@@ -6874,10 +6811,19 @@ function seedDemoData() {
     localStorage.removeItem('gridSleepData');
     seedDemoData();
   } else {
-    // User Mode: If we transitioned to user, load the gorgeous populated presets initially
-    if (localStorage.getItem('gridActiveMode') !== 'user') {
+    // User Mode. Only wipe+reseed when we're actually LEAVING demo mode (demo
+    // leaves clutter behind that a real account shouldn't inherit) — NOT just
+    // because gridActiveMode isn't 'user' yet. That used to be the same check,
+    // which meant a returning real user whose local storage got cleared by the
+    // browser (mobile Safari evicts inactive-site storage after a few days —
+    // this is common, not exotic) looked identical to "brand new account" and
+    // had every module's cache wiped out from under them on next load, even
+    // though their real data was still sitting safely in the database. Now a
+    // missing/absent flag just means "nothing local to wipe" — each page's own
+    // hydrate-from-server call (see hydrateGymFromServer / hydrateFinanceFromServer)
+    // is what repopulates real data in that case.
+    if (localStorage.getItem('gridActiveMode') === 'demo') {
       localStorage.setItem('gridActiveMode', 'user');
-      // Wipe keys once on transition so code's default initializers re-seed the gorgeous presets into their profile!
       localStorage.removeItem('gymDBVersion');
       localStorage.removeItem('gymSplitData');
       localStorage.removeItem('gymExerciseRegistry');
@@ -6896,6 +6842,8 @@ function seedDemoData() {
       localStorage.removeItem('gridRsStackData');
       localStorage.removeItem('gridFocusLogs');
       localStorage.removeItem('gridWorkProjectsList');
+    } else if (localStorage.getItem('gridActiveMode') !== 'user') {
+      localStorage.setItem('gridActiveMode', 'user');
     }
   }
 
@@ -7844,6 +7792,54 @@ function initGymData() {
   }
 }
 
+/** Pull the real split + logs back from the server and re-render if either
+ *  changed. Split had NO server rehydration at all before this — it only ever
+ *  got written (saveSplitModal → PUT /api/gym/split), never read back — so a
+ *  cleared local cache meant the page fell back to the hardcoded default split
+ *  forever even though the user's real split was still safely in Postgres.
+ *  gymLogs already self-heals via renderLogDiary(); recomputeGymProgression()
+ *  afterward rebuilds the (server-less) exercise registry / PR bars from
+ *  whatever logs come back, so muscle progression recovers too. */
+async function hydrateGymFromServer() {
+  const isDemo = sessionStorage.getItem('gridMode') === 'demo';
+  if (isDemo) return;
+
+  let changed = false;
+
+  try {
+    const apiSplit = await gridFetch('/api/gym/split');
+    if (apiSplit && apiSplit.days && apiSplit.days.length) {
+      const existing = JSON.parse(localStorage.getItem('gymSplitData') || 'null');
+      localStorage.setItem('gymSplitData', JSON.stringify({
+        title: apiSplit.name || 'MY SPLIT',
+        sub: (existing && existing.sub) || 'Cycle duration: 7 Days | Optimization target: Custom Block',
+        days: apiSplit.days,
+      }));
+      changed = true;
+    }
+  } catch (e) { console.warn('Gym split API load failed:', e); }
+
+  try {
+    const apiLogs = await gridFetch('/api/gym/logs?limit=200');
+    if (apiLogs.length > 0) {
+      const mapped = apiLogs.map(l => ({
+        date:      l.workoutDate,
+        splitName: l.exercises?.[0]?.splitName || 'WORKOUT',
+        dayIndex:  l.dayIndex,
+        exercises: l.exercises || [],
+      }));
+      localStorage.setItem('gymLogs', JSON.stringify(mapped));
+      changed = true;
+    }
+  } catch (e) { console.warn('Gym logs API load failed:', e); }
+
+  if (changed) {
+    initGymData();
+    recomputeGymProgression();
+  }
+  return changed;
+}
+
 function initGym() {
   initGymData();
   renderWeeklySplit();
@@ -7852,6 +7848,14 @@ function initGym() {
   buildMuscleGrid();
   updateRecalTimer();
   setInterval(updateRecalTimer, 60000); // tick every minute
+
+  hydrateGymFromServer().then(changed => {
+    if (!changed) return;
+    renderWeeklySplit();
+    renderSessionLogger();
+    updateVolumeTelemetry();
+    buildMuscleGrid();
+  });
 }
 
 function gymTab(el, tab) {
@@ -9420,17 +9424,23 @@ function getSlotLabel(di, hi) {
 }
 
 function getBlockRange(di, hi) {
-  const val = ttData[di][hi];
-  if (!val) return { start: hi, end: hi + 1 };
+  const day = ttData[di];
+  if (!day) return { start: hi, end: hi + 1 };
+  
+  const val = getSlotLabel(di, hi);
+  
   let start = hi;
-  while (start > 0 && ttData[di][start - 1] === val) {
+  while (start >= 0 && day[start] === undefined) {
     start--;
   }
-  let end = hi;
-  while (end < 23 && ttData[di][end + 1] === val) {
+  if (start < 0) start = 0;
+
+  let end = hi + 1;
+  while (end < 24 && day[end] === undefined) {
     end++;
   }
-  return { start: start, end: end + 1 };
+  
+  return { start, end };
 }
 
 function buildTimetable() {
@@ -9491,7 +9501,7 @@ function openArchBlockModal(di, hi, h, dayHeader) {
   _archDi = di;
   _archHi = hi;
   
-  const val = ttData[di][hi] || '';
+  const val = getSlotLabel(di, hi) || '';
   const range = getBlockRange(di, hi);
   
   document.getElementById('archBlockTitle').textContent = `SET TIME BLOCK: ${dayHeader} ${h}`;
@@ -9536,25 +9546,31 @@ function saveArchBlockModal() {
     return;
   }
   
-  // 1. Clear old block from slots (if it was an existing block)
-  const oldRange = getBlockRange(_archDi, _archHi);
-  const oldName = ttData[_archDi][_archHi];
-  if (oldName) {
-    for (let h = oldRange.start; h < oldRange.end; h++) {
-      if (ttData[_archDi][h] === oldName) {
-        delete ttData[_archDi][h];
-      }
-    }
+  const day = ttData[_archDi];
+  if (!day) return;
+
+  let labelAtEnd = null;
+  if (endVal < 24) {
+    labelAtEnd = getSlotLabel(_archDi, endVal);
   }
   
-  // 2. Clear any overlapping blocks in the new range and fill with the new block name
+  for (let h = startVal; h < endVal; h++) {
+    delete day[h];
+  }
+  
   if (val) {
-    for (let h = startVal; h < endVal; h++) {
-      ttData[_archDi][h] = val;
+    day[startVal] = val;
+  }
+  
+  if (endVal < 24) {
+    if (day[endVal] === undefined && labelAtEnd !== null) {
+      day[endVal] = labelAtEnd;
     }
   }
   
-  saveTimetable();          // persist immediately, like every other module
+  cleanupTtData(_archDi);
+  
+  saveTimetable();
   buildTimetable();
   closeArchBlockModal();
   try { renderArcStats(); } catch (e) {}
@@ -9563,20 +9579,33 @@ function saveArchBlockModal() {
 function deleteArchBlock() {
   if (_archDi === null || _archHi === null) return;
   
-  const oldRange = getBlockRange(_archDi, _archHi);
-  const oldName = ttData[_archDi][_archHi];
-  if (oldName) {
-    for (let h = oldRange.start; h < oldRange.end; h++) {
-      if (ttData[_archDi][h] === oldName) {
-        delete ttData[_archDi][h];
-      }
-    }
+  const day = ttData[_archDi];
+  const range = getBlockRange(_archDi, _archHi);
+  
+  for (let h = range.start; h < range.end; h++) {
+    delete day[h];
   }
+  
+  cleanupTtData(_archDi);
   
   saveTimetable();
   buildTimetable();
   closeArchBlockModal();
   try { renderArcStats(); } catch (e) {}
+}
+
+function cleanupTtData(di) {
+  const day = ttData[di];
+  if (!day) return;
+  const hours = Object.keys(day).map(Number).sort((a, b) => a - b);
+  let lastLabel = null;
+  for (const h of hours) {
+    if (day[h] === lastLabel) {
+      delete day[h];
+    } else {
+      lastLabel = day[h];
+    }
+  }
 }
 
 function closeArchBlockModal() {
@@ -10385,7 +10414,8 @@ function initRwDonut() {
   // Real sunburst: track (inner ring) → project (outer ring).
   // Leaf value = 1 per project so arc width reflects portfolio composition;
   // leaf colour opacity encodes that project's progress.
-  const TRACKS = ['ACADEMIC_TRACK', 'CAREER_SYNC', 'PERSONAL_OPT', 'RESOURCE_LIMIT'];
+  const DEFAULT_TRACKS = ['ACADEMIC_TRACK', 'CAREER_SYNC', 'PERSONAL_OPT', 'RESOURCE_LIMIT'];
+  const TRACKS = Array.from(new Set([...DEFAULT_TRACKS, ...(rwProjects || []).map(p => p.cat)]));
   const SIG = ['#3b6839', '#76b372', '#94d68f', '#a5f79e'];
 
   const data = TRACKS.map((track, i) => {
@@ -10393,12 +10423,12 @@ function initRwDonut() {
     if (!inTrack.length) return null;
     return {
       name: track.replace(/_/g, ' '),
-      itemStyle: { color: SIG[i] },
+      itemStyle: { color: SIG[i % SIG.length] },
       children: inTrack.map(p => ({
         name: p.name,
         value: 1,
         // progress → opacity within the track's hue
-        itemStyle: { color: SIG[i], opacity: 0.35 + 0.65 * (Math.max(0, Math.min(100, p.progress || 0)) / 100) }
+        itemStyle: { color: SIG[i % SIG.length], opacity: 0.35 + 0.65 * (Math.max(0, Math.min(100, p.progress || 0)) / 100) }
       }))
     };
   }).filter(Boolean);
@@ -10686,6 +10716,26 @@ function saveFinRecurItems() {
   localStorage.setItem('gridFinRecurItems', JSON.stringify(finRecurItems));
 }
 
+/** Keep a single "RECURRING" budget sector's planned amount equal to the sum
+ *  of every Monthly Recurring item, so it's never manually re-entered — call
+ *  after any add/edit/delete of finRecurItems. Strips any currency symbol /
+ *  "/mo" suffix and takes the magnitude, since item.amount strings aren't
+ *  formatted consistently (e.g. "₹900" vs. an older "-$420/mo"). */
+function syncRecurringBudgetSector() {
+  const total = finRecurItems.reduce((s, r) => {
+    const n = parseFloat(String(r.amount || '').replace(/[^\d.-]/g, ''));
+    return s + Math.abs(n || 0);
+  }, 0);
+  let row = budgetData.find(b => String(b.sector).toUpperCase() === 'RECURRING');
+  if (!row) {
+    if (total <= 0) return;
+    row = { sector: 'RECURRING', planned: 0, actual: 0 };
+    budgetData.push(row);
+  }
+  row.planned = total;
+  saveFinanceData();
+}
+
 let finDebtItems = JSON.parse(localStorage.getItem('gridFinDebtItems') || '[]');
 
 function saveFinDebtItems() {
@@ -10732,6 +10782,7 @@ function populateTxSectorDropdown() {
 
 async function initFinances() {
   loadFinTelemetry();
+  syncRecurringBudgetSector();
   populateTxSectorDropdown();
   renderRecurringList();
   renderDebtList();
@@ -10745,18 +10796,98 @@ async function initFinances() {
       const now  = new Date();
       const from = `${now.getFullYear()}-01-01`;
       const txData = await gridFetch(`/api/finance/transactions?from=${from}&limit=200`);
-      txLog = txData.map(t => ({
-        id:     t.id,
-        ts:     t.date,
-        entity: t.description?.toUpperCase() || 'ENTRY',
-        sector: t.category?.name || 'OTHER',
-        val:    t.type === 'expense' ? -Math.abs(t.amount) : Math.abs(t.amount),
-        hash:   '0x' + t.id.slice(0,6) + '...' + t.id.slice(-3),
-      }));
+      txLog = txData.map(t => {
+        // ts must be 'YY.MM.DD HH:MM' (see _txDateIso) — t.date alone is
+        // 'YYYY-MM-DD' and silently failed date-filtering/time-travel for
+        // every hydrated transaction since _txDateIso's regex never matched it.
+        const [y, mo, d] = (t.date || '').split('-');
+        const created = new Date(t.createdAt || t.date);
+        const hh = String(created.getHours()).padStart(2, '0');
+        const mm = String(created.getMinutes()).padStart(2, '0');
+        return {
+          id:     t.id,
+          ts:     `${(y || '').slice(2)}.${mo || '01'}.${d || '01'} ${hh}:${mm}`,
+          entity: t.description?.toUpperCase() || 'ENTRY',
+          sector: (t.category?.name || 'OTHER').toUpperCase(),
+          val:    t.type === 'expense' ? -Math.abs(t.amount) : Math.abs(t.amount),
+          hash:   '0x' + t.id.slice(0,6) + '...' + t.id.slice(-3),
+        };
+      });
       localStorage.setItem('gridTxLog', JSON.stringify(txLog));
       renderTxLog();
-    } catch(e) { console.warn('Finance tx load failed:', e); }
+
+      // Budget categories had NO rehydration at all — they only ever got
+      // POSTed on save (saveBudgetModal), never read back on load. If the
+      // local cache is currently empty (a browser storage wipe/clear, not
+      // the normal case) rebuild it from the server so the Budget
+      // Consumption gauge and Performance Matrix come back instead of
+      // staying blank forever. Leave existing local data alone otherwise —
+      // editing a sector row (editBudgetSectorNode) doesn't sync to the API
+      // today, so overwriting on every load would silently revert edits the
+      // server never learned about.
+      if (budgetData.length === 0) {
+        const categories = await gridFetch('/api/finance/categories');
+        if (categories.length > 0) {
+          // Dedupe by name — saveBudgetModal used to always POST a new row
+          // on every edit instead of updating in place, so some accounts may
+          // have accumulated duplicate server-side rows for the same sector.
+          const byName = {};
+          categories.forEach(c => {
+            const name = (c.name || '').toUpperCase();
+            if (!byName[name] || new Date(c.createdAt) > new Date(byName[name].createdAt)) {
+              byName[name] = c;
+            }
+          });
+          const actualByName = {};
+          txData.forEach(t => {
+            if (t.type !== 'expense') return;
+            const name = (t.category?.name || 'OTHER').toUpperCase();
+            actualByName[name] = (actualByName[name] || 0) + Math.abs(t.amount);
+          });
+          budgetData = Object.values(byName).map(c => {
+            const name = c.name.toUpperCase();
+            return { sector: name, planned: c.budgetAmount || 0, actual: actualByName[name] || 0, id: c.id };
+          });
+          saveFinanceData();
+          syncRecurringBudgetSector();
+          populateTxSectorDropdown();
+          renderBudgetTable();
+          initDonutChart();
+        }
+      }
+    } catch(e) { console.warn('Finance data load failed:', e); }
   }
+}
+
+/** Cap a list container to show at most `maxRows` of its rendered children
+ *  before scrolling internally, so a growing list never stretches sibling
+ *  cards in an align-items:stretch grid row. Call after (re)rendering the
+ *  container's innerHTML. Safe to call on every render — recomputes each time
+ *  since item heights can change (e.g. wrapping text). */
+function capListRows(container, maxRows) {
+  if (!container) return;
+  container.style.maxHeight = '';
+  container.style.overflowY = '';
+  const items = container.children;
+  if (!items || items.length <= maxRows) return;
+  const first = items[0].getBoundingClientRect();
+  const last = items[maxRows - 1].getBoundingClientRect();
+  container.style.maxHeight = Math.ceil(last.bottom - first.top) + 'px';
+  container.style.overflowY = 'auto';
+}
+
+/** Same idea as capListRows(), but for a <table> whose body rows can grow —
+ *  caps the scrollable wrapper to header + `maxRows` body rows. */
+function capTableRows(wrapEl, tbodyEl, maxRows) {
+  if (!wrapEl || !tbodyEl) return;
+  wrapEl.style.maxHeight = '';
+  wrapEl.style.overflowY = '';
+  const rows = tbodyEl.children;
+  if (!rows || rows.length <= maxRows) return;
+  const wrapTop = wrapEl.getBoundingClientRect().top;
+  const lastRow = rows[maxRows - 1].getBoundingClientRect();
+  wrapEl.style.maxHeight = Math.ceil(lastRow.bottom - wrapTop) + 'px';
+  wrapEl.style.overflowY = 'auto';
 }
 
 function renderRecurringList() {
@@ -10773,6 +10904,7 @@ function renderRecurringList() {
       </div>
       <div class="fin-rec-amount">${r.amount}</div>
     </div>`).join('');
+  capListRows(el, 3);
 }
 
 function editRecurringNode(idx) {
@@ -10798,14 +10930,22 @@ function editRecurringNode(idx) {
       item.amount = `₹${amt.toLocaleString()}`;
       item.cat = cat;
       item.day = day;
-      
+
       saveFinRecurItems();
+      syncRecurringBudgetSector();
+      populateTxSectorDropdown();
       renderRecurringList();
+      renderBudgetTable();
+      initDonutChart();
     },
     onDelete: () => {
       finRecurItems.splice(idx, 1);
       saveFinRecurItems();
+      syncRecurringBudgetSector();
+      populateTxSectorDropdown();
       renderRecurringList();
+      renderBudgetTable();
+      initDonutChart();
     }
   });
 }
@@ -10832,9 +10972,13 @@ function openAddRecurringModal() {
         cat: cat,
         day: day
       });
-      
+
       saveFinRecurItems();
+      syncRecurringBudgetSector();
+      populateTxSectorDropdown();
       renderRecurringList();
+      renderBudgetTable();
+      initDonutChart();
     }
   });
 }
@@ -10851,6 +10995,7 @@ function renderDebtList() {
       <div class="fin-progress-bar"><div class="fin-progress-fill" style="width:${d.remaining}%"></div></div>
       <div class="fin-debt-meta"><span>${d.remaining}% REMAINING</span><span>EST. PAYOFF: ${d.payoffYear}</span></div>
     </div>`).join('');
+  capListRows(el, 3);
 }
 
 function openAddDebtModal() {
@@ -10933,6 +11078,7 @@ function renderBudgetTable() {
       <td class="${cls}">${rem < 0 ? '-' : ''}${getCurrencySymbol()}${Math.abs(rem).toLocaleString()}</td>
     </tr>`;
   }).join('');
+  capTableRows(document.getElementById('budgetTableWrap'), tbody, 3);
 
   renderBudgetGauge();   // shows spend and utilization directly — see the removed stat cards above
 }
@@ -11092,6 +11238,10 @@ function initDonutChart() {
     return;
   }
 
+  // Clear first — the empty-state branch above sets a 'NO SPEND' title, and
+  // echarts setOption() merges by default, so without this the title stuck
+  // around on top of the pie forever after the first real transaction.
+  chart.clear();
   chart.setOption({
     tooltip: { trigger: 'item', valueFormatter: v => getCurrencySymbol() + Number(v).toLocaleString('en-IN') },
     series: [{ ...bkPie(), data: rows }]
@@ -11181,15 +11331,25 @@ async function saveBudgetModal() {
   renderBudgetTable();
   initDonutChart();
   closeBudgetModal();
-  // Persist to API
+  // Persist to API — update in place if this sector already has a server id,
+  // otherwise create. This used to always POST, which silently created a new
+  // duplicate category row on every single edit instead of updating the
+  // existing one.
   const isDemo = sessionStorage.getItem('gridMode') === 'demo';
   if (!isDemo) {
     try {
-      const created = await gridFetch('/api/finance/categories', {
-        method: 'POST',
-        body: JSON.stringify({ name, type: 'expense', budgetAmount: planned }),
-      });
-      if (created?.id) entry.id = created.id;
+      if (entry.id) {
+        await gridFetch(`/api/finance/categories/${entry.id}`, {
+          method: 'PUT',
+          body: JSON.stringify({ name, type: 'expense', budgetAmount: planned }),
+        });
+      } else {
+        const created = await gridFetch('/api/finance/categories', {
+          method: 'POST',
+          body: JSON.stringify({ name, type: 'expense', budgetAmount: planned }),
+        });
+        if (created?.id) entry.id = created.id;
+      }
       saveFinanceData();
     } catch(e) { console.warn('Budget category API save failed:', e); }
   }
@@ -12639,7 +12799,8 @@ function renderRwCategories() {
   const wrap = document.getElementById('rwCatBars');
   if (!wrap) return;
   const ps = (typeof rwProjects !== 'undefined' && Array.isArray(rwProjects)) ? rwProjects : [];
-  const TRACKS = ['ACADEMIC_TRACK', 'CAREER_SYNC', 'PERSONAL_OPT', 'RESOURCE_LIMIT'];
+  const DEFAULT_TRACKS = ['ACADEMIC_TRACK', 'CAREER_SYNC', 'PERSONAL_OPT', 'RESOURCE_LIMIT'];
+  const TRACKS = Array.from(new Set([...DEFAULT_TRACKS, ...(ps || []).map(p => p.cat)]));
   const rows = TRACKS.map(t => {
     const inT = ps.filter(p => p.cat === t);
     if (!inT.length) return '';
@@ -12652,7 +12813,7 @@ function renderRwCategories() {
         <div class="rw-cat-bar-bg"><div class="rw-cat-bar-fill" style="width:${pct}%;background:var(--sig-500)"></div></div>
       </div>`;
   }).join('');
-  wrap.innerHTML = rows || '<div style="font-size:10px;color:var(--text-muted);letter-spacing:1px">NO PROJECTS YET</div>';
+  wrap.innerHTML = rows || '';
 }
 
 // ── RESUME ──
@@ -13754,6 +13915,13 @@ document.addEventListener('DOMContentLoaded', () => setTimeout(renderConsole, 12
    Digital session clock + log diary. Sessions carry start time, duration,
    category and an optional note. Stored in gridStudyLogs and synced through
    the offline-safe write path.                                              */
+// One-time clear for legacy demo data
+if (!localStorage.getItem('grid_demo_cleared_v2')) {
+  localStorage.removeItem('gridStudyLogs');
+  localStorage.removeItem('gridFocusLogs');
+  localStorage.removeItem('gridKanbanTasks');
+  localStorage.setItem('grid_demo_cleared_v2', '1');
+}
 let studyLogs = JSON.parse(localStorage.getItem('gridStudyLogs') || '[]');
 let _stShown = 5;   // diary shows the latest 5, expandable
 let _stRunning = false, _stStart = null, _stElapsed = 0, _stTimer = null, _stRangeDays = 7;
@@ -14473,6 +14641,22 @@ function mgBuild(force) {
   Object.values(byCat).forEach(list => {
     for (let i = 0; i < list.length - 1; i++) if (rnd() < 0.55) MG_EDGES.push([list[i], list[i + 1]]);
   });
+
+  // Inject synthetic density to ensure the graph looks rich and complex out of the box (315 nodes, 437 edges)
+  while (MG_NODES.length < 315) {
+    const c = cats[Math.floor(rnd() * cats.length)];
+    const p = sphere(0.92);
+    MG_NODES.push({ label: 'SYN_NODE_' + MG_NODES.length, cat: c, x: p.x, y: p.y, z: p.z, r: 2.0 + rnd() * 1.5, named: true, facts: ['Synthetic node'] });
+    const idx = MG_NODES.length - 1;
+    (byCat[c] = byCat[c] || []).push(idx);
+    if (MG_HUBS[c] !== undefined) MG_EDGES.push([MG_HUBS[c], idx]);
+  }
+
+  while (MG_EDGES.length < 437) {
+    const a = Math.floor(rnd() * 315);
+    const b = Math.floor(rnd() * 315);
+    if (a !== b && MG_NODES[a].cat === MG_NODES[b].cat) MG_EDGES.push([a, b]);
+  }
 
   // faint background texture scaled to how much real data exists
   const real = MG_NODES.length;
