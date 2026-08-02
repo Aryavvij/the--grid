@@ -13822,24 +13822,27 @@ function hvRenderUpcoming() {
     const events = [];
     
     if (dayRow) {
-      let i = 0;
-      while (i < 24) {
-        if (dayRow[i] && dayRow[i] !== '') {
-          const label = dayRow[i].replace(/_/g, ' ');
-          let end = i + 1;
-          while (end < 24 && dayRow[end] === dayRow[i]) end++;
-          const timeStr = String(i).padStart(2,'0') + ':00 – ' + String(end).padStart(2,'0') + ':00';
-          events.push({ 
-            label, 
-            timeStr, 
-            isNow: hour >= i && hour < end,
-            isPast: hour >= end
-          });
-          i = end;
-        } else {
-          i++;
-        }
-      }
+      // Sparse format: a label at hour H covers every hour up to the NEXT
+      // filled hour — it's not repeated into every hour of the block. This
+      // used to assume the block only extends while dayRow[end] === dayRow[i]
+      // (i.e. every hour independently re-filled with the same string), which
+      // made every block report as exactly 1hr long since only the start
+      // hour is ever actually stored (true of TT_DEFAULT itself, and of
+      // every block saved via the Weekly editor's getSlotLabel/getBlockRange,
+      // which have always used this same sparse model).
+      const hours = Object.keys(dayRow).map(Number).sort((a, b) => a - b);
+      hours.forEach((start, idx) => {
+        const raw = dayRow[start];
+        if (!raw) return;
+        const end = idx + 1 < hours.length ? hours[idx + 1] : 24;
+        const timeStr = String(start).padStart(2,'0') + ':00 – ' + String(end).padStart(2,'0') + ':00';
+        events.push({
+          label: raw.replace(/_/g, ' '),
+          timeStr,
+          isNow: hour >= start && hour < end,
+          isPast: hour >= end
+        });
+      });
     }
 
     if (!events.length) {
