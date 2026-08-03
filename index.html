@@ -7030,29 +7030,47 @@ function exitDemoMode() {
   handleLogout();
 }
 
+/** Restore each module's real backup (saved when demo mode was entered) if one
+ *  exists, otherwise clear it — so no demo-seeded value for a key that never
+ *  syncs with the backend (gymExerciseRegistry, gymMuscleGroups, recurring/
+ *  debt items, etc.) can keep sitting there under a real session. Shared by
+ *  handleExitDemo() and by a fresh login/signup/OAuth callback, since all of
+ *  them mean the same thing: "this is now definitely a real authenticated
+ *  user, not demo exploration." */
+function restoreRealDataKeys() {
+  const keysToRestore = [
+    'gymDBVersion', 'gymSplitData', 'gymExerciseRegistry', 'gymMuscleGroups', 'gymLogs',
+    'rwProjects', 'rsTabData', 'gridEntries', 'gridHabits', 'gridBudget', 'gridTxLog', 'gridFinTelemetry',
+    'gridFinRecurItems', 'gridFinDebtItems', 'gridQueueItems', 'gridRsStackData', 'gridFocusLogs', 'gridWorkProjectsList', 'gridKanbanTasks', 'gridSleepData'
+  ];
+  keysToRestore.forEach(k => {
+    const val = localStorage.getItem('userBackup_' + k);
+    if (val !== null) {
+      localStorage.setItem(k, val);
+      localStorage.removeItem('userBackup_' + k);
+    } else {
+      localStorage.removeItem(k);
+    }
+  });
+}
+
+/** Every place a session commits to "I am a real authenticated user now"
+ *  needs to say so as loudly as launchLocalDemo() said "I am in demo now" —
+ *  otherwise a stale sessionStorage.gridMode='demo' left over from exploring
+ *  the demo before signing up survives the reload (sessionStorage isn't
+ *  cleared by login/signup, only by closing the tab), and checkSPAAuth()
+ *  reads THAT first, silently re-mounting demo mode under a real account. */
+function markRealUserSession() {
+  sessionStorage.setItem('gridMode', 'user');
+  sessionStorage.removeItem('gridIsSandbox');
+  localStorage.setItem('gridActiveMode', 'user');
+  restoreRealDataKeys();
+}
+
 function handleExitDemo() {
   const sessionUser = sessionStorage.getItem('gridUser') || localStorage.getItem('gridUser');
   if (sessionUser) {
-    sessionStorage.setItem('gridMode', 'user');
-    sessionStorage.removeItem('gridIsSandbox');
-    localStorage.setItem('gridActiveMode', 'user');
-
-    // Restore backup if exists
-    const keysToRestore = [
-      'gymDBVersion', 'gymSplitData', 'gymExerciseRegistry', 'gymMuscleGroups', 'gymLogs',
-      'rwProjects', 'rsTabData', 'gridEntries', 'gridHabits', 'gridBudget', 'gridTxLog', 'gridFinTelemetry',
-      'gridFinRecurItems', 'gridFinDebtItems', 'gridQueueItems', 'gridRsStackData', 'gridFocusLogs', 'gridWorkProjectsList', 'gridKanbanTasks', 'gridSleepData'
-    ];
-    keysToRestore.forEach(k => {
-      const val = localStorage.getItem('userBackup_' + k);
-      if (val !== null) {
-        localStorage.setItem(k, val);
-        localStorage.removeItem('userBackup_' + k);
-      } else {
-        localStorage.removeItem(k);
-      }
-    });
-    
+    markRealUserSession();
     location.reload();
   } else {
     handleLogout();
@@ -7110,7 +7128,7 @@ async function handleSPALogin() {
     sessionStorage.setItem('gridUser', data.user.email);
     sessionStorage.setItem('gridUserId', data.user.id);
     sessionStorage.setItem('gridUserName', data.user.name || '');
-    localStorage.setItem('gridActiveMode', 'user');
+    markRealUserSession();
     location.reload();
   } catch (err) {
     setAuthLoading('login', false);
@@ -7142,7 +7160,7 @@ async function handleSPASignup() {
     sessionStorage.setItem('gridUser', data.user.email);
     sessionStorage.setItem('gridUserId', data.user.id);
     sessionStorage.setItem('gridUserName', data.user.name || '');
-    localStorage.setItem('gridActiveMode', 'user');
+    markRealUserSession();
     location.reload();
   } catch (err) {
     setAuthLoading('signup', false);
@@ -11787,7 +11805,7 @@ async function checkSPAAuth() {
       sessionStorage.setItem('gridUser', data.user.email);
       sessionStorage.setItem('gridUserId', data.user.id);
       sessionStorage.setItem('gridUserName', data.user.name || '');
-      localStorage.setItem('gridActiveMode', 'user');
+      markRealUserSession();
       window.history.replaceState({}, '', '/');
       mountApp();
       return;
