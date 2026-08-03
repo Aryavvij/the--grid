@@ -8278,7 +8278,8 @@ function saveSplitModal() {
       exerciseRegistry = JSON.parse(localStorage.getItem('gymExerciseRegistry')) || exerciseRegistry;
       finalDays.forEach(d => {
         (d.exercises || []).forEach(ex => {
-          const { bareName, muscleGroup } = gymParseExerciseTag(ex.name);
+          const { bareName } = gymParseExerciseTag(ex.name);
+          const muscleGroup = gymTaggedGroup(ex);
           if (muscleGroup) gymEnsureRegistered(bareName, muscleGroup);
         });
       });
@@ -8532,6 +8533,16 @@ function gymParseExerciseTag(raw) {
   return { bareName: str.toUpperCase(), muscleGroup: null };
 }
 
+/** The (GROUP) tag can be written after the exercise name OR after its sets
+ *  description — e.g. "BENCH PRESS (CHEST) | 4x8" or "BENCH PRESS | 2 x 8-10
+ *  (CHEST)". Checks both and returns whichever one actually has it, without
+ *  stripping the bracket from anything — it stays visible exactly as typed
+ *  in both the name and sets fields. */
+function gymTaggedGroup(ex) {
+  return gymParseExerciseTag(ex && ex.name).muscleGroup
+      || gymParseExerciseTag(ex && ex.sets).muscleGroup;
+}
+
 /** Auto-create a registry entry for a bracket-tagged exercise so its muscle
  *  group starts tracking it immediately, without a separate manual
  *  "REGISTER EXERCISE" step. No-op if it's already registered anywhere. */
@@ -8725,9 +8736,10 @@ function commitWorkoutLog() {
     });
     
     if (sets.length > 0) {
-      // Split exercise names may carry a "(MUSCLE GROUP)" tag — store the bare
-      // name in the log so history lines up with registry entries either way.
-      const { bareName, muscleGroup: taggedGroup } = gymParseExerciseTag(ex.name);
+      // Split exercise names/sets may carry a "(MUSCLE GROUP)" tag — store the
+      // bare name in the log so history lines up with registry entries either way.
+      const { bareName } = gymParseExerciseTag(ex.name);
+      const taggedGroup = gymTaggedGroup(ex);
 
       // Push exercise entry (isPR added below if applicable)
       const logEntry = { name: bareName, sets, sessionMax1RM: maxSession1RM, isPR: false };
