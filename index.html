@@ -3211,6 +3211,16 @@ html, body {
   align-items: stretch;
 }
 .fin-row-row3 .fin-section { margin-bottom:0; display:flex; flex-direction:column; }
+/* These grow with whatever height align-items:stretch gives the card (set by
+   its tallest sibling in the row) instead of a hardcoded row count — that way
+   a card with more room actually uses it, and only scrolls once content
+   genuinely exceeds the space, rather than always capping at a fixed N rows
+   and leaving dead space when the row is naturally taller than that. */
+#recurringList, #finDebtList, #budgetTableWrap {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
 .fin-group-label {
   font-size: 9px; letter-spacing: 2.5px; color: var(--text-muted); font-weight: 700;
   margin: 4px 0 10px;
@@ -10598,37 +10608,6 @@ async function initFinances() {
   }
 }
 
-/** Cap a list container to show at most `maxRows` of its rendered children
- *  before scrolling internally, so a growing list never stretches sibling
- *  cards in an align-items:stretch grid row. Call after (re)rendering the
- *  container's innerHTML. Safe to call on every render — recomputes each time
- *  since item heights can change (e.g. wrapping text). */
-function capListRows(container, maxRows) {
-  if (!container) return;
-  container.style.maxHeight = '';
-  container.style.overflowY = '';
-  const items = container.children;
-  if (!items || items.length <= maxRows) return;
-  const first = items[0].getBoundingClientRect();
-  const last = items[maxRows - 1].getBoundingClientRect();
-  container.style.maxHeight = Math.ceil(last.bottom - first.top) + 'px';
-  container.style.overflowY = 'auto';
-}
-
-/** Same idea as capListRows(), but for a <table> whose body rows can grow —
- *  caps the scrollable wrapper to header + `maxRows` body rows. */
-function capTableRows(wrapEl, tbodyEl, maxRows) {
-  if (!wrapEl || !tbodyEl) return;
-  wrapEl.style.maxHeight = '';
-  wrapEl.style.overflowY = '';
-  const rows = tbodyEl.children;
-  if (!rows || rows.length <= maxRows) return;
-  const wrapTop = wrapEl.getBoundingClientRect().top;
-  const lastRow = rows[maxRows - 1].getBoundingClientRect();
-  wrapEl.style.maxHeight = Math.ceil(lastRow.bottom - wrapTop) + 'px';
-  wrapEl.style.overflowY = 'auto';
-}
-
 function renderRecurringList() {
   const el = document.getElementById('recurringList');
   if (!el) return;
@@ -10643,7 +10622,6 @@ function renderRecurringList() {
       </div>
       <div class="fin-rec-amount">${r.amount}</div>
     </div>`).join('');
-  capListRows(el, 3);
 }
 
 function editRecurringNode(idx) {
@@ -10734,7 +10712,6 @@ function renderDebtList() {
       <div class="fin-progress-bar"><div class="fin-progress-fill" style="width:${d.remaining}%"></div></div>
       <div class="fin-debt-meta"><span>${d.remaining}% REMAINING</span><span>EST. PAYOFF: ${d.payoffYear}</span></div>
     </div>`).join('');
-  capListRows(el, 3);
 }
 
 function openAddDebtModal() {
@@ -10817,7 +10794,6 @@ function renderBudgetTable() {
       <td class="${cls}">${rem < 0 ? '-' : ''}${getCurrencySymbol()}${Math.abs(rem).toLocaleString()}</td>
     </tr>`;
   }).join('');
-  capTableRows(document.getElementById('budgetTableWrap'), tbody, 3);
 
   renderBudgetGauge();   // shows spend and utilization directly — see the removed stat cards above
 }
