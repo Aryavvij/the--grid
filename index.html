@@ -6997,7 +6997,6 @@ function refreshTimeTravelablePages() {
     if (id === 'page-finances') initFinances();
     if (id === 'page-habits') renderActivityHeatmap();   // matrix/momentum stay current-month, not time-travelable
     if (id === 'page-home') { try { hvRenderHeat(); } catch (e) {} }
-    if (id === 'page-work') initWork();   // now handles its own stat cards too
     if (id === 'page-runway' && document.getElementById('rw-study')) { try { stRenderAll(); } catch (e) {} }
   } catch (e) { console.warn('time travel refresh:', e); }
   renderTimeTravelBar();
@@ -7388,7 +7387,6 @@ function navigate(page) {
   if (page === 'finances') initFinances();
   if (page === 'runway')   initRunway();
   if (page === 'habits')   initHabits();
-  if (page === 'work')     initWork();
   if (page === 'weekly')   initWeekly();
   if (page === 'workout')  { try { recomputeGymProgression(); } catch (e) { console.warn('gym progression:', e); } }
   if (page === 'mindgraph'){ try { initMindgraph(); } catch (e) { console.warn('mindgraph:', e); } }
@@ -9072,283 +9070,6 @@ function saveExerciseModal() {
 }
 
 // ═══════════════════════════════════════════════════
-// WORK / NEURAL LOCK
-// ═══════════════════════════════════════════════════
-let nlRunning = false;
-let nlTotalSecs = 25 * 60; // 25 min countdown
-let nlIntervalId = null;
-let nlCsIntervalId = null;
-let nlCs = 0; // centiseconds
-let nlSessionCount = 822;
-
-let focusLogs = JSON.parse(localStorage.getItem('gridFocusLogs') || '[]');
-
-function saveFocusLogs() {
-  localStorage.setItem('gridFocusLogs', JSON.stringify(focusLogs));
-}
-
-// Real users add their own via nlManageProjectOptions() below, which pushes
-// into this array — starting with someone else's project names is exactly
-// the fake-history problem the blank slate is meant to avoid.
-let workProjectsList = JSON.parse(localStorage.getItem('gridWorkProjectsList') || '[]');
-
-function saveWorkProjectsList() {
-  localStorage.setItem('gridWorkProjectsList', JSON.stringify(workProjectsList));
-}
-
-function populateNlProjectsDropdown() {
-  const select = document.getElementById('nlProject');
-  if (!select) return;
-  select.innerHTML = workProjectsList.map(p => `<option>${p}</option>`).join('');
-}
-
-function renderFocusLogs() {
-  const container = document.getElementById('nlLogs');
-  if (!container) return;
-  container.innerHTML = focusLogs.map((log, idx) => {
-    const errClass = log.isErr ? ' nl-log-err' : '';
-    const idClass = log.isErr ? ' err' : '';
-    return `
-      <div class="nl-log-item${errClass}" onclick="editFocusLogNode(${idx})" style="cursor:pointer" title="Click to edit or delete focus log">
-        <div class="nl-log-head">
-          <span class="nl-log-id${idClass}">${log.id} <span style="font-size:8px;color:var(--text-muted);opacity:0.6;"><svg viewBox="0 0 24 24" width="10" height="10" stroke="currentColor" fill="none" stroke-width="2" style="vertical-align:-1px"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></span></span>
-          <span class="nl-log-time">${log.time}</span>
-        </div>
-        <div class="nl-log-name">${log.name}</div>
-        <div class="nl-log-meta">${log.meta}</div>
-      </div>`;
-  }).join('');
-}
-
-function editFocusLogNode(idx) {
-  const log = focusLogs[idx];
-  
-  showUniversalModal({
-    title: `EDIT FOCUS LOG: ${log.name}`,
-    fields: [
-      { id: 'name', label: 'Log Project/Task Name', type: 'text', value: log.name },
-      { id: 'time', label: 'Timestamp (e.g. 13:24)', type: 'text', value: log.time },
-      { id: 'meta', label: 'Duration/Meta (e.g. Duration: 30m)', type: 'text', value: log.meta }
-    ],
-    onSave: (data) => {
-      const name = data.name.trim();
-      if (!name) return;
-      log.name = name;
-      log.time = data.time.trim() || log.time;
-      log.meta = data.meta.trim() || log.meta;
-      saveFocusLogs();
-      renderFocusLogs();
-    },
-    onDelete: () => {
-      focusLogs.splice(idx, 1);
-      saveFocusLogs();
-      renderFocusLogs();
-    }
-  });
-}
-
-function nlManageProjectOptions() {
-  const optionsList = workProjectsList.map((p, i) => ({ value: i, label: `${i}: ${p}` }));
-  
-  showUniversalModal({
-    title: "MANAGE DROPDOWN TASKS",
-    fields: [
-      { 
-        id: 'action', 
-        label: 'Action', 
-        type: 'select', 
-        options: [
-          { value: 'add', label: 'Add New Task / Project Option' },
-          { value: 'edit', label: 'Rename Selected Task' },
-          { value: 'delete', label: 'Delete Selected Task' }
-        ],
-        value: 'add'
-      },
-      { 
-        id: 'select_task', 
-        label: 'Select Existing Task (For Edit/Delete)', 
-        type: 'select', 
-        options: optionsList,
-        value: optionsList.length > 0 ? optionsList[0].value : ''
-      },
-      { 
-        id: 'task_name', 
-        label: 'Task Name (For Add/Rename)', 
-        type: 'text', 
-        placeholder: 'Enter task name...' 
-      }
-    ],
-    description: "Choose an action. Use 'Select Existing Task' to specify which option to edit or delete.",
-    onSave: (data) => {
-      const action = data.action;
-      const selectIdx = parseInt(data.select_task);
-      const name = data.task_name.trim();
-      
-      if (action === 'add') {
-        if (name) {
-          workProjectsList.push(name);
-          saveWorkProjectsList();
-          populateNlProjectsDropdown();
-        }
-      } else if (action === 'edit') {
-        if (!isNaN(selectIdx) && selectIdx >= 0 && selectIdx < workProjectsList.length && name) {
-          workProjectsList[selectIdx] = name;
-          saveWorkProjectsList();
-          populateNlProjectsDropdown();
-        }
-      } else if (action === 'delete') {
-        if (!isNaN(selectIdx) && selectIdx >= 0 && selectIdx < workProjectsList.length) {
-          workProjectsList.splice(selectIdx, 1);
-          saveWorkProjectsList();
-          populateNlProjectsDropdown();
-        }
-      }
-    }
-  });
-}
-
-function initWork() {
-  initCogFlowChart();
-  populateNlProjectsDropdown();
-  renderFocusLogs();
-  // Was only ever updated by the periodic hydrateRealStats() sweep, so visiting
-  // this page fresh (or after navigating here while time-travelling) could show
-  // stale numbers until that timer next fired. Make the page's own bootstrap
-  // responsible for its own stat cards instead of depending on a side timer.
-  try { renderNlStats(); } catch (e) {}
-}
-
-function initCogFlowChart() {
-  const el = document.getElementById('cogFlowChart');
-  if (!el || typeof echarts === 'undefined') return;
-  const chart = ethosChart(el);
-  if (!chart) return;
-
-  // Real data only. focusLogs entries carry duration inside `meta`
-  // (e.g. "Efficiency: 92% | Duration: 45m"), so parse it out.
-  const sessions = gridAsOf(
-    (typeof focusLogs !== 'undefined' && Array.isArray(focusLogs)) ? focusLogs : [],
-    l => l.date
-  ).filter(l => !l.isErr);
-
-  const parsed = sessions.map(l => {
-    const m = /Duration:\s*(\d+)\s*m/i.exec(l.meta || '');
-    return { name: l.name || l.id, time: l.time || '', mins: m ? parseInt(m[1], 10) : 0 };
-  }).filter(x => x.mins > 0);
-
-  if (!parsed.length) {
-    chart.clear();
-    chart.setOption({
-      title: {
-        text: 'NO SESSIONS LOGGED',
-        subtext: 'Run the timer, then STOP & LOG to populate',
-        left: 'center', top: 'center'
-      }
-    });
-    return;
-  }
-
-  parsed.reverse(); // oldest → newest, left to right
-
-  chart.setOption({
-    tooltip: {
-      trigger: 'axis',
-      formatter: pts => {
-        const p = pts[0];
-        return `${parsed[p.dataIndex].name}<br/>${p.value} min @ ${parsed[p.dataIndex].time}`;
-      }
-    },
-    xAxis: { type: 'category', data: parsed.map(p => p.time) },
-    yAxis: { type: 'value', name: 'MIN', nameTextStyle: { fontSize: 9 } },
-    series: [{ ...bkBar('#76b372', { count: parsed.length }), data: parsed.map(p => p.mins) }]
-  });
-}
-
-function nlUpdateDisplay() {
-  const m = Math.floor(nlTotalSecs / 60);
-  const s = nlTotalSecs % 60;
-  document.getElementById('nlTimer').childNodes[0].textContent =
-    String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
-}
-
-function nlToggleTimer() {
-  if (nlRunning) {
-    // Pause
-    clearInterval(nlIntervalId);
-    clearInterval(nlCsIntervalId);
-    nlRunning = false;
-    document.getElementById('nlInitBtn').innerHTML = `<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" fill="none" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg> INITIATE`;
-  } else {
-    // Start
-    nlRunning = true;
-    document.getElementById('nlInitBtn').innerHTML = `<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" fill="none" stroke-width="2"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg> PAUSE`;
-    nlIntervalId = setInterval(() => {
-      if (nlTotalSecs > 0) {
-        nlTotalSecs--;
-        nlUpdateDisplay();
-      } else {
-        clearInterval(nlIntervalId);
-        clearInterval(nlCsIntervalId);
-        nlRunning = false;
-        nlStopLog();
-      }
-    }, 1000);
-    nlCsIntervalId = setInterval(() => {
-      nlCs = (nlCs + 1) % 100;
-      document.getElementById('nlTimerMs').textContent = ':' + String(nlCs).padStart(2,'0');
-    }, 10);
-  }
-}
-
-function nlStopLog() {
-  if (gridBlockWriteIfTimeTraveling()) return;
-  clearInterval(nlIntervalId);
-  clearInterval(nlCsIntervalId);
-  nlRunning = false;
-  nlTotalSecs = 25 * 60;
-  nlCs = 0;
-  nlUpdateDisplay();
-  document.getElementById('nlTimerMs').textContent = ':00';
-  document.getElementById('nlInitBtn').innerHTML = `<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" fill="none" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg> INITIATE`;
-
-  const project = document.getElementById('nlProject')?.value || 'Focus Session';
-  const now = new Date();
-  const timeStr = String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
-  
-  focusLogs.unshift({
-    id: `SESSION_${nlSessionCount++}`,
-    time: timeStr,
-    name: project,
-    meta: 'Efficiency: 92% | Duration: 25m',
-    isErr: false
-  });
-  saveFocusLogs();
-  renderFocusLogs();
-}
-
-function nlCommitLedger() {
-  const proj  = document.getElementById('nlProject').value;
-  const start = document.getElementById('nlStart').value;
-  const end   = document.getElementById('nlEnd').value;
-  if (!start || !end) return;
-  
-  focusLogs.unshift({
-    id: `SESSION_${nlSessionCount++}`,
-    time: start,
-    name: proj,
-    meta: `Manual entry | ${start} – ${end}`,
-    isErr: false
-  });
-  saveFocusLogs();
-  renderFocusLogs();
-}
-
-function nlToggle(el) {
-  document.querySelectorAll('#page-work .rw-toggle').forEach(t => t.classList.remove('active'));
-  el.classList.add('active');
-}
-
-// ═══════════════════════════════════════════════════
 // WEEKLY / ARCHITECT
 // ═══════════════════════════════════════════════════
 
@@ -10060,8 +9781,11 @@ function hmCollect() {
       .forEach(l => bump(l.date || l.workoutDate));
   } catch (e) {}
   // Study — one point per 45 minutes, so a long session outweighs a token one.
+  // Reads gridStudyLogs, not gridFocusLogs: the latter belonged to the old
+  // standalone Focus Hub timer, which nothing writes to since it was merged
+  // into Runway's Study tab — this was silently missing every real session.
   try {
-    gridAsOf(JSON.parse(localStorage.getItem('gridFocusLogs') || '[]'), l => l.date)
+    gridAsOf(JSON.parse(localStorage.getItem('gridStudyLogs') || '[]'), l => l.date)
       .forEach(l => bump(l.date, Math.max(1, Math.round((+l.minutes || 0) / 45))));
   } catch (e) {}
   return day;
@@ -12751,35 +12475,6 @@ function renderHbStats() {
   }
 }
 
-// ── FOCUS ──
-function renderNlStats() {
-  const logs = gridAsOf(
-    (typeof focusLogs !== 'undefined' && Array.isArray(focusLogs)) ? focusLogs : [],
-    l => l.date
-  );
-  const real = logs.filter(l => !l.isErr);
-  const mins = real.reduce((s, l) => {
-    const m = /Duration:\s*(\d+)\s*m/i.exec(l.meta || '');
-    return s + (m ? parseInt(m[1], 10) : 0);
-  }, 0);
-
-  if (!real.length) {
-    ['nlTotalLogged','nlSessionsToday','nlMonthlyAvg','nlLinkedTasks'].forEach(id => _hyd(id, null, 'NO DATA'));
-    ['nlTotalLoggedSub','nlSessionsTodaySub','nlMonthlyAvgSub','nlLinkedTasksSub'].forEach(id => _hyd(id, ''));
-    return;
-  }
-  _hyd('nlTotalLogged', Math.floor(mins / 60) + ':' + String(mins % 60).padStart(2, '0') + ' HRS');
-  _hyd('nlTotalLoggedSub', 'ACROSS ' + real.length + ' SESSIONS');
-  _hyd('nlSessionsToday', String(real.length).padStart(2, '0'));
-  _hyd('nlSessionsTodaySub', '');
-  _hyd('nlMonthlyAvg', Math.round(mins / real.length) + ' MIN');
-  _hyd('nlMonthlyAvgSub', 'AVG / SESSION');
-
-  const projs = (typeof rwProjects !== 'undefined' && Array.isArray(rwProjects)) ? rwProjects : [];
-  const active = projs.filter(p => p.status === 'running').length;
-  _hyd('nlLinkedTasks', String(active).padStart(2, '0'));
-  _hyd('nlLinkedTasksSub', 'RUNNING PROJECTS');
-}
 
 // ── RUNWAY ──
 function renderRwStats() {
@@ -12866,7 +12561,6 @@ function rsEditCgpa() {
 function hydrateRealStats() {
   try { renderArcStats(); } catch (e) { console.warn('arc stats:', e); }
   try { renderHbStats(); }  catch (e) { console.warn('hb stats:', e); }
-  try { renderNlStats(); }  catch (e) { console.warn('nl stats:', e); }
   try { renderRwStats(); }  catch (e) { console.warn('rw stats:', e); }
   try { renderRsStats(); }  catch (e) { console.warn('rs stats:', e); }
 }
@@ -13286,7 +12980,6 @@ function hvToday() {
   const d = new Date();
   return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
 }
-function hvMins(l) { const m = /Duration:\s*(\d+)\s*m/i.exec(l && l.meta || ''); return m ? parseInt(m[1], 10) : 0; }
 function hvCur() { return (typeof getCurrencySymbol === 'function') ? getCurrencySymbol() : '₹'; }
 
 /* ── Analog ring clock ────────────────────────────────────────────────────
@@ -13607,10 +13300,12 @@ function hvRenderStatus() {
     } else { set('hvKFin', '—'); sub('hvKFinS', 'NO BUDGET'); }
   } catch (e) {}
 
-  // focus
+  // focus — reads the live Study timer's studyLogs (gridStudyLogs), not the
+  // old standalone Focus Hub's focusLogs, which nothing writes to anymore
+  // since it was merged into Runway's Study tab: this tile always read 0.
   try {
-    const logs = (focusLogs || []).filter(l => !l.isErr);
-    const mins = logs.reduce((s, l) => s + hvMins(l), 0);
+    const logs = (typeof studyLogs !== 'undefined' && Array.isArray(studyLogs)) ? studyLogs : [];
+    const mins = logs.reduce((s, l) => s + (+l.minutes || 0), 0);
     if (logs.length) { set('hvKFoc', Math.floor(mins / 60) + 'h<small>' + String(mins % 60).padStart(2, '0') + '</small>');
       sub('hvKFocS', logs.length + ' SESSIONS'); }
     else { set('hvKFoc', '—'); sub('hvKFocS', 'NO SESSIONS'); }
@@ -13688,8 +13383,6 @@ function hvRenderHeat() {
   try { gridAsOf(JSON.parse(localStorage.getItem('gymLogs')||'[]'), x => x.date || x.workoutDate)
     .forEach(x => { if(x.date) rec(x.date.slice(0,10)); if(x.workoutDate) rec(x.workoutDate.slice(0,10)); }); }catch(e){}
   try { gridAsOf(JSON.parse(localStorage.getItem('gridStudyLogs')||'[]'), x => x.date)
-    .forEach(x => { if(x.date) rec(x.date.slice(0,10)); }); }catch(e){}
-  try { gridAsOf(JSON.parse(localStorage.getItem('gridFocusLogs')||'[]'), x => x.date)
     .forEach(x => { if(x.date) rec(x.date.slice(0,10)); }); }catch(e){}
   // ts is 'YY.MM.DD HH:MM', not ISO — _txDateIso reshapes it so this actually matches rows.
   try { gridAsOf(JSON.parse(localStorage.getItem('gridTxLog')||'[]'), x => _txDateIso(x.ts))
