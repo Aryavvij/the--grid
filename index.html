@@ -5217,10 +5217,10 @@ html, body {
           <div class="hb-chart-head">
             <div class="hb-matrix-title" style="font-size:13px">CONSISTENCY_MOMENTUM</div>
             <div class="hb-legend">
-              <span class="hb-leg-dot" style="background:var(--green)"></span><span>COMPLETION % BY WEEK</span>
+              <span class="hb-leg-dot" style="background:var(--green)"></span><span>HABITS COMPLETED BY DAY</span>
             </div>
           </div>
-          <div id="momentumChart" style="width:100%;height:260px"></div>
+          <div id="momentumChart" style="width:100%;height:320px"></div>
         </div>
 
       </div>
@@ -9907,7 +9907,9 @@ function initMomentumChart() {
   const chart = ethosChart(el);
   if (!chart) return;
 
-  // Real consistency: % of habits completed, bucketed by week of this month.
+  // Consistency across the ongoing month: one point per calendar day, value =
+  // how many habits were completed that day (not a %) — the heatmap already
+  // covers the full-year overview, this is the month's shape at a glance.
   const hs = (typeof habits !== 'undefined' && Array.isArray(habits)) ? habits : [];
   if (!hs.length) {
     chart.clear();
@@ -9917,32 +9919,23 @@ function initMomentumChart() {
 
   const today = new Date();
   const dim = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
-  const weeks = [], vals = [];
-  for (let w = 0; w < Math.ceil(dim / 7); w++) {
-    const from = w * 7 + 1, to = Math.min(dim, from + 6);
-    if (from > today.getDate()) break;
-    const cap = Math.min(to, today.getDate());
-    let hit = 0, poss = 0;
-    hs.forEach(h => {
-      const set = new Set(h.checked || []);
-      for (let d = from; d <= cap; d++) { poss++; if (set.has(d)) hit++; }
-    });
-    weeks.push('W' + (w + 1));
-    vals.push(poss ? Math.round((hit / poss) * 100) : 0);
+  const days = [], vals = [];
+  for (let d = 1; d <= dim; d++) {
+    days.push(String(d).padStart(2, '0'));
+    if (d > today.getDate()) { vals.push(null); continue; }   // not reached yet this month
+    let hit = 0;
+    hs.forEach(h => { if ((h.checked || []).includes(d)) hit++; });
+    vals.push(hit);
   }
 
   chart.setOption({
-    tooltip: { trigger: 'axis', valueFormatter: v => v + '%' },
-    xAxis: { type: 'category', data: weeks },
-    yAxis: { type: 'value', max: 100, name: '%', nameTextStyle: { fontSize: 9 } },
-    // Bklit area treatment — see bkArea(). bkArea() defaults to symbol:'none'
-    // (no point markers), which is fine for a multi-point line but means a
-    // single week (the common case early in a fresh month, before a 2nd
-    // week-bucket exists) has nothing to draw at all: one point makes no line
-    // segment, and an area fill has no width with only one x value — so the
-    // chart rendered a bare axis with zero visible marks. Explicit markers
-    // make a lone point visible as a dot instead of nothing.
-    series: [{ ...bkArea('#76b372'), symbol: 'circle', symbolSize: 6, data: vals }]
+    tooltip: { trigger: 'axis', valueFormatter: v => v + (v === 1 ? ' HABIT' : ' HABITS') },
+    xAxis: { type: 'category', data: days, name: 'DAY', nameLocation: 'middle', nameGap: 22, nameTextStyle: { fontSize: 9 } },
+    yAxis: { type: 'value', min: 0, max: hs.length, minInterval: 1, name: 'HABITS', nameTextStyle: { fontSize: 9 } },
+    // Explicit markers: bkArea() defaults to symbol:'none', which reads fine
+    // once there are several days of data but leaves day 1 (or any lone real
+    // point) with nothing drawn at all — same reasoning as the fix below.
+    series: [{ ...bkArea('#76b372'), symbol: 'circle', symbolSize: 5, connectNulls: false, data: vals }]
   });
 }
 
