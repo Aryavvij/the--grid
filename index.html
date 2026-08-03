@@ -13822,27 +13822,34 @@ function hvRenderUpcoming() {
     const events = [];
     
     if (dayRow) {
-      // Sparse format: a label at hour H covers every hour up to the NEXT
-      // filled hour — it's not repeated into every hour of the block. This
-      // used to assume the block only extends while dayRow[end] === dayRow[i]
-      // (i.e. every hour independently re-filled with the same string), which
-      // made every block report as exactly 1hr long since only the start
-      // hour is ever actually stored (true of TT_DEFAULT itself, and of
-      // every block saved via the Weekly editor's getSlotLabel/getBlockRange,
-      // which have always used this same sparse model).
-      const hours = Object.keys(dayRow).map(Number).sort((a, b) => a - b);
-      hours.forEach((start, idx) => {
-        const raw = dayRow[start];
-        if (!raw) return;
-        const end = idx + 1 < hours.length ? hours[idx + 1] : 24;
-        const timeStr = String(start).padStart(2,'0') + ':00 – ' + String(end).padStart(2,'0') + ':00';
+      // Real schedules show up in BOTH shapes: sparse (only the block's start
+      // hour is stored — true of TT_DEFAULT and of getSlotLabel/getBlockRange
+      // reads elsewhere) and dense (every hour of the block explicitly stores
+      // the same repeated label). Resolve each hour's effective label by
+      // forward-filling from the last stored value (handles sparse gaps),
+      // THEN merge consecutive hours that resolve to the same label into one
+      // block (handles dense repeats) — either format alone under-merges if
+      // you only do one of these two steps.
+      let last = null;
+      const perHour = [];
+      for (let h = 0; h < 24; h++) {
+        if (dayRow[h]) last = dayRow[h];
+        perHour.push(last);
+      }
+      let i = 0;
+      while (i < 24) {
+        if (!perHour[i]) { i++; continue; }
+        let end = i + 1;
+        while (end < 24 && perHour[end] === perHour[i]) end++;
+        const timeStr = String(i).padStart(2,'0') + ':00 – ' + String(end).padStart(2,'0') + ':00';
         events.push({
-          label: raw.replace(/_/g, ' '),
+          label: perHour[i].replace(/_/g, ' '),
           timeStr,
-          isNow: hour >= start && hour < end,
+          isNow: hour >= i && hour < end,
           isPast: hour >= end
         });
-      });
+        i = end;
+      }
     }
 
     if (!events.length) {
