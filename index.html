@@ -10003,12 +10003,21 @@ function toggleHabitDay(e) {
   pctCell.textContent = h.pct + '%';
   pctCell.className   = 'hb-td-pct ' + (h.pct >= 80 ? 'hi' : h.pct < 55 ? 'lo' : 'mid');
 
+  // #hbTerminal was removed from the page markup in an earlier redesign but
+  // this call site never got updated — term.appendChild() threw on every tick
+  // (TypeError on null), which aborted the function right here, before it
+  // ever reached saveHabits()/the heatmap re-render/the API sync below. The
+  // checkbox and % text above still visually updated (they run first), so a
+  // tick looked like it worked right up until the next page revisit reverted
+  // it. Guarding instead of assuming the element exists fixes that.
   const term = document.getElementById('hbTerminal');
-  const line = document.createElement('div');
-  line.className   = 'hb-log-line';
-  line.textContent = `> ${h.name} DAY_${String(d).padStart(2,'0')} ${completing ? 'COMPLETE' : 'UNMARKED'}`;
-  term.appendChild(line);
-  term.scrollTop = term.scrollHeight;
+  if (term) {
+    const line = document.createElement('div');
+    line.className   = 'hb-log-line';
+    line.textContent = `> ${h.name} DAY_${String(d).padStart(2,'0')} ${completing ? 'COMPLETE' : 'UNMARKED'}`;
+    term.appendChild(line);
+    term.scrollTop = term.scrollHeight;
+  }
 
   saveHabits(); // localStorage cache
   renderActivityHeatmap();     // cross-module grid moves with every tick
