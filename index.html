@@ -14023,7 +14023,10 @@ function mgCollect() {
     });
   } catch (e) {}
 
-  // FINANCES — budget sectors, recurring commitments, debts
+  // FINANCES — budget sectors, recurring commitments, AND every historical
+  // ledger entry (dated, so a recurring "AWS_HOSTING" charge each month gets
+  // its own node per date instead of collapsing into one — add() dedupes by
+  // label, so anything meant to show up more than once needs a unique label).
   try {
     (budgetData || []).forEach(b => add(b.sector, 'finances', [
       'planned ' + cur + (+b.planned || 0).toLocaleString('en-IN'),
@@ -14032,17 +14035,31 @@ function mgCollect() {
     ]));
     (typeof finRecurItems !== 'undefined' ? finRecurItems : []).forEach(r =>
       add(r.name, 'finances', ['recurring ' + (r.amount || ''), r.cat || '', 'renews day ' + (r.day || '?')]));
+    (typeof txLog !== 'undefined' ? txLog : []).forEach(t => {
+      const d = (t.ts || '').split(' ')[0];
+      add((t.entity || 'TRANSACTION') + ' · ' + d, 'finances', [
+        d, (+t.val < 0 ? '-' : '+') + cur + Math.abs(+t.val || 0).toLocaleString('en-IN'), t.sector || '']);
+    });
   } catch (e) {}
 
-  // GYM — muscle groups and registered exercises
+  // GYM — muscle groups, registered exercises (current PR/1RM snapshot), AND
+  // every historical logged session per exercise (dated), so a workout from
+  // months ago still shows up on its own, not just folded into the current PR.
   try {
     (muscleGroups || []).forEach(m => add(m.name, 'gym', [m.growth ? 'growth ' + m.growth : '', m.muscles || '']));
     Object.keys(exerciseRegistry || {}).forEach(mg =>
       (exerciseRegistry[mg].exercises || []).forEach(ex =>
         add(ex.name, 'gym', [ex.orm ? 'est 1RM ' + ex.orm + 'kg' : '', ex.pr ? 'PR ' + ex.pr + 'kg' : '', mg])));
+    const glogs = JSON.parse(localStorage.getItem('gymLogs') || '[]');
+    glogs.forEach(l => {
+      const d = l.date || l.workoutDate || '';
+      (l.exercises || []).forEach(ex => add((ex.name || 'EXERCISE') + ' · ' + d, 'gym', [
+        d, ex.sessionMax1RM ? 'session 1RM ' + ex.sessionMax1RM + 'kg' : '', ex.isPR ? 'PR that day' : '']));
+    });
   } catch (e) {}
 
-  // WORK — projects and study categories
+  // WORK — projects, study categories, AND every individual dated study
+  // session (the category rollup alone can't answer "what did I study on X").
   try {
     (rwProjects || []).forEach(p => add(p.name, 'work', [
       (p.progress || 0) + '% complete', p.status || '', p.deadline ? 'due ' + p.deadline : '']));
@@ -14053,9 +14070,15 @@ function mgCollect() {
     });
     Object.keys(byCat).forEach(k =>
       add(k, 'work', [Math.round(byCat[k] / 60 * 10) / 10 + 'h studied', 'study category']));
+    (typeof studyLogs !== 'undefined' ? studyLogs : []).forEach(l =>
+      add((l.category || 'GENERAL') + ' · ' + (l.date || ''), 'work', [
+        l.date || '', (l.minutes || 0) + ' min', l.note || '']));
   } catch (e) {}
 
-  // WEEKLY — timetable blocks and tasks
+  // WEEKLY — timetable blocks and tasks. Tasks are a day-of-week template
+  // with no date attached per task, and completing/deleting one removes it
+  // permanently — there is no "what did I put in for a specific week" to
+  // recover here, this board was never built to retain that.
   try {
     const blocks = new Set();
     (typeof ttData !== 'undefined' ? ttData : []).forEach(day =>
@@ -14065,12 +14088,14 @@ function mgCollect() {
       t.type || '', t.done ? 'completed' : (t.status || 'pending')]));
   } catch (e) {}
 
-  // CALENDAR — upcoming entries
+  // CALENDAR — every entry, past and future (used to filter to only the next
+  // 20 upcoming, which is exactly why an old entry like "Jan 2nd week" never
+  // showed up here even though it was still sitting in `entries` the whole
+  // time). Dated labels so a repeating title on different days doesn't collapse.
   try {
     const map = (typeof entries !== 'undefined' && entries) ? entries : {};
-    const today = new Date().toISOString().slice(0, 10);
-    Object.keys(map).filter(k => k >= today).sort().slice(0, 20).forEach(k =>
-      (map[k] || []).forEach(e => add(e.title, 'calendar', [k, e.time || 'all day'])));
+    Object.keys(map).sort().forEach(k =>
+      (map[k] || []).forEach(e => add((e.title || 'EVENT') + ' · ' + k, 'calendar', [k, e.time || 'all day'])));
   } catch (e) {}
 
   // PORTFOLIO — every registry node
