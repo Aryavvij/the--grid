@@ -10201,8 +10201,14 @@ function initMomentumChart() {
     tooltip: { trigger: 'axis', valueFormatter: v => v + '%' },
     xAxis: { type: 'category', data: weeks },
     yAxis: { type: 'value', max: 100, name: '%', nameTextStyle: { fontSize: 9 } },
-    // Bklit area treatment — see bkArea()
-    series: [{ ...bkArea('#76b372'), data: vals }]
+    // Bklit area treatment — see bkArea(). bkArea() defaults to symbol:'none'
+    // (no point markers), which is fine for a multi-point line but means a
+    // single week (the common case early in a fresh month, before a 2nd
+    // week-bucket exists) has nothing to draw at all: one point makes no line
+    // segment, and an area fill has no width with only one x value — so the
+    // chart rendered a bare axis with zero visible marks. Explicit markers
+    // make a lone point visible as a dot instead of nothing.
+    series: [{ ...bkArea('#76b372'), symbol: 'circle', symbolSize: 6, data: vals }]
   });
 }
 
