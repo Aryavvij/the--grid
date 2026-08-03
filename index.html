@@ -13420,12 +13420,19 @@ function hvRenderNow() {
     set('hvNextT', '');
   }
 
-  // CTA follows whatever is actually happening
+  // CTA follows whatever is actually happening. #hvCta has no markup left in
+  // the page (this button was superseded by the mini-widget row and never
+  // called via hvRunCta() from anywhere either) — this threw on every single
+  // Home render, silently swallowed by renderConsole()'s per-fn try/catch,
+  // which meant hvCtaMode never updated either. Still compute hvCtaMode (some
+  // other affordance may read it) without touching the missing element.
   const ctx = ((cur && cur.label) || (ev && ev.sameDay && (ev.e.title || '')) || '').toLowerCase();
   const cta = document.getElementById('hvCta');
-  if (/gym|workout|lift|train|push|pull|leg/.test(ctx))       { hvCtaMode = 'gym';   cta.textContent = 'OPEN GYM SESSION'; }
-  else if (/deep|study|focus|read|algo|research|code|lab|class|exam/.test(ctx)) { hvCtaMode = 'focus'; cta.textContent = 'START FOCUS'; }
-  else { hvCtaMode = 'console'; cta.textContent = 'OPEN DAILY CONSOLE'; }
+  let ctaText;
+  if (/gym|workout|lift|train|push|pull|leg/.test(ctx))       { hvCtaMode = 'gym';   ctaText = 'OPEN GYM SESSION'; }
+  else if (/deep|study|focus|read|algo|research|code|lab|class|exam/.test(ctx)) { hvCtaMode = 'focus'; ctaText = 'START FOCUS'; }
+  else { hvCtaMode = 'console'; ctaText = 'OPEN DAILY CONSOLE'; }
+  if (cta) cta.textContent = ctaText;
 }
 /** Focus Hub was merged into Runway's Study tab — one timer, not two. */
 function hvGoToStudyTimer() {
