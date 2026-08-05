@@ -6007,28 +6007,34 @@ html, body {
             </div>
             <div class="drawer-close" onclick="closeRsDetailModal()"><svg viewBox="0 0 24 24" width="13" height="13" stroke="currentColor" fill="none" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></div>
           </div>
-          <div class="drawer-body" style="padding: 24px; overflow-y:auto;">
-            <div style="margin-bottom:16px; text-align: left;">
-              <div style="font-size: 10px; color:var(--text-muted); letter-spacing:1px; margin-bottom:4px;">TIMELINE / DATE</div>
-              <div style="font-size: 12px; font-weight:700; color:var(--text);" id="rsDetailModalDate">Present</div>
-            </div>
-            <div style="margin-bottom:16px; text-align: left;">
-              <div style="font-size: 10px; color:var(--text-muted); letter-spacing:1px; margin-bottom:4px;">ONE-LINE SUMMARY</div>
-              <div style="font-size: 13px; font-style:italic; color:var(--green);" id="rsDetailModalSummary">A beautiful outline of the project...</div>
-            </div>
-            <div style="margin-bottom:16px; text-align: left;">
-              <div style="font-size: 10px; color:var(--text-muted); letter-spacing:1px; margin-bottom:4px;">FULL DETAILED LOG</div>
-              <div style="font-size: 11px; color:var(--text-dim); line-height:1.6;" id="rsDetailModalFullDesc">
-                Here are the details of the project...
+          <div style="display:grid; grid-template-columns: 200px 1fr; gap:24px; padding:24px; overflow-y:auto; flex:1; min-height:0;">
+            <!-- Metadata column: short fields grouped together -->
+            <div style="display:flex; flex-direction:column; gap:20px; text-align:left;">
+              <div>
+                <div style="font-size: 10px; color:var(--text-muted); letter-spacing:1px; margin-bottom:4px;">TIMELINE / DATE</div>
+                <div style="font-size: 12px; font-weight:700; color:var(--text);" id="rsDetailModalDate">Present</div>
+              </div>
+              <div>
+                <div style="font-size: 10px; color:var(--text-muted); letter-spacing:1px; margin-bottom:6px;">TECHNOLOGIES / SKILLS SYNC</div>
+                <div id="rsDetailModalTags" style="display:flex; gap:6px; flex-wrap:wrap;"></div>
+              </div>
+              <div id="rsDetailLinksWrap">
+                <div style="font-size:10px; color:var(--text-muted); letter-spacing:1px; margin-bottom:6px;">LINKS</div>
+                <div id="rsDetailModalLinks" style="display:flex; flex-direction:column; gap:8px;"></div>
               </div>
             </div>
-            <div style="text-align: left; margin-bottom:16px;">
-              <div style="font-size: 10px; color:var(--text-muted); letter-spacing:1px; margin-bottom:6px;">TECHNOLOGIES / SKILLS SYNC</div>
-              <div id="rsDetailModalTags" style="display:flex; gap:6px; flex-wrap:wrap;"></div>
-            </div>
-            <div style="text-align:left;" id="rsDetailLinksWrap">
-              <div style="font-size:10px; color:var(--text-muted); letter-spacing:1px; margin-bottom:6px;">LINKS</div>
-              <div id="rsDetailModalLinks" style="display:flex; gap:8px; flex-wrap:wrap;"></div>
+            <!-- Content column: the actual prose, given real width to read -->
+            <div style="display:flex; flex-direction:column; gap:16px; text-align:left; min-width:0;">
+              <div>
+                <div style="font-size: 10px; color:var(--text-muted); letter-spacing:1px; margin-bottom:4px;">ONE-LINE SUMMARY</div>
+                <div style="font-size: 13px; font-style:italic; color:var(--green);" id="rsDetailModalSummary">A beautiful outline of the project...</div>
+              </div>
+              <div>
+                <div style="font-size: 10px; color:var(--text-muted); letter-spacing:1px; margin-bottom:4px;">FULL DETAILED LOG</div>
+                <div style="font-size: 11px; color:var(--text-dim); line-height:1.6;" id="rsDetailModalFullDesc">
+                  Here are the details of the project...
+                </div>
+              </div>
             </div>
           </div>
           <div style="padding:14px 24px; border-top:1px solid var(--card-border); display:flex; gap:10px; justify-content:flex-end;">
