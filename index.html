@@ -3553,7 +3553,7 @@ html, body {
 .rs-pdf-sheet {
   background: #ffffff;
   color: #1a1a1a;
-  padding: 30px;
+  padding: 34px 36px;
   font-family: 'Inter', sans-serif;
   border-radius: 8px;
   box-shadow: 0 4px 20px rgba(0,0,0,0.15);
@@ -3562,63 +3562,114 @@ html, body {
   min-height: 1000px;
   box-sizing: border-box;
 }
+/* Centered name/contact header, matching a standard ATS resume — a thin rule
+   separates it from the two-column body below. */
 .rs-pdf-sheet h1 {
   font-family: 'Outfit', sans-serif;
-  font-size: 26px;
+  font-size: 28px;
+  font-weight: 800;
   color: #111;
   text-align: center;
   margin: 0 0 6px 0;
   text-transform: uppercase;
-  letter-spacing: 1.5px;
+  letter-spacing: 3px;
 }
 .rs-pdf-sheet .rs-pdf-contact {
   text-align: center;
   font-size: 10px;
   color: #666;
-  margin-bottom: 20px;
   letter-spacing: 0.5px;
+  padding-bottom: 14px;
+  margin-bottom: 18px;
+  border-bottom: 1.5px solid #ddd;
 }
+/* Two columns: short/factual sections (courses, achievements) on the left,
+   narrative sections (projects, internships, positions, research) on the
+   right — same split a standard resume makes between "credentials" and
+   "experience". */
+.rs-pdf-body {
+  display: grid;
+  grid-template-columns: 190px 1fr;
+  gap: 26px;
+  align-items: start;
+}
+.rs-pdf-col { min-width: 0; }
 .rs-pdf-sheet h2 {
   font-family: 'Outfit', sans-serif;
-  font-size: 13px;
-  color: #444;
-  border-bottom: 2px solid #ddd;
+  font-size: 11px;
+  font-weight: 800;
+  color: #222;
+  border-bottom: 1.5px solid #ccc;
   padding-bottom: 4px;
-  margin: 20px 0 10px 0;
+  margin: 0 0 8px 0;
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: 2px;
 }
+.rs-pdf-col + .rs-pdf-col h2:first-child,
+.rs-pdf-col h2:not(:first-child) { margin-top: 16px; }
 .rs-pdf-sheet .rs-pdf-item {
-  margin-bottom: 12px;
+  margin-bottom: 10px;
   text-align: left;
 }
 .rs-pdf-sheet .rs-pdf-item-hdr {
   display: flex;
   justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
   font-weight: 700;
   font-size: 11px;
   color: #111;
 }
 .rs-pdf-sheet .rs-pdf-item-date {
-  color: #666;
+  color: #777;
   font-weight: 400;
+  font-size: 9px;
+  white-space: nowrap;
 }
 .rs-pdf-sheet .rs-pdf-item-summary {
-  font-style: italic;
   font-size: 10px;
-  color: #333;
-  margin: 3px 0;
-}
-.rs-pdf-sheet .rs-pdf-item-desc {
-  font-size: 10px;
-  color: #555;
+  color: #444;
   line-height: 1.4;
-  margin: 0 0 4px 0;
+  margin: 3px 0 0 0;
+  padding-left: 11px;
+  position: relative;
+}
+.rs-pdf-sheet .rs-pdf-item-summary::before {
+  content: '•';
+  position: absolute;
+  left: 0;
+  color: #999;
 }
 .rs-pdf-sheet .rs-pdf-item-tags {
-  font-size: 9px;
+  font-size: 8.5px;
   color: #888;
-  font-weight: bold;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  margin-top: 3px;
+}
+/* Compact left-column entries — a title line and one factual detail line,
+   no bullet, since these are meant to read as a quick list (like Education/
+   Skills on a standard resume), not a narrative. */
+.rs-pdf-sheet .rs-pdf-left-item {
+  margin-bottom: 9px;
+  text-align: left;
+}
+.rs-pdf-sheet .rs-pdf-left-item-title {
+  font-weight: 700;
+  font-size: 10px;
+  color: #111;
+  line-height: 1.35;
+}
+.rs-pdf-sheet .rs-pdf-left-item-date {
+  font-size: 8.5px;
+  color: #888;
+  margin-top: 1px;
+}
+.rs-pdf-sheet .rs-pdf-left-item-detail {
+  font-size: 9px;
+  color: #555;
+  line-height: 1.35;
+  margin-top: 2px;
 }
 
 @media print {
@@ -3626,8 +3677,15 @@ html, body {
   body > * {
     display: none !important;
   }
-  #page-resume, #rs-pdf, #rsPdfPreviewWrapper, #rsPdfPreviewSheet, #rsPdfPreviewSheet * {
+  /* Only force display:block on the wrapper chain (in case a parent tab
+     container is display:none) — forcing it on every descendant too would
+     collapse the two-column layout below back to a single column the
+     moment this actually prints. Descendants just need visibility. */
+  #page-resume, #rs-pdf, #rsPdfPreviewWrapper, #rsPdfPreviewSheet {
     display: block !important;
+    visibility: visible !important;
+  }
+  #rsPdfPreviewSheet * {
     visibility: visible !important;
   }
   #rsPdfPreviewSheet {
@@ -4333,13 +4391,14 @@ html, body {
   .gk-panel, .dc-panel { width: 96vw; }
 }
 
-/* ── One-page PDF: compact rhythm so a full profile fits a single sheet ── */
-.rs-pdf-item { margin-bottom: 9px; page-break-inside: avoid; }
-.rs-pdf-item-hdr { display:flex; justify-content:space-between; font-weight:700; font-size:11px; }
-.rs-pdf-item-summary { font-size:10px; line-height:1.35; margin-top:2px; }
-.rs-pdf-item-tags { font-size:9px; opacity:.75; margin-top:2px; }
-#rsPdfPreviewSheet h2 { font-size:11px; letter-spacing:1.5px; margin:12px 0 6px;
-  border-bottom:1px solid rgba(0,0,0,.25); padding-bottom:3px; }
+/* ── One-page PDF: compact rhythm so a full profile fits a single sheet ──
+   #rsPdfPreviewSheet h2 is an ID selector, so it would otherwise beat the
+   .rs-pdf-sheet h2 class rule above regardless of source order — kept in
+   sync with it rather than left to silently override it. */
+.rs-pdf-item, .rs-pdf-left-item { page-break-inside: avoid; }
+#rsPdfPreviewSheet h2 { font-size:11px; letter-spacing:2px; margin:0 0 8px 0;
+  border-bottom:1.5px solid #ccc; padding-bottom:4px; }
+.rs-pdf-col h2:not(:first-child) { margin-top:16px; }
 @media print {
   @page { size: A4; margin: 12mm; }
   #rsPdfPreviewSheet { font-size:10px; }
@@ -5978,6 +6037,7 @@ html, body {
             <svg viewBox="0 0 24 24"><polyline points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
             SYNTHESIZE RUNWAY RESUME PDF STRUCTURE
           </button>
+          <div id="rsCompilerStatus" style="margin-top:8px; font-size:10px; color:var(--text-muted); text-align:center; letter-spacing:0.5px;"></div>
         </div>
         
         <!-- Preview panel -->
@@ -11378,14 +11438,22 @@ function generateResumePdf() {
   if (!sheet) return;
   const _status = document.getElementById('rsCompilerStatus');
   
-  // ONE-PAGE BUDGET. An A4 page fits roughly this much at the compact rhythm,
-  // so selections beyond it are trimmed rather than silently spilling to page 2.
-  const PDF_MAX_ITEMS = 14;
+  // ONE-PAGE BUDGET. Raised from the old single-column sheet's 14: the
+  // two-column layout roughly doubles content density per printed inch
+  // (compact left-column entries especially), so the old cap was trimming
+  // whole sections that would actually still fit on one A4 page.
+  const PDF_MAX_ITEMS = 22;
   const PDF_SUMMARY_CHARS = 110;
   let _pdfUsed = 0, _pdfDropped = 0;
 
-  const content = [];
-  Object.keys(rsTabData).forEach(cat => {
+  // Left = short, factual, list-style entries (mirrors a standard resume's
+  // Education/Skills column). Right = narrative, detail-bearing entries
+  // (mirrors a standard resume's Work Experience column). Fixed order per
+  // column rather than Object.keys(rsTabData)'s arbitrary insertion order.
+  const LEFT_CATS  = ['courses', 'achievements'];
+  const RIGHT_CATS = ['projects', 'internships', 'positions', 'research'];
+
+  const selectCat = cat => {
     const items = rsTabData[cat] || [];
     const selected = [];
     items.forEach((item, idx) => {
@@ -11396,30 +11464,46 @@ function generateResumePdf() {
         selected.push(item);
       }
     });
-    
-    if (selected.length > 0) {
-      // Brief one-page format: title + date, a single summary line, and skills
-      // inline. Full descriptions are deliberately omitted so everything fits
-      // on one page and stays scannable.
-      const sectionHeader = `<h2>${escHtml(cat.toUpperCase())}</h2>`;
-      const sectionItems = selected.map(item => {
-        const tags = (item.tags || []).slice(0, 6).join(' • ');
-        const links = (item.links || []).map(l => (typeof l === 'string' ? l : l.url)).filter(Boolean).slice(0, 2);
-        return `
-        <div class="rs-pdf-item">
-          <div class="rs-pdf-item-hdr">
-            <span>${escHtml(item.name)}</span>
-            <span class="rs-pdf-item-date">${escHtml(item.date || '')}</span>
-          </div>
-          <div class="rs-pdf-item-summary">${escHtml(String(item.desc || '').slice(0, PDF_SUMMARY_CHARS))}${String(item.desc || '').length > PDF_SUMMARY_CHARS ? '…' : ''}</div>
-          ${tags ? `<div class="rs-pdf-item-tags">${escHtml(tags)}</div>` : ''}
-          ${links.length ? `<div class="rs-pdf-item-tags">${links.map(l => escHtml(l)).join(' · ')}</div>` : ''}
-        </div>`;
-      }).join('');
-      content.push(sectionHeader + sectionItems);
-    }
-  });
-  
+    return selected;
+  };
+
+  // Compact list format: title, date, one factual detail line — no bullet,
+  // no tags row, reads as quick credentials rather than a narrative.
+  const leftContent = LEFT_CATS.map(cat => {
+    const selected = selectCat(cat);
+    if (!selected.length) return '';
+    const items = selected.map(item => `
+      <div class="rs-pdf-left-item">
+        <div class="rs-pdf-left-item-title">${escHtml(item.name)}</div>
+        ${item.date ? `<div class="rs-pdf-left-item-date">${escHtml(item.date)}</div>` : ''}
+        ${item.desc ? `<div class="rs-pdf-left-item-detail">${escHtml(item.desc)}</div>` : ''}
+      </div>`).join('');
+    return `<h2>${escHtml(cat.toUpperCase())}</h2>${items}`;
+  }).filter(Boolean).join('');
+
+  // Narrative format: header row (name + date), one bulleted summary line,
+  // tags/links below. Full descriptions stay deliberately omitted so
+  // everything fits on one page and stays scannable.
+  const rightContent = RIGHT_CATS.map(cat => {
+    const selected = selectCat(cat);
+    if (!selected.length) return '';
+    const items = selected.map(item => {
+      const tags = (item.tags || []).slice(0, 6).join(' • ');
+      const links = (item.links || []).map(l => (typeof l === 'string' ? l : l.url)).filter(Boolean).slice(0, 2);
+      return `
+      <div class="rs-pdf-item">
+        <div class="rs-pdf-item-hdr">
+          <span>${escHtml(item.name)}</span>
+          <span class="rs-pdf-item-date">${escHtml(item.date || '')}</span>
+        </div>
+        <div class="rs-pdf-item-summary">${escHtml(String(item.desc || '').slice(0, PDF_SUMMARY_CHARS))}${String(item.desc || '').length > PDF_SUMMARY_CHARS ? '…' : ''}</div>
+        ${tags ? `<div class="rs-pdf-item-tags">${escHtml(tags)}</div>` : ''}
+        ${links.length ? `<div class="rs-pdf-item-tags">${links.map(l => escHtml(l)).join(' · ')}</div>` : ''}
+      </div>`;
+    }).join('');
+    return `<h2>${escHtml(cat.toUpperCase())}</h2>${items}`;
+  }).filter(Boolean).join('');
+
   // Pull contact info from saved profile
   const _rsPd = JSON.parse(localStorage.getItem('gridUserProfile') || '{}');
   const _rsName  = _rsPd.name  || sessionStorage.getItem('gridUserName') || 'YOUR NAME';
@@ -11444,7 +11528,11 @@ function generateResumePdf() {
     <div class="rs-pdf-contact">
       ${_rsContactParts || 'Add your contact info in Profile → Edit Details'}
     </div>
-    ${content.join('') || '<div style="text-align:center; padding:100px; color:#888;">Select items from categories above and click Compile to synthesize your Resume sheet.</div>'}
+    ${(leftContent || rightContent) ? `
+    <div class="rs-pdf-body">
+      <div class="rs-pdf-col">${leftContent}</div>
+      <div class="rs-pdf-col">${rightContent}</div>
+    </div>` : '<div style="text-align:center; padding:100px; color:#888;">Select items from categories above and click Compile to synthesize your Resume sheet.</div>'}
   `;
 }
 
