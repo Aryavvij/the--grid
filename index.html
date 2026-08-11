@@ -5200,6 +5200,14 @@ html, body {
           </div>
         </div>
 
+        <!-- Tasks that were still open when a new week started — the board
+             itself resets per-week, this is where anything unfinished lands
+             instead of silently vanishing. Hidden entirely when empty. -->
+        <div id="arcCarryover" style="display:none; margin-top:16px;">
+          <div class="arc-stat-label" style="margin-bottom:10px;">UNFINISHED FROM LAST WEEK</div>
+          <div id="arcCarryoverList" style="display:flex; flex-direction:column; gap:8px;"></div>
+        </div>
+
       </div>
 
     </div><!-- /page-weekly -->
@@ -9238,9 +9246,82 @@ function getWeekDayLabels() {
 }
 const HOURS = Array.from({length:24}, (_,i) => String(i).padStart(2,'0') + ':00'); // 00:00 - 23:00
 
+/** This week's Monday as YYYY-MM-DD — the "which week is it" stamp everything
+ *  below compares against. */
+function getWeekMondayISO() {
+  const dow = today.getDay() === 0 ? 6 : today.getDay() - 1;
+  const monday = new Date(today); monday.setDate(monday.getDate() - dow);
+  return monday.getFullYear() + '-' + String(monday.getMonth() + 1).padStart(2, '0') + '-' + String(monday.getDate()).padStart(2, '0');
+}
+
+let kanbanCarryover = JSON.parse(localStorage.getItem('gridKanbanCarryover') || '[]');
+function saveKanbanCarryover() {
+  localStorage.setItem('gridKanbanCarryover', JSON.stringify(kanbanCarryover));
+  // Local-only: WeeklyTask's backend model is day-of-week-indexed the same
+  // way the board itself is (see prisma schema) — there's no field to sync
+  // a cross-week carryover list to, so this stays a client-side concept.
+}
+
+/** kanbanTasks is a day-of-week template, not date-anchored — nothing ever
+ *  cleared it between real weeks, so Monday's column kept showing LAST
+ *  Monday's tasks (done or not) forever. Detects an actual new week (by
+ *  comparing this week's Monday against the last-seen one) and, on a real
+ *  rollover: sweeps every unfinished task into kanbanCarryover so it isn't
+ *  silently lost, then resets the board to a clean week. Finished tasks are
+ *  just dropped — they're done, nothing to carry forward. */
+function checkKanbanWeekRollover() {
+  const thisMonday = getWeekMondayISO();
+  const lastSeen = localStorage.getItem('gridKanbanWeekStamp');
+  if (lastSeen === thisMonday) return false;   // same week (or first-ever load) — nothing to do
+
+  if (lastSeen) {   // only sweep if there WAS a previous week on record
+    const carried = [];
+    kanbanTasks.forEach((dayTasks, di) => {
+      (dayTasks || []).forEach(t => {
+        if (t && !t.done) carried.push({ name: t.name, type: t.type, fromDay: WEEK_DAY_ABBR[di] });
+      });
+    });
+    if (carried.length) {
+      kanbanCarryover = kanbanCarryover.concat(carried);
+      saveKanbanCarryover();
+    }
+    kanbanTasks = [[], [], [], [], [], [], []];
+    saveKanbanTasks();
+  }
+  localStorage.setItem('gridKanbanWeekStamp', thisMonday);
+  return true;
+}
+
+function renderCarryoverList() {
+  const wrap = document.getElementById('arcCarryover');
+  const list = document.getElementById('arcCarryoverList');
+  if (!wrap || !list) return;
+  if (!kanbanCarryover.length) { wrap.style.display = 'none'; return; }
+  wrap.style.display = 'block';
+  list.innerHTML = kanbanCarryover.map((t, idx) => `
+    <div style="display:flex; align-items:center; gap:10px; padding:9px 12px; background:rgba(255,255,255,0.02); border:1px solid var(--card-border); border-radius:6px;">
+      <div onclick="arcCompleteCarryover(${idx})" title="Mark done" style="width:16px; height:16px; border:1.5px solid var(--text-muted); border-radius:4px; cursor:pointer; flex-shrink:0;"></div>
+      <span style="font-size:9px; color:${taskCatColor(t.type)}; text-transform:uppercase; letter-spacing:0.5px;">${escHtml(String(t.type || 'general'))}</span>
+      <span style="font-size:11px; color:var(--text-dim); flex:1;">${escHtml(t.name)}</span>
+      <span style="font-size:9px; color:var(--text-muted); letter-spacing:0.5px;">WAS ${t.fromDay}</span>
+    </div>`).join('');
+}
+
+/** Checking a carried-over task off just means "handled" — it's gone either
+ *  way, whether that's because it got done or because it's no longer
+ *  relevant; nothing here re-injects it into the current week's board. */
+function arcCompleteCarryover(idx) {
+  kanbanCarryover.splice(idx, 1);
+  saveKanbanCarryover();
+  renderCarryoverList();
+  try { renderArcStats(); } catch (e) {}
+}
+
 function initWeekly() {
+  checkKanbanWeekRollover();
   buildTimetable();
   buildKanban();
+  renderCarryoverList();
 }
 
 /** Label covering slot (di,hi) — a block's label persists until the next filled hour. */
