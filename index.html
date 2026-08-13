@@ -3550,11 +3550,20 @@ html, body {
 .rs-footer-bar{display:flex;justify-content:space-between;font-size:7px;color:var(--text-muted);letter-spacing:1px;padding-top:4px;}
 
 /* A4 Styled Live Resume preview sheet */
+/* Single-column, serif, ATS-classic layout (the "Jake Ryan" template
+   format): centered name, left-aligned section headers each underlined with
+   a full-width rule, entries as a bold-left/regular-right header row plus
+   an italic subtitle row, bullet lists beneath. Georgia is used instead of
+   trying to load the original's LaTeX serif — it's installed everywhere by
+   default, so the sheet renders identically with no font network request
+   (Inter/Outfit above were referenced the same way but never actually
+   loaded via a <link>, so this follows the existing, if accidental, pattern
+   of just relying on a real system font instead). */
 .rs-pdf-sheet {
   background: #ffffff;
   color: #1a1a1a;
-  padding: 34px 36px;
-  font-family: 'Inter', sans-serif;
+  padding: 40px 46px;
+  font-family: Georgia, 'Times New Roman', serif;
   border-radius: 8px;
   box-shadow: 0 4px 20px rgba(0,0,0,0.15);
   max-width: 800px;
@@ -3562,115 +3571,80 @@ html, body {
   min-height: 1000px;
   box-sizing: border-box;
 }
-/* Centered name/contact header, matching a standard ATS resume — a thin rule
-   separates it from the two-column body below. */
 .rs-pdf-sheet h1 {
-  font-family: 'Outfit', sans-serif;
-  font-size: 28px;
-  font-weight: 800;
+  font-size: 26px;
+  font-weight: 700;
   color: #111;
   text-align: center;
   margin: 0 0 6px 0;
-  text-transform: uppercase;
-  letter-spacing: 3px;
+  letter-spacing: 0.5px;
 }
 .rs-pdf-sheet .rs-pdf-contact {
   text-align: center;
   font-size: 10px;
-  color: #666;
-  letter-spacing: 0.5px;
-  padding-bottom: 14px;
-  margin-bottom: 18px;
-  border-bottom: 1.5px solid #ddd;
+  color: #333;
+  letter-spacing: 0.2px;
+  margin-bottom: 16px;
 }
-/* Two columns: short/factual sections (courses, achievements) on the left,
-   narrative sections (projects, internships, positions, research) on the
-   right — same split a standard resume makes between "credentials" and
-   "experience". */
-.rs-pdf-body {
-  display: grid;
-  grid-template-columns: 190px 1fr;
-  gap: 26px;
-  align-items: start;
-}
-.rs-pdf-col { min-width: 0; }
 .rs-pdf-sheet h2 {
-  font-family: 'Outfit', sans-serif;
-  font-size: 11px;
-  font-weight: 800;
-  color: #222;
-  border-bottom: 1.5px solid #ccc;
-  padding-bottom: 4px;
-  margin: 0 0 8px 0;
-  text-transform: uppercase;
-  letter-spacing: 2px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #111;
+  border-bottom: 1px solid #333;
+  padding-bottom: 2px;
+  margin: 14px 0 8px 0;
+  letter-spacing: 0.4px;
 }
-.rs-pdf-col + .rs-pdf-col h2:first-child,
-.rs-pdf-col h2:not(:first-child) { margin-top: 16px; }
+.rs-pdf-sheet h2:first-of-type { margin-top: 0; }
 .rs-pdf-sheet .rs-pdf-item {
-  margin-bottom: 10px;
+  margin-bottom: 9px;
   text-align: left;
 }
 .rs-pdf-sheet .rs-pdf-item-hdr {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
-  gap: 8px;
+  gap: 10px;
   font-weight: 700;
-  font-size: 11px;
+  font-size: 11.5px;
   color: #111;
 }
 .rs-pdf-sheet .rs-pdf-item-date {
-  color: #777;
+  color: #111;
   font-weight: 400;
-  font-size: 9px;
+  font-style: italic;
+  font-size: 10.5px;
   white-space: nowrap;
 }
-.rs-pdf-sheet .rs-pdf-item-summary {
-  font-size: 10px;
-  color: #444;
-  line-height: 1.4;
-  margin: 3px 0 0 0;
-  padding-left: 11px;
-  position: relative;
-}
-.rs-pdf-sheet .rs-pdf-item-summary::before {
-  content: '•';
-  position: absolute;
-  left: 0;
-  color: #999;
-}
-.rs-pdf-sheet .rs-pdf-item-tags {
-  font-size: 8.5px;
-  color: #888;
-  font-weight: 600;
-  letter-spacing: 0.3px;
-  margin-top: 3px;
-}
-/* Compact left-column entries — a title line and one factual detail line,
-   no bullet, since these are meant to read as a quick list (like Education/
-   Skills on a standard resume), not a narrative. */
-.rs-pdf-sheet .rs-pdf-left-item {
-  margin-bottom: 9px;
-  text-align: left;
-}
-.rs-pdf-sheet .rs-pdf-left-item-title {
-  font-weight: 700;
-  font-size: 10px;
-  color: #111;
-  line-height: 1.35;
-}
-.rs-pdf-sheet .rs-pdf-left-item-date {
-  font-size: 8.5px;
-  color: #888;
+.rs-pdf-sheet .rs-pdf-item-sub {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+  font-style: italic;
+  font-size: 10.5px;
+  color: #333;
   margin-top: 1px;
 }
-.rs-pdf-sheet .rs-pdf-left-item-detail {
-  font-size: 9px;
-  color: #555;
-  line-height: 1.35;
-  margin-top: 2px;
+.rs-pdf-sheet .rs-pdf-item-bullets {
+  margin: 4px 0 0 0;
+  padding-left: 16px;
+  list-style: disc;
 }
+.rs-pdf-sheet .rs-pdf-item-bullets li {
+  font-size: 10px;
+  color: #222;
+  line-height: 1.38;
+  margin-bottom: 1px;
+}
+/* Technical Skills: bold category label inline with its comma-separated
+   list, one row per category — matches the reference's own skills block. */
+.rs-pdf-sheet .rs-pdf-skills-row {
+  font-size: 10px;
+  color: #222;
+  line-height: 1.6;
+}
+.rs-pdf-sheet .rs-pdf-skills-row b { color: #111; }
 
 @media print {
   /* Hide all elements except the preview sheet */
@@ -4395,10 +4369,9 @@ html, body {
    #rsPdfPreviewSheet h2 is an ID selector, so it would otherwise beat the
    .rs-pdf-sheet h2 class rule above regardless of source order — kept in
    sync with it rather than left to silently override it. */
-.rs-pdf-item, .rs-pdf-left-item { page-break-inside: avoid; }
-#rsPdfPreviewSheet h2 { font-size:11px; letter-spacing:2px; margin:0 0 8px 0;
-  border-bottom:1.5px solid #ccc; padding-bottom:4px; }
-.rs-pdf-col h2:not(:first-child) { margin-top:16px; }
+.rs-pdf-item { page-break-inside: avoid; }
+#rsPdfPreviewSheet h2 { font-size:12.5px; letter-spacing:0.4px; margin:14px 0 8px 0;
+  border-bottom:1px solid #333; padding-bottom:2px; }
 @media print {
   @page { size: A4; margin: 12mm; }
   #rsPdfPreviewSheet { font-size:10px; }
@@ -11514,27 +11487,33 @@ function renderRsPdfSelectors() {
   }).join('');
 }
 
+/** Break a description into sentence-level bullets (the reference format's
+ *  entries are always multi-bullet, not one summary line) — fullDesc is
+ *  preferred since it's usually a few sentences; desc is the one-line
+ *  fallback for items that only ever had a short summary entered. */
+function rsBullets(item, max, maxLen) {
+  const raw = String(item.fullDesc || item.desc || '').trim();
+  if (!raw) return [];
+  const parts = raw.split(/(?<=[.!?])\s+(?=[A-Z(])/).map(s => s.trim()).filter(Boolean);
+  return parts.slice(0, max).map(s => s.length > maxLen ? s.slice(0, maxLen).trim() + '…' : s);
+}
+
 function generateResumePdf() {
   const sheet = document.getElementById('rsPdfPreviewSheet');
   if (!sheet) return;
   const _status = document.getElementById('rsCompilerStatus');
-  
-  // ONE-PAGE BUDGET. Raised from the old single-column sheet's 14: the
-  // two-column layout roughly doubles content density per printed inch
-  // (compact left-column entries especially), so the old cap was trimming
-  // whole sections that would actually still fit on one A4 page.
-  const PDF_MAX_ITEMS = 22;
-  const PDF_SUMMARY_CHARS = 110;
+
+  // ONE-PAGE BUDGET.
+  const PDF_MAX_ITEMS = 16;
   let _pdfUsed = 0, _pdfDropped = 0;
+  const allTags = new Set();
 
-  // Left = short, factual, list-style entries (mirrors a standard resume's
-  // Education/Skills column). Right = narrative, detail-bearing entries
-  // (mirrors a standard resume's Work Experience column). Fixed order per
-  // column rather than Object.keys(rsTabData)'s arbitrary insertion order.
-  const LEFT_CATS  = ['courses', 'achievements'];
-  const RIGHT_CATS = ['projects', 'internships', 'positions', 'research'];
-
-  const selectCat = cat => {
+  // collectTags is false for courses/achievements — their tags tend to be
+  // topical labels ("HONORS", "GPA: 9.1", "CONSISTENT"), not technical
+  // skills, and mixing them into Technical Skills reads as wrong on a real
+  // resume. Only categories that are actually about built/used technology
+  // feed that aggregate.
+  const selectCat = (cat, collectTags) => {
     const items = rsTabData[cat] || [];
     const selected = [];
     items.forEach((item, idx) => {
@@ -11543,47 +11522,78 @@ function generateResumePdf() {
         if (_pdfUsed >= PDF_MAX_ITEMS) { _pdfDropped++; return; }
         _pdfUsed++;
         selected.push(item);
+        if (collectTags) (item.tags || []).forEach(t => t && allTags.add(String(t)));
       }
     });
     return selected;
   };
 
-  // Compact list format: title, date, one factual detail line — no bullet,
-  // no tags row, reads as quick credentials rather than a narrative.
-  const leftContent = LEFT_CATS.map(cat => {
-    const selected = selectCat(cat);
-    if (!selected.length) return '';
-    const items = selected.map(item => `
-      <div class="rs-pdf-left-item">
-        <div class="rs-pdf-left-item-title">${escHtml(item.name)}</div>
-        ${item.date ? `<div class="rs-pdf-left-item-date">${escHtml(item.date)}</div>` : ''}
-        ${item.desc ? `<div class="rs-pdf-left-item-detail">${escHtml(item.desc)}</div>` : ''}
-      </div>`).join('');
-    return `<h2>${escHtml(cat.toUpperCase())}</h2>${items}`;
-  }).filter(Boolean).join('');
+  // Standard entry: bold name (left) + date (right) on one row, then
+  // sentence-split bullets beneath. Shared by Experience/Research/
+  // Achievements — the reference format uses the same shape for all of them.
+  const renderEntry = item => {
+    const bullets = rsBullets(item, 3, 130);
+    return `
+    <div class="rs-pdf-item">
+      <div class="rs-pdf-item-hdr">
+        <span>${escHtml(item.name)}</span>
+        <span class="rs-pdf-item-date">${escHtml(item.date || '')}</span>
+      </div>
+      ${bullets.length ? `<ul class="rs-pdf-item-bullets">${bullets.map(b => `<li>${escHtml(b)}</li>`).join('')}</ul>` : ''}
+    </div>`;
+  };
 
-  // Narrative format: header row (name + date), one bulleted summary line,
-  // tags/links below. Full descriptions stay deliberately omitted so
-  // everything fits on one page and stays scannable.
-  const rightContent = RIGHT_CATS.map(cat => {
-    const selected = selectCat(cat);
-    if (!selected.length) return '';
-    const items = selected.map(item => {
-      const tags = (item.tags || []).slice(0, 6).join(' • ');
-      const links = (item.links || []).map(l => (typeof l === 'string' ? l : l.url)).filter(Boolean).slice(0, 2);
-      return `
-      <div class="rs-pdf-item">
-        <div class="rs-pdf-item-hdr">
-          <span>${escHtml(item.name)}</span>
-          <span class="rs-pdf-item-date">${escHtml(item.date || '')}</span>
-        </div>
-        <div class="rs-pdf-item-summary">${escHtml(String(item.desc || '').slice(0, PDF_SUMMARY_CHARS))}${String(item.desc || '').length > PDF_SUMMARY_CHARS ? '…' : ''}</div>
-        ${tags ? `<div class="rs-pdf-item-tags">${escHtml(tags)}</div>` : ''}
-        ${links.length ? `<div class="rs-pdf-item-tags">${links.map(l => escHtml(l)).join(' · ')}</div>` : ''}
-      </div>`;
-    }).join('');
-    return `<h2>${escHtml(cat.toUpperCase())}</h2>${items}`;
-  }).filter(Boolean).join('');
+  // Education entries: bold name (left) + date (right), then an italic
+  // detail line underneath instead of bullets — the reference format never
+  // bullets Education.
+  const renderEducation = item => `
+    <div class="rs-pdf-item">
+      <div class="rs-pdf-item-hdr">
+        <span>${escHtml(item.name)}</span>
+        <span class="rs-pdf-item-date">${escHtml(item.date || '')}</span>
+      </div>
+      ${item.desc ? `<div class="rs-pdf-item-sub"><span>${escHtml(item.desc)}</span></div>` : ''}
+    </div>`;
+
+  // Project entries: bold name + italic tech-stack inline on the header row
+  // (matching "Gitlytics | Python, Flask, React…"), date at the right,
+  // bullets beneath.
+  const renderProject = item => {
+    const stack = (item.tags || []).slice(0, 5).join(', ');
+    const bullets = rsBullets(item, 3, 130);
+    return `
+    <div class="rs-pdf-item">
+      <div class="rs-pdf-item-hdr">
+        <span><b>${escHtml(item.name)}</b>${stack ? ` <i style="font-weight:400;">| ${escHtml(stack)}</i>` : ''}</span>
+        <span class="rs-pdf-item-date">${escHtml(item.date || '')}</span>
+      </div>
+      ${bullets.length ? `<ul class="rs-pdf-item-bullets">${bullets.map(b => `<li>${escHtml(b)}</li>`).join('')}</ul>` : ''}
+    </div>`;
+  };
+
+  const section = (label, items, renderFn) => {
+    if (!items.length) return '';
+    return `<h2>${escHtml(label)}</h2>${items.map(renderFn).join('')}`;
+  };
+
+  // Fixed order matching the reference: Education, Experience, Projects,
+  // then whatever else the account has (Research/Achievements — the
+  // reference template has no equivalent for these, so they're appended
+  // in the same visual style rather than dropped), Technical Skills last.
+  const education  = section('EDUCATION', selectCat('courses', false), renderEducation);
+  const experience = section('EXPERIENCE', [...selectCat('internships', true), ...selectCat('positions', true)], renderEntry);
+  const projects   = section('PROJECTS', selectCat('projects', true), renderProject);
+  const research   = section('RESEARCH', selectCat('research', true), renderEntry);
+  const achieve    = section('ACHIEVEMENTS', selectCat('achievements', false), renderEntry);
+
+  // Technical Skills: one aggregated, deduplicated line — Grid stores tags
+  // as a flat list per item with no Language/Framework/Tool sub-typing, so
+  // rather than guess at a categorization the reference happens to have,
+  // this is one honest "Technical Skills" row of everything selected.
+  const skillsList = [...allTags].sort((a, b) => a.localeCompare(b)).join(', ');
+  const skills = skillsList ? `<h2>TECHNICAL SKILLS</h2><div class="rs-pdf-skills-row"><b>Technical Skills:</b> ${escHtml(skillsList)}</div>` : '';
+
+  const body = education + experience + projects + research + achieve + skills;
 
   // Pull contact info from saved profile
   const _rsPd = JSON.parse(localStorage.getItem('gridUserProfile') || '{}');
@@ -11592,10 +11602,10 @@ function generateResumePdf() {
   const _rsCity  = _rsPd.city  || '';
   const _rsOcc   = _rsPd.occupation || '';
   const _rsContactParts = [
-    _rsEmail && `Email: ${_rsEmail}`,
+    _rsEmail && _rsEmail,
     _rsCity  && _rsCity,
     _rsOcc   && _rsOcc,
-  ].filter(Boolean).join(' • ');
+  ].filter(Boolean).join(' | ');
 
   if (_status) {
     _status.textContent = _pdfDropped
@@ -11609,11 +11619,7 @@ function generateResumePdf() {
     <div class="rs-pdf-contact">
       ${_rsContactParts || 'Add your contact info in Profile → Edit Details'}
     </div>
-    ${(leftContent || rightContent) ? `
-    <div class="rs-pdf-body">
-      <div class="rs-pdf-col">${leftContent}</div>
-      <div class="rs-pdf-col">${rightContent}</div>
-    </div>` : '<div style="text-align:center; padding:100px; color:#888;">Select items from categories above and click Compile to synthesize your Resume sheet.</div>'}
+    ${body || '<div style="text-align:center; padding:100px; color:#888; font-family:Inter,sans-serif;">Select items from categories above and click Compile to synthesize your Resume sheet.</div>'}
   `;
 }
 
