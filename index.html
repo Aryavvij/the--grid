@@ -6913,12 +6913,24 @@ function seedDemoData() {
 // ─── API Client ───────────────────────────────────────────────────────────────
 const GRID_API = 'https://the-grid-1t3x.vercel.app';
 
-async function gridFetch(path, options = {}) {
+async function gridFetch(path, options = {}, _isRetry = false) {
   const res = await fetch(GRID_API + path, {
     credentials: 'include',
     headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
     ...options,
   });
+  // Right after a hard page load, the cross-site auth cookie can occasionally
+  // not be attached to the very first burst of requests fired at mount time
+  // (browser storage-access settling for the SameSite=None cookie) — every
+  // module's initial hydrate raced this and lost, throwing 401, then silently
+  // falling back to stale/empty local data with no retry. A confirmed-valid
+  // session resolves this within a few hundred ms, so one short-delay retry
+  // tells a real logged-out/expired session (still 401 on retry, unaffected)
+  // apart from this transient one.
+  if (res.status === 401 && !_isRetry) {
+    await new Promise(r => setTimeout(r, 600));
+    return gridFetch(path, options, true);
+  }
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw { status: res.status, message: data.error || 'Request failed' };
   return data;
@@ -10575,9 +10587,9 @@ function commitTransaction() {
   txLog.unshift({ ts, entity: label.toUpperCase(), sector, val: signed });
 
   // Roll the spend into its budget sector so the donut and matrix stay truthful.
-  if (signed < 0) {
-    const row = budgetData.find(b => String(b.sector).toUpperCase() === String(sector).toUpperCase());
-    if (row) row.actual = (+row.actual || 0) + Math.abs(signed);
+  const row = budgetData.find(b => String(b.sector).toUpperCase() === String(sector).toUpperCase());
+  if (signed < 0 && row) {
+    row.actual = (+row.actual || 0) + Math.abs(signed);
   }
 
   saveFinanceData();
@@ -10585,11 +10597,15 @@ function commitTransaction() {
   renderBudgetTable();
   initDonutChart();
 
+  // categoryId was never sent, so every transaction came back from the server
+  // uncategorized ("OTHER") after any reload/re-login — the amount persisted
+  // fine, but it silently dropped out of its sector's spend total forever.
   gridSync('/api/finance/transactions', {
     amount: Math.abs(amount),
     description: label.toUpperCase(),
     date: now.toISOString().split('T')[0],
     type: sector === 'REVENUE' ? 'income' : 'expense',
+    ...(row?.id ? { categoryId: row.id } : {}),
   });
 
   labelEl.value = '';
@@ -10925,9 +10941,27 @@ function finToggleAllTx() {
   if (btn) btn.textContent = finShowAllTx ? 'SHOW LESS' : 'VIEW ALL';
 }
 
+/** Rows to render — actual is recomputed from transactions at-or-before the
+ *  viewed date when the Time Machine is active. Previously the matrix, gauge
+ *  and donut always showed the LIVE total regardless of viewed date, so
+ *  "viewing August" showed today's running spend against August's plan even
+ *  though the ledger right below it correctly showed only August's entries.
+ *  Index-aligned with budgetData — edit/delete still index into the real
+ *  array; only the displayed `actual` differs while time-traveling. */
+function budgetRowsForDisplay() {
+  if (!TimeMachine.active) return budgetData;
+  const visibleTx = gridAsOf(txLog, t => _txDateIso(t.ts));
+  return budgetData.map(r => {
+    const actual = visibleTx
+      .filter(t => t.val < 0 && String(t.sector).toUpperCase() === String(r.sector).toUpperCase())
+      .reduce((s, t) => s + Math.abs(t.val), 0);
+    return { ...r, actual };
+  });
+}
+
 function renderBudgetTable() {
   const tbody = document.getElementById('budgetBody');
-  tbody.innerHTML = budgetData.map((r, idx) => {
+  tbody.innerHTML = budgetRowsForDisplay().map((r, idx) => {
     const rem = r.planned - r.actual;
     const cls = rem < 0 ? 'neg' : rem > 0 ? 'pos' : '';
     return `<tr>
@@ -10951,8 +10985,9 @@ function renderBudgetGauge() {
   const noteEl = document.getElementById('finGaugeNote');
   const paceEl = document.getElementById('finGaugePace');
 
-  const planned = budgetData.reduce((s, r) => s + (Number(r.planned) || 0), 0);
-  const actual  = budgetData.reduce((s, r) => s + (Number(r.actual)  || 0), 0);
+  const rows    = budgetRowsForDisplay();
+  const planned = rows.reduce((s, r) => s + (Number(r.planned) || 0), 0);
+  const actual  = rows.reduce((s, r) => s + (Number(r.actual)  || 0), 0);
 
   if (!planned) {
     // The empty state is the actual entry point for a real new account, so it
@@ -11011,15 +11046,26 @@ function editBudgetSectorNode(idx) {
     onSave: (data) => {
       const val = data.sector.trim().toUpperCase();
       if (!val) return;
-      
+
       sector.sector = val;
       sector.planned = parseFloat(data.planned) || 0;
+      // 'actual' has no server field — it's always recomputed from real
+      // transactions there, so this edit is a local display override only,
+      // same as it always was. Name + planned are real server fields below.
       sector.actual = parseFloat(data.actual) || 0;
-      
+
       saveFinanceData();
       populateTxSectorDropdown();
       renderBudgetTable();
       initDonutChart();
+
+      // Persist rename/replan to the API — this previously only wrote to
+      // localStorage, so an edit here never left the browser it was made in.
+      if (sector.id) {
+        gridSync(`/api/finance/categories/${sector.id}`, {
+          name: val, type: 'expense', budgetAmount: sector.planned,
+        }, 'PUT');
+      }
     },
     onDelete: () => {
       budgetData.splice(idx, 1);
@@ -11027,6 +11073,15 @@ function editBudgetSectorNode(idx) {
       populateTxSectorDropdown();
       renderBudgetTable();
       initDonutChart();
+
+      // Same gap as above — delete never reached the server, so a "removed"
+      // category reappeared on any device that still had it cached.
+      if (sector.id) {
+        // {} not null — express.json()'s strict mode rejects a bare "null"
+        // body (only object/array literals pass), which turned every delete
+        // into a 400 the first time this exact fix was tried.
+        gridSync(`/api/finance/categories/${sector.id}`, {}, 'DELETE');
+      }
     }
   });
 }
@@ -11066,7 +11121,8 @@ const donutColors = ['#9b59b6', '#ff4d8f', '#3b82f6', '#76b372', '#f97316', '#a8
 
 function initDonutChart() {
   const el = document.getElementById('spendDonut');
-  const totalActual = budgetData.reduce((sum, item) => sum + item.actual, 0);
+  const displayRows  = budgetRowsForDisplay();
+  const totalActual = displayRows.reduce((sum, item) => sum + item.actual, 0);
 
   const spentStatEl = document.getElementById('fStatSpent');
   if (spentStatEl) {
@@ -11076,7 +11132,7 @@ function initDonutChart() {
 
   const legendContainer = document.querySelector('.fin-legend');
   if (legendContainer) {
-    legendContainer.innerHTML = budgetData.map((b, idx) => {
+    legendContainer.innerHTML = displayRows.map((b, idx) => {
       const color = donutColors[idx % donutColors.length];
       return `<div class="fin-legend-item"><span class="fin-legend-dot" style="background:${color}"></span>${b.sector}</div>`;
     }).join('');
@@ -11086,7 +11142,7 @@ function initDonutChart() {
   const chart = ethosChart(el);
   if (!chart) return;
 
-  const rows = budgetData.filter(b => b.actual > 0)
+  const rows = displayRows.filter(b => b.actual > 0)
     .map((b, idx) => ({ name: b.sector, value: b.actual,
                         itemStyle: { color: donutColors[idx % donutColors.length] } }));
 
@@ -12542,8 +12598,14 @@ document.addEventListener('keydown', e => {
   }
 });
 
-// Run the Single Page Application mount sequence
-checkSPAAuth();
+// Run the Single Page Application mount sequence. Deferred one tick: called
+// synchronously here, checkSPAAuth() -> mountApp() -> navigate('home') reaches
+// renderConsole(), which reads module-level `let hvCtaMode` / `hvClockTimer`
+// declared further down this same script — a same-tick call hit those in their
+// temporal dead zone ("Cannot access before initialization") on every load.
+// setTimeout(...,0) waits for the rest of this script to finish executing
+// (declarations included) before the mount sequence runs.
+setTimeout(checkSPAAuth, 0);
 
 /* ── REAL-DATA HYDRATION ──────────────────────────────────────────────────────
    P1 truth pass: every stat below is computed from actual stored data.
