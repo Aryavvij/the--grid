@@ -38,5 +38,8 @@ const srv = app.listen(4012, async () => {
   r = await j('/api/nutrition/log/mine', 'PUT', { date: '2020-01-01', userId: 'attacker' }); t('food edit cannot change date or owner (stripped, then empty)', r[0] === 400);
   r = await j('/api/nutrition/log/mine', 'PUT', { slot: 'brunch' }); t('food edit rejects bad meal slot', r[0] === 400);
   r = await j('/api/nutrition/log/other', 'PUT', { qty: 1 }); t("cannot edit someone else's entry", r[0] === 404);
+  // API responses must not be cacheable (private, per-user data)
+  const app2 = require(GRID + '/grid-backend/node_modules/express')(); app2.use('/api', (req, res, next) => { res.set('Cache-Control', 'no-store'); next(); }); app2.get('/api/x', (q, r) => r.json({ ok: 1 }));
+  const srv2 = app2.listen(4016); const hr = await fetch('http://localhost:4016/api/x'); t('api responses carry Cache-Control: no-store', hr.headers.get('cache-control') === 'no-store'); srv2.close();
   srv.close();
 });

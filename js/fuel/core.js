@@ -9,19 +9,37 @@
   /** Register a page. def = { sub, dot?, tools?: html, render(root) }. Mounted into #page-<name>. */
   G.registerPage = (name, def) => { G.pages[name] = def; };
 
-  /** Called from navigate(): header in Grid's page-header / page-subtitle style, then the page body. */
+  /** Called from navigate(): header in Grid's page-header / page-subtitle style, a loading state, then the page body.
+      Never leaves the body blank: a failure shows what went wrong, and failed requests show a notice with RETRY. */
   G.show = (name) => {
     const def = G.pages[name], root = document.getElementById('page-' + name);
     if (!def || !root) return;
+    const token = (G._showToken = (G._showToken || 0) + 1);            // a newer visit supersedes this one
+    G.problems = [];
     root.innerHTML = `
       <div class="page-header" style="margin-bottom:20px;align-items:center">
         <div><div class="page-subtitle" style="margin-top:0"><span class="dot" style="background:${def.dot || 'var(--green)'}"></span>${def.sub}</div></div>
         <div class="fx-tools" data-role="tools">${def.tools || ''}</div>
       </div>
-      <div data-role="body"></div>
+      <div data-role="notice"></div>
+      <div data-role="body"><div class="hl-empty">LOADING…</div></div>
       ${def.foot ? `<div class="fx-foot">${def.foot}</div>` : ''}`;
-    const body = root.querySelector('[data-role="body"]');
-    Promise.resolve().then(() => def.render(body, root)).catch((e) => { console.warn('[fuel:' + name + ']', e); body.innerHTML = '<div class="hl-empty">COULD NOT LOAD THIS PAGE<br>' + (e && e.message || '') + '</div>'; });
+    const body = root.querySelector('[data-role="body"]'), notice = root.querySelector('[data-role="notice"]');
+    const showNotice = () => {
+      if (token !== G._showToken || !G.problems.length) return;
+      const auth = G.problems.some(p => p.status === 401);
+      notice.innerHTML = `<div class="fin-section" style="border-color:rgba(249,115,22,.4);margin-bottom:16px"><div class="fin-section-title" style="color:var(--orange);margin-bottom:8px">${auth ? 'YOU MAY BE SIGNED OUT' : 'SOME DATA COULD NOT BE LOADED'}</div>
+        <div class="hl-note" style="text-transform:none;line-height:1.8;font-size:10px">${auth ? 'The server said your session is not valid. Sign out and back in, then retry.' : 'The page is showing empty values for: ' + [...new Set(G.problems.map(p => p.kind))].join(', ') + '.'} <span style="color:var(--text-muted)">(${[...new Set(G.problems.map(p => p.message))].slice(0, 2).join(' · ').slice(0, 140)})</span></div>
+        <div style="margin-top:10px"><button class="hl-btn pri" data-retry>RETRY</button></div></div>`;
+      notice.querySelector('[data-retry]').onclick = () => G.show(name);
+    };
+    Promise.resolve().then(() => def.render(body, root)).then(showNotice).catch((e) => {
+      console.warn('[fuel:' + name + ']', e);
+      if (token !== G._showToken) return;
+      body.innerHTML = `<div class="hl-empty">COULD NOT DRAW THIS PAGE<br><span style="text-transform:none">${String((e && e.message) || e).slice(0, 200)}</span><br><br><button class="hl-btn pri" data-retry>RETRY</button></div>`;
+      body.querySelector('[data-retry]').onclick = () => G.show(name);
+      showNotice();
+    });
   };
 
   /** Data access: demo mode reads seeded mock data, login mode calls the API. */
@@ -30,8 +48,15 @@
     const map = { runs: '/api/runs', presets: '/api/nutrition/presets', foodlog: '/api/nutrition/log', targets: '/api/nutrition/targets', water: '/api/nutrition/water',
       weight: '/api/progress/weight', photos: '/api/progress/photos', burn: '/api/progress/burn' };
     const qs = new URLSearchParams(Object.entries(params).filter(([, v]) => v != null && v !== '')).toString();
-    try { return await gridFetch(map[kind] + (qs ? '?' + qs : '')); }
-    catch (e) { console.warn('[fuel] ' + kind + ' fetch failed:', e); return kind === 'targets' ? null : []; }
+    const timeout = new Promise((_, rej) => setTimeout(() => rej({ message: 'request timed out after 20s' }), 20000));
+    try {
+      const r = await Promise.race([gridFetch(map[kind] + (qs ? '?' + qs : ''), { cache: 'no-store' }), timeout]);
+      // validate the shape so one odd response can never crash a page: lists must be arrays, targets an object or null
+      if (kind === 'targets') { if (r == null || (typeof r === 'object' && !Array.isArray(r) && 'calories' in r)) return r || null; throw { message: 'unexpected response for targets' }; }
+      if (!Array.isArray(r)) throw { message: 'unexpected response for ' + kind + ' (expected a list)' };
+      return r;
+    }
+    catch (e) { console.warn('[fuel] ' + kind + ' fetch failed:', e); (G.problems = G.problems || []).push({ kind, status: e && e.status, message: (e && e.message) || String(e) }); return kind === 'targets' ? null : []; }
   };
 
   // ── formatting ───────────────────────────────────────────

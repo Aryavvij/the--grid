@@ -289,7 +289,7 @@
         root.querySelectorAll('[data-delp]').forEach(x => x.onclick = async () => { const p = store.presets.find(q => q.id === x.dataset.delp); if (!confirm(`Delete preset ${p.code} (${p.name})? Past diary entries keep their numbers.`)) return; try { await store.delPreset(p.id); } catch (e) { G.toast('DELETE FAILED'); } draw(); });
       };
 
-      draw();
+      await draw();
     },
   });
 })();

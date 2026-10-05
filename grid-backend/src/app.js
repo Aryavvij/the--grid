@@ -48,6 +48,9 @@ app.use(passport.initialize());
 // /health probe (~2/min) sits far under the cap, so monitoring is unaffected.
 app.use(globalLimiter);
 
+// Private, per-user JSON: never let a browser or proxy cache or revalidate it (no stale 304 bodies, nothing stored on disk).
+app.use('/api', (req, res, next) => { res.set('Cache-Control', 'no-store'); next(); });
+
 // ─── Routes ───────────────────────────────────────────────────────────────────
 app.use('/api/auth',     require('./routes/auth'));
 app.use('/api/profile',  require('./routes/profile'));
