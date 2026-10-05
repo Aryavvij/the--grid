@@ -4487,6 +4487,7 @@ html, body {
 @media (max-width:820px){ .mg-root { height:calc(100vh - var(--topbar-h) - 64px); min-height:460px; } .mg-dos { width:100%; } }
 
 </style>
+<link rel="stylesheet" href="css/health.css" />
 </head>
 <body>
 
@@ -4937,6 +4938,38 @@ html, body {
       <svg viewBox="0 0 24 24"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>
       GYM
     </div>
+    <!-- Health expansion (js/health/*). Pages mount into the empty page-* divs below. -->
+    <div class="nav-group-label">HEALTH</div>
+    <div class="nav-item" data-page="health" onclick="navigate('health')">
+      <svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+      Health
+    </div>
+    <div class="nav-item" data-page="heart" onclick="navigate('heart')">
+      <svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      Heart
+    </div>
+    <div class="nav-item" data-page="sleep" onclick="navigate('sleep')">
+      <svg viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      Sleep
+    </div>
+    <div class="nav-item" data-page="activity" onclick="navigate('activity')">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      Activity
+    </div>
+    <div class="nav-item" data-page="recovery" onclick="navigate('recovery')">
+      <svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+      Recovery
+    </div>
+    <div class="nav-group-label">TRAINING &amp; FUEL</div>
+    <div class="nav-item" data-page="runs" onclick="navigate('runs')">
+      <svg viewBox="0 0 24 24"><path d="M3 17l6-6 4 4 8-8"/><polyline points="14 7 21 7 21 14"/></svg>
+      Runs
+    </div>
+    <div class="nav-item" data-page="nutrition" onclick="navigate('nutrition')">
+      <svg viewBox="0 0 24 24"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/></svg>
+      Nutrition
+    </div>
+
     <!-- Window: PROJECTS = Runway + Focus (execution). Weekly stays separate
          because timetable is recurring time-blocking, not project execution. -->
     <div class="nav-item" data-page="runway" onclick="navigate('runway')">
@@ -6085,6 +6118,15 @@ html, body {
       </div>
     </div><!-- /page-resume -->
 
+
+    <!-- Health expansion pages: rendered by js/health/*.js -->
+    <div class="page" id="page-health"></div>
+    <div class="page" id="page-heart"></div>
+    <div class="page" id="page-sleep"></div>
+    <div class="page" id="page-activity"></div>
+    <div class="page" id="page-recovery"></div>
+    <div class="page" id="page-runs"></div>
+    <div class="page" id="page-nutrition"></div>
   </main>
 </div>
 
@@ -7482,6 +7524,7 @@ function navigate(page) {
   // asynchronously and charts size from their container, which has no width
   // while the page is hidden — without this, tiles keep a stale "NO DATA"
   // state and charts render 0px wide.
+  if (window.Grid && Grid.show) { try { Grid.show(page); } catch (e) { console.warn('health page:', e); } }
   refreshActivePage(page);
   if (page === 'workout')  initGym();
   if (page === 'resume')   initResume();
@@ -15247,5 +15290,17 @@ function renderGymRadar() {
 
 <button class="gk-fab" id="gkFab" onclick="dcOpen()" title="Daily Console">◉</button>
 
+<script defer src="js/health/core.js"></script>
+<script defer src="js/health/calc.js"></script>
+<script defer src="js/health/charts.js"></script>
+<script defer src="js/health/presets.js"></script>
+<script defer src="js/health/seed-demo.js"></script>
+<script defer src="js/health/overview.js"></script>
+<script defer src="js/health/heart.js"></script>
+<script defer src="js/health/sleep.js"></script>
+<script defer src="js/health/activity.js"></script>
+<script defer src="js/health/recovery.js"></script>
+<script defer src="js/health/runs.js"></script>
+<script defer src="js/health/nutrition.js"></script>
 </body>
 </html>

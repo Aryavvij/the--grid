@@ -39,6 +39,14 @@ model User {
   studySessions    StudySession[]
   gymSplits        GymSplit[]
   gymLogs          GymLog[]
+  healthDaily      HealthDaily[]
+  healthSleep      HealthSleep[]
+  healthToken      HealthToken?
+  runActivities    RunActivity[]
+  mealPresets      MealPreset[]
+  foodLogs         FoodLog[]
+  waterLogs        WaterLog[]
+  nutritionTargets NutritionTargets?
   budgetCategories BudgetCategory[]
   transactions     Transaction[]
   calendarEvents   CalendarEvent[]
@@ -349,4 +357,190 @@ model StudySession {
   @@index([userId, date])
   @@index([userId, category])
   @@map("study_sessions")
+}
+
+// ─── Health (Google Health / Fitbit Air) ──────────────────────────────────────
+
+// One row per user per local date. All metric columns are nullable: a day can
+// be partially synced, and derived scores are filled in by GRID, not Google.
+model HealthDaily {
+  id             String   @id @default(uuid())
+  userId         String   @map("user_id")
+  date           String // YYYY-MM-DD in the user's timezone
+  restingHr      Int?     @map("resting_hr")
+  hrvMs          Float?   @map("hrv_ms")
+  spo2Avg        Float?   @map("spo2_avg")
+  spo2Min        Float?   @map("spo2_min")
+  skinTempDelta  Float?   @map("skin_temp_delta") // °C vs personal baseline
+  breathingRate  Float?   @map("breathing_rate")
+  steps          Int?
+  distanceM      Float?   @map("distance_m")
+  caloriesTotal  Int?     @map("calories_total")
+  caloriesActive Int?     @map("calories_active")
+  azmMinutes     Int?     @map("azm_minutes")
+  sedentaryMin   Int?     @map("sedentary_min")
+  cardioLoad     Float?   @map("cardio_load") // GRID-calculated unless Google exposes it
+  readiness      Int? // GRID-calculated 0–100
+  hrZones        Json?    @map("hr_zones") // { outOfRange, fatBurn, cardio, peak } minutes
+  intraday       Json? // optional { hr: [[min,bpm]...], stepsByHour: [24] }
+  source         String   @default("google_health")
+  syncedAt       DateTime @default(now()) @map("synced_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date])
+  @@index([userId, date])
+  @@map("health_daily")
+}
+
+model HealthSleep {
+  id            String   @id @default(uuid())
+  userId        String   @map("user_id")
+  date          String // wake-up date, YYYY-MM-DD
+  startTime     DateTime @map("start_time")
+  endTime       DateTime @map("end_time")
+  minutesAsleep Int      @map("minutes_asleep")
+  minutesAwake  Int?     @map("minutes_awake")
+  lightMin      Int?     @map("light_min")
+  deepMin       Int?     @map("deep_min")
+  remMin        Int?     @map("rem_min")
+  efficiency    Float?
+  score         Int? // GRID-calculated unless Google exposes it
+  sleepingHr    Int?     @map("sleeping_hr")
+  stages        Json? // [{ type, start, end }]
+  source        String   @default("google_health")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, startTime])
+  @@index([userId, date])
+  @@map("health_sleep")
+}
+
+// Refresh token is stored encrypted (AES-256-GCM, key in HEALTH_TOKEN_KEY env).
+model HealthToken {
+  id              String    @id @default(uuid())
+  userId          String    @unique @map("user_id")
+  refreshTokenEnc String    @map("refresh_token_enc")
+  scopes          String?
+  lastSyncAt      DateTime? @map("last_sync_at")
+  lastSyncStatus  String?   @map("last_sync_status")
+  lastSyncError   String?   @map("last_sync_error")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("health_tokens")
+}
+
+// ─── Runs (Strava file imports) ───────────────────────────────────────────────
+
+model RunActivity {
+  id           String   @id @default(uuid())
+  userId       String   @map("user_id")
+  date         String // YYYY-MM-DD local
+  startTime    DateTime @map("start_time")
+  name         String?
+  distanceM    Float    @map("distance_m")
+  movingSec    Int      @map("moving_sec")
+  elapsedSec   Int?     @map("elapsed_sec")
+  avgHr        Int?     @map("avg_hr")
+  maxHr        Int?     @map("max_hr")
+  cadence      Int?
+  elevGainM    Float?   @map("elev_gain_m")
+  calories     Int?
+  gear         String?
+  splits       Json? // [{ km, sec, hr, elevDelta }]
+  hrZones      Json?    @map("hr_zones")
+  route        Json? // simplified polyline [[lat,lon]...]
+  streams      Json? // downsampled { dist, pace, hr, ele, cad } for detail charts
+  fileHash     String   @map("file_hash")
+  sourceFormat String   @map("source_format") // fit | gpx | tcx | csv
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, fileHash])
+  @@index([userId, date])
+  @@map("run_activities")
+}
+
+// ─── Nutrition ────────────────────────────────────────────────────────────────
+
+// Saved meal shortcuts: type "S1" and the saved macros are logged.
+model MealPreset {
+  id          String   @id @default(uuid())
+  userId      String   @map("user_id")
+  code        String // uppercase, unique per user, e.g. "S1"
+  name        String
+  serving     String?
+  calories    Int
+  protein     Float    @default(0)
+  carbs       Float    @default(0)
+  fat         Float    @default(0)
+  defaultSlot String?  @map("default_slot") // breakfast | lunch | dinner | snack
+  color       String?
+  favorite    Boolean  @default(false)
+  useCount    Int      @default(0) @map("use_count")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  user User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  logs FoodLog[]
+
+  @@unique([userId, code])
+  @@map("meal_presets")
+}
+
+model FoodLog {
+  id         String   @id @default(uuid())
+  userId     String   @map("user_id")
+  date       String // YYYY-MM-DD
+  slot       String // breakfast | lunch | dinner | snack
+  name       String
+  serving    String?
+  qty        Float    @default(1)
+  calories   Int
+  protein    Float    @default(0)
+  carbs      Float    @default(0)
+  fat        Float    @default(0)
+  presetId   String?  @map("preset_id")
+  presetCode String?  @map("preset_code")
+  confidence String   @default("exact") // exact | estimated | rough
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  user   User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  preset MealPreset? @relation(fields: [presetId], references: [id], onDelete: SetNull)
+
+  @@index([userId, date])
+  @@map("food_logs")
+}
+
+model WaterLog {
+  id     String @id @default(uuid())
+  userId String @map("user_id")
+  date   String
+  ml     Int    @default(0)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date])
+  @@map("water_logs")
+}
+
+model NutritionTargets {
+  id        String   @id @default(uuid())
+  userId    String   @unique @map("user_id")
+  calories  Int
+  protein   Int
+  carbs     Int
+  fat       Int
+  waterMl   Int      @default(3000) @map("water_ml")
+  plan      Json? // inputs + BMR/TDEE snapshot for the Methodology card
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("nutrition_targets")
 }

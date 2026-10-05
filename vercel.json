@@ -5,6 +5,14 @@
       "use": "@vercel/static"
     },
     {
+      "src": "js/**",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "css/**",
+      "use": "@vercel/static"
+    },
+    {
       "src": "grid-backend/api/index.js",
       "use": "@vercel/node"
     }
@@ -13,6 +21,9 @@
     {
       "src": "/api/(.*)",
       "dest": "/grid-backend/api/index.js"
+    },
+    {
+      "handle": "filesystem"
     },
     {
       "src": "/(.*)",
