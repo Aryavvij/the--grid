@@ -8,7 +8,7 @@
     title: 'Heart & Vitals', sub: 'Resting HR · HRV · SpO2 · skin temp · breathing', ranges: [7, 30, 90],
     async render(root, { range }) {
       const all = (await G.data('daily', { limit: 90 })).slice().reverse();
-      if (!all.length) { root.innerHTML = G.empty('NO HEALTH DATA YET<br>Press CONNECT GOOGLE HEALTH (top right) to start syncing.'); return; }
+      if (!all.length) { root.innerHTML = G.empty('NO HEALTH DATA YET<br>Press CONNECT GOOGLE HEALTH (top right). Your data refreshes once a day.'); return; }
       const rows = all.slice(-range), prev = all.slice(-range * 2, -range), x = rows.map(r => F.short(r.date));
       const col = (k) => rows.map(r => r[k]), avg = (k) => S.avg(col(k)), pavg = (k) => S.avg(prev.map(r => r[k]));
       const last = rows.at(-1);

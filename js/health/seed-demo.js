@@ -69,9 +69,11 @@
     ['L2', 'Dal Rice Combo', 580, 22, 92, 11, 'lunch'], ['D1', 'Paneer Wrap', 540, 28, 52, 24, 'dinner'], ['SHAKE', 'Post-workout Shake', 260, 40, 18, 3, 'snack'], ['COFFEE', 'Black Coffee', 5, 0, 1, 0, 'breakfast'],
   ].map((p, i) => ({ id: 'p' + i, code: p[0], name: p[1], calories: p[2], protein: p[3], carbs: p[4], fat: p[5], defaultSlot: p[6], serving: '1 serving', favorite: i < 3, useCount: 40 - i * 3 }));
   const foodlog = []; let fid = 0;
-  for (let off = 13; off >= 0; off--) {
+  for (let off = 59; off >= 0; off--) {
     const ds = F.date(day(off));
-    [['B1', 'breakfast'], ['COFFEE', 'breakfast'], [rng() > 0.5 ? 'L1' : 'L2', 'lunch'], ['S1', 'snack'], [rng() > 0.5 ? 'D1' : 'L1', 'dinner'], [rng() > 0.4 ? 'SHAKE' : 'S2', 'snack']].forEach(([code, slot]) => {
+    if (off > 0 && rng() < 0.06) continue;                                           // a day with nothing logged
+    const treat = rng() < 0.08 ? [['D1', 'snack'], ['S3', 'snack']] : [];            // occasional surplus day
+    [['B1', 'breakfast'], ['COFFEE', 'breakfast'], [rng() > 0.5 ? 'L1' : 'L2', 'lunch'], ['S1', 'snack'], [rng() > 0.5 ? 'D1' : 'L1', 'dinner'], [rng() > 0.4 ? 'SHAKE' : 'S2', 'snack'], ...treat].forEach(([code, slot]) => {
       if (off === 0 && (slot === 'dinner' || slot === 'snack' && code !== 'S1')) return;       // today is partly logged
       const p = presets.find(x => x.code === code);
       foodlog.push({ id: 'f' + (fid++), date: ds, slot, name: p.name, serving: p.serving, qty: 1, calories: p.calories, protein: p.protein, carbs: p.carbs, fat: p.fat, presetCode: p.code, confidence: 'exact' });
@@ -79,11 +81,19 @@
   }
   const targets = { calories: 2350, protein: 160, carbs: 250, fat: 70, waterMl: 3000, plan: { sex: 'male', age: 21, kg: 72, cm: 175, level: 'moderate', bmr: C.bmr({ sex: 'male', kg: 72, cm: 175, age: 21 }) } };
   targets.plan.tdee = C.tdee(targets.plan.bmr, 'moderate');
-  const water = Array.from({ length: 14 }, (_, i) => ({ date: F.date(day(13 - i)), ml: Math.round(jit(2400, 500)) }));
+  const water = Array.from({ length: 35 }, (_, i) => ({ date: F.date(day(34 - i)), ml: Math.round(jit(2400, 500)) }));
+  // weight every ~2 days, drifting down with the deficit; photos are user-uploaded (none in demo until added)
+  const weight = []; for (let off = 59; off >= 0; off -= 2) weight.push({ date: F.date(day(off)), kg: +(74.6 - (59 - off) * 0.035 + (rng() - 0.5) * 0.5).toFixed(1) });
+  const photos = [];
 
   const desc = (a) => a.slice().sort((x, y) => (x.date < y.date ? 1 : -1));
   G.seed = {
     /** Demo-mode importer target: add parsed runs to the in-memory history. */
+    setWeight(date, kg) { const i = weight.findIndex(w => w.date === date); if (i >= 0) weight[i].kg = kg; else { weight.push({ date, kg }); weight.sort((a, b) => (a.date < b.date ? -1 : 1)); } },
+    delWeight(date) { const i = weight.findIndex(w => w.date === date); if (i >= 0) weight.splice(i, 1); },
+    addPhoto(p) { const row = { id: 'ph' + Date.now() + Math.random().toString(36).slice(2, 5), ...p }; photos.push(row); photos.sort((a, b) => (a.date < b.date ? -1 : 1)); return row; },
+    delPhoto(id) { const i = photos.findIndex(x => x.id === id); if (i >= 0) photos.splice(i, 1); },
+    photo(id) { return photos.find(x => x.id === id) || null; },
     removeRun(id) { const i = runs.findIndex(x => x.id === id); if (i >= 0) runs.splice(i, 1); },
     addRuns(rs) { rs.forEach((r, i) => runs.push({ ...r, id: 'u' + Date.now() + i })); },
     /** Full detail for one run. Seeded runs have no stored track, so draw a plausible loop + streams from their splits. */
@@ -103,7 +113,7 @@
       return { ...r, route, streams: { dist, pace, hr, ele, cad }, bestEfforts: r.bestEfforts || { 1000: Math.round(fastest), 5000: km >= 5 ? Math.round(r.movingSec / km * 5 * 0.98) : undefined } };
     },
     get(kind, p = {}) {
-      const rows = { daily: desc(daily), sleep: desc(sleep), runs: runs.slice().sort((a, b) => (a.startTime < b.startTime ? 1 : -1)), presets, foodlog: desc(foodlog), targets, water: desc(water) }[kind];
+      const rows = { daily: desc(daily), sleep: desc(sleep), runs: runs.slice().sort((a, b) => (a.startTime < b.startTime ? 1 : -1)), presets, foodlog: desc(foodlog), targets, water: desc(water), weight: weight.slice(), photos: photos.slice() }[kind];
       if (!rows) return [];
       if (Array.isArray(rows) && (p.from || p.to)) return rows.filter(r => (!p.from || r.date >= p.from) && (!p.to || r.date <= p.to));
       return Array.isArray(rows) && p.limit ? rows.slice(0, +p.limit) : rows;

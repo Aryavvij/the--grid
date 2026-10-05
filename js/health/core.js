@@ -19,7 +19,7 @@
     const ranges = def.ranges;
     root.innerHTML = `
       <div class="hl-head">
-        <div><div class="hl-title">${def.title}</div><div class="hl-sub">${def.sub || ''}</div></div>
+        <div><div class="hl-title">${def.title}</div><div class="hl-sub">${def.sub || ''}${def.google ? ' · DAILY SUMMARY, NOT LIVE · OPEN GOOGLE HEALTH FOR LIVE DATA' : ''}</div></div>
         <div class="hl-tools">
           ${ranges ? `<div class="hl-pills" data-role="ranges">${ranges.map(r =>
             `<button class="hl-pill ${G.state.range === r ? 'on' : ''}" data-r="${r}">${r}D</button>`).join('')}</div>` : ''}
@@ -51,6 +51,7 @@
     const map = {
       daily: '/api/health/daily', sleep: '/api/health/sleep', runs: '/api/runs',
       presets: '/api/nutrition/presets', foodlog: '/api/nutrition/log', targets: '/api/nutrition/targets', water: '/api/nutrition/water',
+      weight: '/api/progress/weight', photos: '/api/progress/photos',
     };
     const qs = new URLSearchParams(Object.entries(params).filter(([, v]) => v != null && v !== '')).toString();
     try { return await gridFetch(map[kind] + (qs ? '?' + qs : '')); }
@@ -82,7 +83,7 @@
       btn.classList.toggle('pri', !st.connected || st.lastSyncStatus === 'reauth_required');
       if (!st.connected) btn.textContent = 'CONNECT GOOGLE HEALTH';
       else if (st.lastSyncStatus === 'reauth_required') btn.textContent = 'RECONNECT GOOGLE HEALTH';
-      else btn.textContent = 'SYNC NOW · ' + (st.lastSyncStatus === 'partial' ? 'PARTIAL · ' : st.lastSyncStatus === 'error' ? 'ERROR · ' : '') + ago(st.lastSyncAt).toUpperCase();
+      else btn.textContent = 'UPDATED ' + ago(st.lastSyncAt).toUpperCase() + (st.lastSyncStatus === 'partial' ? ' · PARTIAL' : st.lastSyncStatus === 'error' ? ' · ERROR' : '') + ' · REFRESH';
       btn.title = st.lastSyncError || '';
       btn._st = st;
     };
@@ -93,9 +94,9 @@
         if (!st.connected || st.lastSyncStatus === 'reauth_required') {
           const { url } = await gridFetch('/api/health/google/connect'); window.location.href = url; return;
         }
-        btn.disabled = true; btn.textContent = 'SYNCING…';
+        btn.disabled = true; btn.textContent = 'REFRESHING…';
         const r = await gridFetch('/api/health/sync', { method: 'POST', body: JSON.stringify({ days: 7 }) });
-        G.toast(`SYNCED ${r.days} DAYS · ${r.sleepNights} NIGHTS` + (Object.keys(r.errors || {}).length ? ' · SOME METRICS FAILED' : ''));
+        G.toast(`REFRESHED ${r.days} DAYS · ${r.sleepNights} NIGHTS` + (Object.keys(r.errors || {}).length ? ' · SOME METRICS FAILED' : ''));
       } catch (e) { G.toast((e.message || 'SYNC FAILED').toUpperCase()); }
       btn.disabled = false;
       try { paint(await gridFetch('/api/health/status')); } catch (_) {}

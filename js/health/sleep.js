@@ -26,7 +26,7 @@
     title: 'Sleep', sub: 'Stages · score · consistency · sleeping heart rate', ranges: [7, 30, 90],
     async render(root, { range }) {
       const all = (await G.data('sleep', { limit: 90 })).slice().reverse();
-      if (!all.length) { root.innerHTML = G.empty('NO SLEEP DATA YET<br>Press CONNECT GOOGLE HEALTH (top right) to start syncing.'); return; }
+      if (!all.length) { root.innerHTML = G.empty('NO SLEEP DATA YET<br>Press CONNECT GOOGLE HEALTH (top right). Your data refreshes once a day.'); return; }
       const rows = all.slice(-range), prev = all.slice(-range * 2, -range), night = all.at(-1), x = rows.map(r => F.short(r.date));
       const col = (k) => rows.map(r => r[k]), pct = (a, b) => (b ? ((a - b) / b) * 100 : null);
       const ids = ['hyp', 'dur', 'score', 'cons', 'tbl'].reduce((o, k) => (o[k] = G.uid(), o), {});

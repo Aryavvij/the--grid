@@ -4969,6 +4969,10 @@ html, body {
       <svg viewBox="0 0 24 24"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/></svg>
       Nutrition
     </div>
+    <div class="nav-item" data-page="deficit" onclick="navigate('deficit')">
+      <svg viewBox="0 0 24 24"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/><polyline points="17 18 23 18 23 12"/></svg>
+      Deficit
+    </div>
 
     <!-- Window: PROJECTS = Runway + Focus (execution). Weekly stays separate
          because timetable is recurring time-blocking, not project execution. -->
@@ -6127,6 +6131,7 @@ html, body {
     <div class="page" id="page-recovery"></div>
     <div class="page" id="page-runs"></div>
     <div class="page" id="page-nutrition"></div>
+    <div class="page" id="page-deficit"></div>
   </main>
 </div>
 
@@ -15304,5 +15309,7 @@ function renderGymRadar() {
 <script defer src="js/health/recovery.js"></script>
 <script defer src="js/health/runs.js"></script>
 <script defer src="js/health/nutrition.js"></script>
+<script defer src="js/health/deficit-calc.js"></script>
+<script defer src="js/health/deficit.js"></script>
 </body>
 </html>

@@ -47,6 +47,8 @@ model User {
   foodLogs         FoodLog[]
   waterLogs        WaterLog[]
   nutritionTargets NutritionTargets?
+  weightLogs       WeightLog[]
+  progressPhotos   ProgressPhoto[]
   budgetCategories BudgetCategory[]
   transactions     Transaction[]
   calendarEvents   CalendarEvent[]
@@ -544,4 +546,36 @@ model NutritionTargets {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("nutrition_targets")
+}
+
+// ─── Deficit tracking: weight + progress photos ───────────────────────────────
+
+model WeightLog {
+  id     String @id @default(uuid())
+  userId String @map("user_id")
+  date   String // YYYY-MM-DD
+  kg     Float
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date])
+  @@map("weight_logs")
+}
+
+// Photos are compressed client-side (JPEG, <= ~600 KB) and stored as base64 text.
+// Fine for one person's progress photos; move to object storage if this ever grows.
+model ProgressPhoto {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  date      String // YYYY-MM-DD
+  note      String?
+  weightKg  Float?   @map("weight_kg")
+  image     String // data:image/jpeg;base64,...
+  thumb     String // small preview, same format
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, date])
+  @@map("progress_photos")
 }
