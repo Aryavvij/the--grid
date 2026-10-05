@@ -61,6 +61,14 @@
     document.body.appendChild(t); setTimeout(() => t.remove(), 5000);
   };
 
+  /** Download rows (array of arrays) as a CSV file. Cells starting with = + - @ are prefixed so spreadsheets never run them as formulas. */
+  G.csv = (filename, rows) => {
+    const cell = (v) => { let t = v == null ? '' : String(v); if (/^[=+\-@]/.test(t) && isNaN(Number(t))) t = "'" + t; return /[",\n]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t; };
+    const blob = new Blob([rows.map(r => r.map(cell).join(',')).join('\n') + '\n'], { type: 'text/csv;charset=utf-8' });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = filename; document.body.appendChild(a); a.click();
+    setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+  };
+
   // ── modal: Grid's .modal-overlay / .modal / .form-* / .btn-* ──
   G.field = (label, input) => `<div class="form-group"><label class="form-label">${label}</label>${input}</div>`;
   G.input = (name, v = '', extra = '') => `<input class="form-input" name="${name}" value="${String(v ?? '').replace(/"/g, '&quot;')}" ${extra}>`;

@@ -114,6 +114,19 @@ router.post('/log', validate(foodSchema), async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// PUT /api/nutrition/log/:id — fix an entry (quantity, numbers, meal). The date cannot change.
+const foodEditSchema = z.object({
+  slot: slot.optional(), name: z.string().trim().min(1).max(120).optional(), serving: z.string().trim().max(80).nullish(), qty: z.number().min(0.1).max(50).optional(),
+  calories: z.number().int().min(0).max(10000).optional(), protein: macro.optional(), carbs: macro.optional(), fat: macro.optional(), confidence: z.enum(['exact', 'estimated', 'rough']).optional(),
+}).refine(v => Object.keys(v).length > 0, 'Nothing to update');
+router.put('/log/:id', validate(foodEditSchema), async (req, res, next) => {
+  try {
+    const row = await db.foodLog.findFirst({ where: { id: req.params.id, userId: req.user.id }, select: { id: true } });
+    if (!row) return res.status(404).json({ error: 'Entry not found' });
+    res.json(await db.foodLog.update({ where: { id: row.id }, data: req.body }));
+  } catch (err) { next(err); }
+});
+
 router.delete('/log/:id', async (req, res, next) => {
   try {
     const row = await db.foodLog.findFirst({ where: { id: req.params.id, userId: req.user.id } });

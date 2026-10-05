@@ -74,6 +74,7 @@
     photo(id) { return photos.find(x => x.id === id) || null; },
     setBurn(date, kcal) { const i = burn.findIndex(b => b.date === date); if (i >= 0) burn[i].kcal = kcal; else burn.push({ date, kcal }); },
     delBurn(date) { const i = burn.findIndex(b => b.date === date); if (i >= 0) burn.splice(i, 1); },
+    updateRun(id, patch) { const r = runs.find(x => x.id === id); if (r) Object.assign(r, patch); return r; },
     removeRun(id) { const i = runs.findIndex(x => x.id === id); if (i >= 0) runs.splice(i, 1); },
     addRuns(rs) { rs.forEach((r, i) => runs.push({ ...r, id: 'u' + Date.now() + i })); },
     /** Full detail for one run. Seeded runs have no stored track, so draw a plausible loop + streams from their splits. */

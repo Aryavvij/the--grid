@@ -76,6 +76,17 @@ router.post('/import', validate(importSchema), async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// PUT /api/runs/:id — rename a run or change its gear (everything else comes from the file and is not editable)
+const editSchema = z.object({ name: z.string().trim().max(200).nullish(), gear: z.string().trim().max(120).nullish() }).refine(v => 'name' in v || 'gear' in v, 'Nothing to update');
+router.put('/:id', validate(editSchema), async (req, res, next) => {
+  try {
+    const run = await db.runActivity.findFirst({ where: { id: req.params.id, userId: req.user.id }, select: { id: true } });
+    if (!run) return res.status(404).json({ error: 'Run not found' });
+    const data = {}; if ('name' in req.body) data.name = req.body.name || null; if ('gear' in req.body) data.gear = req.body.gear || null;
+    res.json(await db.runActivity.update({ where: { id: run.id }, data, select: { id: true, name: true, gear: true } }));
+  } catch (err) { next(err); }
+});
+
 // DELETE /api/runs/:id
 router.delete('/:id', async (req, res, next) => {
   try {

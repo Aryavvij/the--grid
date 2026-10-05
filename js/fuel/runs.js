@@ -31,6 +31,7 @@
     sub: 'Strava exports · monthly and yearly overview', dot: 'var(--green)', foot: 'Run metrics are computed from your imported files.',
     async render(root) {
       st.detail = null;                                     // always open on the list, never a stale detail view
+      st.report = null; st.importing = null;               // and never an old import report
       let all = [];
       const load = async () => { all = (await G.data('runs', { limit: 5000 })).slice().sort((a, b) => (a.startTime < b.startTime ? -1 : 1)); };
       await load();
@@ -60,7 +61,17 @@
       const draw = () => {
         if (st.detail) return drawDetail();
         if (!all.length) {
-          root.innerHTML = `${importCard()}${G.empty('NO RUNS YET<br>Import your Strava export above.')}`; return bind();
+          const step = (n, t, b) => `<div style="display:flex;gap:12px;margin-bottom:12px"><span class="hl-code" style="height:fit-content">${n}</span><div><div style="font-size:11px;color:var(--text);margin-bottom:3px">${t}</div><div class="hl-note" style="text-transform:none;line-height:1.7;font-size:10px">${b}</div></div></div>`;
+          root.innerHTML = `${importCard()}
+            <div class="fin-group-label" style="margin-top:16px">GET YOUR RUNS IN</div>
+            <div class="hl-grid hl-g3">
+              ${G.card('ALL YOUR RUNS AT ONCE', step(1, 'Request your Strava archive', 'On strava.com: Settings → My Account → Download or Delete Your Account → Request Your Archive.') + step(2, 'Wait for the email', 'Strava emails a download link, usually within minutes to a few hours.') + step(3, 'Drop the .zip here', 'No need to unzip it. Runs, names, gear and calories are read from the archive; rides and walks are skipped.'))}
+              ${G.card('ONE RUN AT A TIME', step(1, 'Open the run on strava.com', 'Use the activity page, not the phone app.') + step(2, 'Menu (•••) → Export GPX or Export Original', 'GPX, TCX and original FIT files all work, with or without .gz.') + step(3, 'Drop the file above', 'Importing the same run twice is safe: duplicates are skipped automatically.'))}
+              ${G.card('WHAT YOU GET', '<div class="hl-note" style="text-transform:none;line-height:2;font-size:10px">Monthly and yearly overview with year-over-year comparison<br>Personal bests: 1 km, 1 mile, 3 km, 5 km, 10 km, half marathon<br>Pace vs heart rate fitness trend and HR zones<br>Weekly mileage with a ramp-up warning<br>Shoe mileage<br>Run detail: route map, splits, linked pace, heart rate, elevation and cadence charts<br>Compare any run with a similar one</div>')}
+            </div>
+            <div class="fin-group-label">OVERVIEW</div><div id="t1"></div>`;
+          G.tiles(root.querySelector('#t1'), [{ label: 'DISTANCE', value: '—', unit: 'km' }, { label: 'RUNS', value: '—' }, { label: 'MOVING TIME', value: '—' }, { label: 'AVG PACE', value: '—', unit: '/km' }]);
+          return bind();
         }
         const years = [...new Set(all.map(r => +r.date.slice(0, 4)))].sort();
         if (!years.includes(st.year)) st.year = years.at(-1);
@@ -107,7 +118,7 @@
           <div class="fin-group-label">RECORDS</div>
           ${G.card('PERSONAL BESTS', '<div id="pbs"></div>', '<span class="hl-note">FASTEST WINDOW WITHIN A RUN · NEEDS A TRACK FILE</span>')}
           <div class="fin-group-label" style="margin-top:16px">ALL RUNS</div>
-          ${G.card('RUNS', '<div id="list"></div>')}`;
+          ${G.card('RUNS', '<div id="list"></div>', '<button class="hl-btn" id="expCsv">EXPORT CSV</button>')}`;
 
         G.tiles(root.querySelector('#t1'), [
           { label: 'DISTANCE', value: F.km(cur.dist), unit: 'km', delta: delta(cur.dist, prv.dist), goodWhen: 'up', vs },
@@ -204,7 +215,7 @@
         const sp = r.splits || [], secs = sp.map(s => s.sec), fast = secs.length ? Math.min(...secs) : null, slow = secs.length ? Math.max(...secs) : null;
         const half = Math.floor(sp.length / 2), neg = sp.length >= 4 ? S.sum(secs.slice(half)) < S.sum(secs.slice(0, half)) : null;
         const z = r.hrZones, zt = z ? S.sum([1, 2, 3, 4, 5].map(i => z['z' + i] || 0)) : 0;
-        root.innerHTML = `<div style="margin-bottom:14px;display:flex;gap:8px;align-items:center"><button class="hl-btn" id="back">← BACK TO RUNS</button><span class="hl-note">${r.date} · ${esc(r.name || 'Run')}${r.gear ? ' · ' + esc(r.gear) : ''} · ${(r.sourceFormat || '').toUpperCase()}</span><span style="flex:1"></span><button class="hl-btn" id="del" style="color:var(--red);border-color:rgba(239,68,68,.4)">DELETE</button></div>
+        root.innerHTML = `<div style="margin-bottom:14px;display:flex;gap:8px;align-items:center"><button class="hl-btn" id="back">← BACK TO RUNS</button><span class="hl-note">${r.date} · ${esc(r.name || 'Run')}${r.gear ? ' · ' + esc(r.gear) : ''} · ${(r.sourceFormat || '').toUpperCase()}</span><span style="flex:1"></span><button class="hl-btn" id="editRun">EDIT</button><button class="hl-btn" id="del" style="color:var(--red);border-color:rgba(239,68,68,.4)">DELETE</button></div>
           <div class="hl-grid hl-g4" id="dt1"></div><div class="hl-grid hl-g4" id="dt2"></div>
           <div class="hl-grid hl-g21">
             ${G.card('ROUTE', r.route ? `<div id="routeBox" style="height:300px"></div>` : G.empty('NO GPS TRACK<br>This run came from a CSV summary'), r.route ? '<span class="hl-note">COLOUR = PACE · GREEN FAST</span>' : '')}
@@ -217,7 +228,9 @@
             ${G.card('HEART-RATE ZONES', zt ? `<div style="display:flex;height:22px;border-radius:4px;overflow:hidden;margin-bottom:10px">${[1, 2, 3, 4, 5].map(i => `<div title="Z${i}" style="width:${((z['z' + i] || 0) / zt) * 100}%;background:${ZCOL[i - 1]}"></div>`).join('')}</div>
               <table class="hl-table">${[1, 2, 3, 4, 5].map(i => `<tr><td><span class="hl-code" style="color:${ZCOL[i - 1]};border-color:${ZCOL[i - 1]}">Z${i}</span></td><td>${F.hm((z['z' + i] || 0) / 60)}</td><td>${Math.round(((z['z' + i] || 0) / zt) * 100)}%</td></tr>`).join('')}</table>` : G.empty('NO HEART-RATE DATA'))}
             ${G.card('BEST EFFORTS IN THIS RUN', r.bestEfforts && Object.keys(r.bestEfforts).length ? `<table class="hl-table">${BEST.filter(([k]) => r.bestEfforts[k]).map(([k, l]) => `<tr><td>${l}</td><td>${tFmt(r.bestEfforts[k])}</td><td>${F.pace(r.bestEfforts[k] / (+k / 1000))}</td></tr>`).join('')}</table>` : G.empty('NO BEST EFFORTS'))}
-          </div>`;
+          </div>
+          <div class="fin-group-label">COMPARE</div>
+          ${G.card('COMPARE WITH ANOTHER RUN', '<div id="cmpBox"></div>', '<span class="hl-note">RUNS WITHIN 30% OF THIS DISTANCE</span>')}`;
         G.tiles(root.querySelector('#dt1'), [{ label: 'DISTANCE', value: F.km(r.distanceM, 2), unit: 'km' }, { label: 'MOVING TIME', value: tFmt(r.movingSec) }, { label: 'AVG PACE', value: F.pace(pace(r)).replace(' /km', ''), unit: '/km' }, { label: 'ELAPSED', value: r.elapsedSec ? tFmt(r.elapsedSec) : '—' }]);
         G.tiles(root.querySelector('#dt2'), [{ label: 'AVG / MAX HR', value: r.avgHr ? r.avgHr + ' / ' + (r.maxHr || '—') : '—', unit: 'bpm' }, { label: 'CADENCE', value: r.cadence || '—', unit: 'spm' }, { label: 'ELEVATION GAIN', value: Math.round(r.elevGainM || 0), unit: 'm' }, { label: 'CALORIES', value: r.calories || '—', unit: 'kcal' }]);
         if (r.route) drawRoute(root.querySelector('#routeBox'), r);
@@ -229,10 +242,43 @@
           echarts.connect(cs);
         }
         root.querySelector('#back').onclick = () => { st.detail = null; draw(); };
+        root.querySelector('#editRun').onclick = () => G.modal('EDIT RUN', `${G.field('Name', G.input('name', r.name || '', 'maxlength="200" placeholder="e.g. Sunday long run"'))}${G.field('Gear (shoes)', G.input('gear', r.gear || '', 'maxlength="120" list="gearList" placeholder="e.g. Pegasus 40"'))}<datalist id="gearList">${[...new Set(all.map(x => x.gear).filter(Boolean))].map(g => `<option value="${esc(g)}">`).join('')}</datalist>
+          <div class="hl-note" style="text-transform:none;line-height:1.7">Distance, time and heart rate come from the file and can't be edited.</div><div class="modal-actions"><button class="btn-cancel" data-cancel>CANCEL</button><button class="btn-save" data-save>SAVE</button></div>`, (m, close) => {
+          m.querySelector('[data-save]').onclick = async () => {
+            const patch = { name: m.querySelector('[name=name]').value.trim() || null, gear: m.querySelector('[name=gear]').value.trim() || null };
+            try { if (G.isDemo()) G.seed.updateRun(r.id, patch); else await gridFetch('/api/runs/' + r.id, { method: 'PUT', body: JSON.stringify(patch) }); } catch (e) { return G.toast((e.message || 'SAVE FAILED').toUpperCase()); }
+            close(); await load(); G.toast('RUN UPDATED'); drawDetail();
+          };
+        }, 440);
+        setupCompare(r);
         root.querySelector('#del').onclick = async () => {
           if (!confirm('Delete this run? This cannot be undone.')) return;
           try { if (G.isDemo()) G.seed.removeRun(r.id); else await gridFetch('/api/runs/' + r.id, { method: 'DELETE' }); } catch (e) { G.toast('DELETE FAILED'); return; }
           st.detail = null; await load(); draw();
+        };
+      };
+
+      /** Compare this run with another of similar length: pace overlay by distance + a metric table. */
+      const setupCompare = (r) => {
+        const box = root.querySelector('#cmpBox'); if (!box) return;
+        const cand = all.filter(x => x.id !== r.id && Math.abs(x.distanceM - r.distanceM) <= r.distanceM * 0.3).sort((a, b) => Math.abs(a.distanceM - r.distanceM) - Math.abs(b.distanceM - r.distanceM)).slice(0, 40).sort((a, b) => (a.startTime < b.startTime ? 1 : -1));
+        if (!cand.length) { box.innerHTML = G.empty('NO OTHER RUN WITHIN 30% OF THIS DISTANCE YET'); return; }
+        box.innerHTML = `<select class="form-select" id="cmpSel" style="margin-bottom:14px"><option value="">Choose a run to compare…</option>${cand.map(x => `<option value="${x.id}">${x.date} · ${esc(x.name || 'Run')} · ${F.km(x.distanceM, 2)} km · ${F.pace(pace(x))}</option>`).join('')}</select><div id="cmpOut"></div>`;
+        box.querySelector('#cmpSel').onchange = async (e) => {
+          const out = box.querySelector('#cmpOut'); if (!e.target.value) { out.innerHTML = ''; return; }
+          out.innerHTML = G.empty('LOADING…');
+          let o; try { o = G.isDemo() ? G.seed.runDetail(e.target.value) : await gridFetch('/api/runs/' + e.target.value); } catch (err) { o = null; }
+          if (!o) { out.innerHTML = G.empty('COULD NOT LOAD THAT RUN'); return; }
+          const diff = (a, b, fmt, lowerBetter) => { if (a == null || b == null) return '—'; const d = a - b; if (!d) return '='; return `<span style="color:${(d < 0) === !!lowerBetter ? 'var(--green)' : 'var(--orange)'}">${d > 0 ? '+' : '−'}${fmt(Math.abs(d))}</span>`; };
+          const rows = [['Distance', F.km(r.distanceM, 2) + ' km', F.km(o.distanceM, 2) + ' km', diff(r.distanceM, o.distanceM, v => F.km(v, 2) + ' km', false)], ['Time', F.dur(r.movingSec), F.dur(o.movingSec), diff(r.movingSec, o.movingSec, F.dur, true)],
+            ['Pace', F.pace(pace(r)), F.pace(pace(o)), diff(pace(r), pace(o), v => Math.round(v) + ' s/km', true)], ['Avg HR', r.avgHr || '—', o.avgHr || '—', diff(r.avgHr, o.avgHr, v => v + ' bpm', true)],
+            ['Elevation', Math.round(r.elevGainM || 0) + ' m', Math.round(o.elevGainM || 0) + ' m', diff(r.elevGainM || 0, o.elevGainM || 0, v => Math.round(v) + ' m', false)], ['Cadence', r.cadence || '—', o.cadence || '—', diff(r.cadence, o.cadence, v => v + ' spm', false)]];
+          const cid = G.uid();
+          out.innerHTML = `<div class="hl-grid hl-g2" style="margin-bottom:0"><div class="hl-chart sm" id="${cid}"></div><table class="hl-table"><tr><th></th><th>This run</th><th>${o.date}</th><th>Diff</th></tr>${rows.map(x => `<tr><td>${x[0]}</td><td>${x[1]}</td><td>${x[2]}</td><td>${x[3]}</td></tr>`).join('')}</table></div>`;
+          const line = (run, color, name) => ({ type: 'line', name, symbol: 'none', lineStyle: { color, width: 2 }, data: run.streams ? run.streams.dist.map((d, i) => [d / 1000, run.streams.pace[i]]).filter(p => p[1]) : [] });
+          const c = window.ethosChart(cid);
+          c.setOption({ grid: { left: 46, right: 14, top: 28, bottom: 26 }, tooltip: { trigger: 'axis', valueFormatter: (v) => F.pace(v) }, legend: { top: 0, right: 0 }, xAxis: { type: 'value', name: 'km', nameTextStyle: { color: 'rgba(240,240,240,.38)', fontSize: 9 } },
+            yAxis: { type: 'value', scale: true, inverse: true, axisLabel: { formatter: (v) => F.pace(v).replace(' /km', '') } }, series: [line(r, '#76b372', 'This run'), line(o, '#9b59b6', o.date)] }, true);
         };
       };
 
@@ -262,6 +308,9 @@
         root.querySelectorAll('[data-mode],[data-year],[data-month]').forEach(b => b.onclick = () => {
           if (b.dataset.mode) st.mode = b.dataset.mode; if (b.dataset.year) st.year = +b.dataset.year; if (b.dataset.month != null && b.dataset.month !== '') st.month = +b.dataset.month; draw();
         });
+        const exp = root.querySelector('#expCsv');
+        if (exp) exp.onclick = () => G.csv('grid-runs.csv', [['date', 'start_time', 'name', 'distance_km', 'moving_time_s', 'pace_s_per_km', 'avg_hr', 'max_hr', 'cadence_spm', 'elevation_gain_m', 'calories', 'gear', 'source'],
+          ...all.slice().reverse().map(r => [r.date, r.startTime, r.name, (r.distanceM / 1000).toFixed(3), r.movingSec, Math.round(pace(r)), r.avgHr, r.maxHr, r.cadence, r.elevGainM, r.calories, r.gear, r.sourceFormat])]);
         root.querySelectorAll('[data-run]').forEach(tr => tr.onclick = () => { st.detail = tr.dataset.run; draw(); });
         root.querySelectorAll('[data-best]').forEach(c => c.onclick = () => { st.bestKey = c.dataset.best; pbs(); bindBest(); });
         root.querySelectorAll('[data-sort]').forEach(h => h.onclick = () => { const k = h.dataset.sort; st.sort = [k, st.sort[0] === k ? -st.sort[1] : -1]; draw(); });

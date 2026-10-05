@@ -58,11 +58,17 @@
         const pred = startKg ? D().predictedWeight(startKg, cum) : cum.map(() => null), actualChange = wInRange.length >= 2 ? +(wInRange.at(-1).kg - wInRange[0].kg).toFixed(1) : null;
         const trend = D().weightTrend(wInRange), wk = D().weekly(rows), ids = {}; ['io', 'def', 'cum'].forEach(k => { ids[k] = G.uid(); });
         const missingBurn = rows.filter(r => r.status === 'noburn').length;
+        const foodDays = rows.filter(r => r.date >= D().addDays(today, -7) && r.intake).length, manualDays = rows.filter(r => r.burnSource === 'manual').length;
+        const steps = [[!!tdee, 'Set up your plan', 'So GRID knows your goal and can estimate the days you skip logging burn.', 'plan', 'OPEN NUTRITION'], [foodDays >= 3, 'Log your food on 3 or more days this week', 'Use the quick-log on the Nutrition page.', 'plan', 'OPEN NUTRITION'],
+          [manualDays >= 3, 'Type in your calories burned', 'Copy the day total from your Google Health app. More entries means less estimating.', 'burn', 'LOG BURN'], [weight.length >= 2, 'Log your weight twice', 'The weight card below turns it into a trend and checks it against your deficit.', 'weight', 'LOG WEIGHT'], [photos.length >= 1, 'Add a first progress photo', 'Same spot and lighting each time makes the comparison honest.', 'photo', 'ADD PHOTO']];
+        const checklist = steps.every(x => x[0]) ? '' : G.card('GET STARTED', `<div class="hl-note" style="margin-bottom:12px">${steps.filter(x => x[0]).length} OF ${steps.length} DONE</div>${steps.map(([ok, t, b, act, label]) => `<div style="display:flex;gap:12px;align-items:center;margin-bottom:12px"><span style="width:18px;height:18px;border-radius:50%;border:1px solid ${ok ? 'var(--green)' : 'var(--card-border)'};background:${ok ? 'var(--green-dim)' : 'transparent'};color:var(--green);font-size:11px;display:flex;align-items:center;justify-content:center;flex-shrink:0">${ok ? '✓' : ''}</span>
+          <div style="flex:1"><div style="font-size:11px;color:${ok ? 'var(--text-muted)' : 'var(--text)'};${ok ? 'text-decoration:line-through' : ''}">${t}</div><div class="hl-note" style="text-transform:none;font-size:10px">${b}</div></div>${ok ? '' : `<button class="hl-btn" data-step="${act}">${label}</button>`}</div>`).join('')}`);
 
         root.innerHTML = `
           <div class="fx-bar"><div class="hl-pills">${[14, 30, 60, 90].map(r => `<button class="hl-pill ${st.range === r ? 'on' : ''}" data-r="${r}">${r}D</button>`).join('')}</div>
             <div class="fx-tools"><div class="hl-pills"><button class="hl-pill ${st.useEst ? 'on' : ''}" data-est="1" title="Use the plan's TDEE for days with no burn entry">COUNT ESTIMATED DAYS</button><button class="hl-pill ${!st.useEst ? 'on' : ''}" data-est="0">TYPED-IN ONLY</button></div><button class="hl-btn pri" id="burnBtn">+ LOG BURN</button></div></div>
           <div class="hl-note" style="margin-bottom:14px">BURN = YOUR TYPED-IN TOTAL (OR THE PLAN'S TDEE, MARKED EST.) · EATEN = FOOD LOG · TODAY IS EXCLUDED UNTIL IT ENDS</div>
+          ${checklist}
           <div class="fin-group-label">OVERVIEW</div>
           <div id="t1"></div>
           <div class="fin-group-label">DAILY</div>
@@ -76,7 +82,7 @@
             ${G.card('WEEKLY SUMMARY', wk.length ? `<table class="hl-table"><tr><th>Week of</th><th>Days</th><th>Total</th><th>Avg/day</th><th>Est. kg</th></tr>${wk.slice().reverse().map(w => `<tr><td>${w.week}</td><td>${w.days}</td><td>${F.num(w.total)}</td><td>${F.num(w.avg)}</td><td>${(w.total / D().KCAL_PER_KG).toFixed(2)}</td></tr>`).join('')}</table>` : G.empty('NO COMPLETE DAYS YET'))}
             ${G.card('RECENT DAYS', `<table class="hl-table"><tr><th>Date</th><th>Eaten</th><th>Burned</th><th>Deficit</th><th>Status</th></tr>${rows.slice().reverse().slice(0, 14).map(r => `<tr><td>${r.date}</td><td>${r.intake ? F.num(r.intake) : '—'}</td>
               <td><span class="hl-x" data-burn="${r.date}" title="Edit burn" style="color:inherit">${r.burn != null ? F.num(r.burn) : '—'}${r.burnSource === 'estimate' ? ' <span class="hl-note">EST</span>' : ''} ✎</span></td>
-              <td style="color:${r.status === 'ok' ? (r.deficit >= 0 ? 'var(--green)' : 'var(--orange)') : 'var(--text-muted)'}">${r.deficit != null ? (r.deficit > 0 ? '−' : '+') + Math.abs(r.deficit) : '—'}</td><td><span class="hl-note" style="color:${STATUS[r.status][1]}">${STATUS[r.status][0]}</span></td></tr>`).join('')}</table>`, '<span class="hl-note">CLICK A BURN TO EDIT</span>')}
+              <td style="color:${r.status === 'ok' ? (r.deficit >= 0 ? 'var(--green)' : 'var(--orange)') : 'var(--text-muted)'}">${r.deficit != null ? (r.deficit > 0 ? '−' : '+') + Math.abs(r.deficit) : '—'}</td><td><span class="hl-note" style="color:${STATUS[r.status][1]}">${STATUS[r.status][0]}</span></td></tr>`).join('')}</table>`, '<span class="hl-note">CLICK A BURN TO EDIT</span> <button class="hl-btn" id="expDef">EXPORT CSV</button>')}
           </div>
           <div class="fin-group-label">BODY</div>
           <div class="hl-grid hl-g2">
@@ -180,6 +186,12 @@
         root.querySelectorAll('[data-r]').forEach(b => b.onclick = async () => { st.range = +b.dataset.r; await load(); draw(); });
         root.querySelectorAll('[data-est]').forEach(b => b.onclick = async () => { st.useEst = b.dataset.est === '1'; await load(); draw(); });
         root.querySelector('#burnBtn').onclick = () => burnModal(D().addDays(today, -1));
+        root.querySelectorAll('[data-step]').forEach(b => b.onclick = () => {
+          const a = b.dataset.step;
+          if (a === 'plan') navigate('nutrition'); else if (a === 'burn') burnModal(D().addDays(today, -1)); else if (a === 'photo') photoDialog();
+          else { const i = root.querySelector('#wKg'); i.scrollIntoView({ block: 'center', behavior: 'smooth' }); i.focus(); }
+        });
+        root.querySelector('#expDef').onclick = () => G.csv('grid-deficit.csv', [['date', 'eaten_kcal', 'burned_kcal', 'burn_source', 'deficit_kcal', 'status'], ...rows.map(r => [r.date, r.intake, r.burn, r.burnSource, r.deficit, r.status])]);
         root.querySelectorAll('[data-burn]').forEach(x => x.onclick = () => burnModal(x.dataset.burn));
         root.querySelector('#addPhoto').onclick = photoDialog;
         root.querySelector('#wSave').onclick = async () => {

@@ -10,11 +10,14 @@ Carbon-green aesthetic. Deployed on Vercel (frontend + serverless API). Postgres
 | `index.html` | The entire frontend — a single ~11,200-line vanilla-JS SPA. No build step, no framework. |
 | `grid-backend/` | Express + Prisma + Postgres API. |
 | `BLUEPRINT.html` | The v2 product blueprint (Carbon-Green upgrade plan). Open it for the intended direction — typed metric engine, Daily Console, Focus Engine, Streak 2.0. Treat it as the spec for new work. |
+| `js/fuel/`, `css/fuel.css` | Runs, Nutrition, Deficit pages and the Gym PROGRESS tab. Plain scripts loaded with `<script defer>`; each registers with `Grid.registerPage(name, {...})` and mounts into an empty `<div id="page-*">`. Built from the same components as the rest of the app (`fin-section`, `fin-stat-card`, `page-subtitle`, `form-*`, `modal-*`). |
+| `tests/` | `node tests/run-all.js` runs every suite (no framework). |
+| `docs/` | Planning notes and the Stitch prompt for the fuel pages. |
 | `Ethos-Hub-main/`, `Previous Files/` | Archived/older material — not the live app. |
 
 ## Frontend (`index.html`)
 
-- **One file, vanilla JS.** Views are `<div id="page-*">` sections toggled in JS: `page-home`, `page-calendar`, `page-weekly`, `page-habits`, `page-finances`, `page-workout`, `page-work`, `page-runway`, `page-resume`. Auth screens: `tabLogin` / `tabSignup`.
+- **One file, vanilla JS.** Views are `<div id="page-*">` sections toggled in JS: `page-home`, `page-calendar`, `page-weekly`, `page-habits`, `page-finances`, `page-workout`, `page-work`, `page-runway`, `page-resume`, plus `page-runs`, `page-nutrition`, `page-deficit` (rendered by `js/fuel/*`). Auth screens: `tabLogin` / `tabSignup`.
 - **⚠️ Dual storage fork — the #1 source of bugs.** The app runs in two modes:
   - **Auth mode** → calls the backend API.
   - **Demo mode** → reads/writes `localStorage` (keys: `gridHabits`, `gymLogs`, `gridBudget`, `rwProjects`, `rsTabData`, `gridEntries`, `gridFinRecurItems`, etc.). Entering demo **wipes** ~14 keys.

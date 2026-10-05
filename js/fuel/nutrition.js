@@ -29,6 +29,17 @@
       if (G.isDemo()) { preset.useCount = (preset.useCount || 0) + 1; return store.addFood({ date, slot, name: preset.name, serving: preset.serving, qty: cmd.qty, presetCode: preset.code, confidence: 'exact', ...P().scale(preset, cmd.qty) }); }
       const row = await gridFetch('/api/nutrition/log-preset', { method: 'POST', body: JSON.stringify({ code: cmd.code, qty: cmd.qty, slot: cmd.slot || undefined, date }) }); store.log.push(row); return row;
     },
+    async editFood(id, patch) {
+      if (G.isDemo()) { const row = store.log.find(e => e.id === id); Object.assign(row, patch); return row; }
+      const row = await gridFetch('/api/nutrition/log/' + id, { method: 'PUT', body: JSON.stringify(patch) });
+      store.log = store.log.map(e => (e.id === id ? row : e)); return row;
+    },
+    /** Copy every entry of one day onto another (preset links are not kept; the numbers are). */
+    async copyDay(from, to) {
+      const src = store.log.filter(e => e.date === from); let n = 0;
+      for (const e of src) { await store.addFood({ date: to, slot: e.slot, name: e.name, serving: e.serving || null, qty: e.qty || 1, calories: e.calories, protein: e.protein, carbs: e.carbs, fat: e.fat, confidence: e.confidence || 'estimated' }); n++; }
+      return n;
+    },
     async delFood(id) {
       if (!G.isDemo()) await gridFetch('/api/nutrition/log/' + id, { method: 'DELETE' });
       store.log = store.log.filter(e => e.id !== id); if (demo) demo.log = store.log;
@@ -129,6 +140,29 @@
     });
   }
 
+  const STARTERS = [['B1', 'Oats & Whey', 410, 32, 48, 9, 'breakfast'], ['B2', '3 Egg Toast', 380, 24, 28, 18, 'breakfast'], ['S1', 'Protein Bar', 210, 20, 22, 7, 'snack'], ['S2', 'Greek Yogurt & Fruit', 180, 17, 22, 2, 'snack'],
+    ['S3', 'Peanut Butter Banana', 290, 9, 38, 12, 'snack'], ['L1', 'Chicken Rice Bowl', 620, 48, 70, 14, 'lunch'], ['L2', 'Dal Rice Combo', 580, 22, 92, 11, 'lunch'], ['D1', 'Paneer Wrap', 540, 28, 52, 24, 'dinner'],
+    ['SHAKE', 'Post-workout Shake', 260, 40, 18, 3, 'snack'], ['COFFEE', 'Black Coffee', 5, 0, 1, 0, 'breakfast']];
+
+  /** Edit a diary entry. Changing the quantity rescales the numbers live from the original, so 1x -> 2x just works. */
+  function foodEditForm(entry, done) {
+    const q0 = entry.qty || 1, base = { calories: entry.calories, protein: entry.protein, carbs: entry.carbs, fat: entry.fat };
+    modal('EDIT ENTRY', `${field('Name', inp('name', entry.name, 'maxlength="120"'))}
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">${field('Quantity', inp('qty', q0, 'inputmode="decimal"'))}${field('Meal', sel('slot', SLOTS.map(s => [s, s]), entry.slot))}${field('How sure?', sel('confidence', [['exact', 'Exact'], ['estimated', 'Estimated'], ['rough', 'Rough']], entry.confidence || 'estimated'))}</div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px">${field('Calories', inp('calories', entry.calories))}${field('Protein g', inp('protein', entry.protein))}${field('Carbs g', inp('carbs', entry.carbs))}${field('Fat g', inp('fat', entry.fat))}</div>
+      <div class="hl-note" style="text-transform:none;line-height:1.7">Change the quantity to rescale the numbers, or type them yourself.</div>
+      <div id="err" style="color:var(--red);font-size:11px;min-height:16px;margin-top:6px"></div><div class="modal-actions"><button class="btn-cancel" data-cancel>CANCEL</button><button class="btn-save" data-save>SAVE</button></div>`, (m, close) => {
+      m.querySelector('[name=qty]').addEventListener('input', (e) => { const q = Number(e.target.value); if (!(q > 0) || !(q0 > 0)) return; const k = q / q0;
+        m.querySelector('[name=calories]').value = Math.round(base.calories * k); ['protein', 'carbs', 'fat'].forEach(n => { m.querySelector('[name=' + n + ']').value = +(base[n] * k).toFixed(1); }); });
+      m.querySelector('[data-save]').onclick = async () => {
+        const d = formData(m), err = m.querySelector('#err'), qty = numOr(d.qty), kcal = numOr(d.calories), pr = numOr(d.protein), cb = numOr(d.carbs), ft = numOr(d.fat);
+        if (!d.name) return (err.textContent = 'Name is required'); if (!(qty >= 0.1 && qty <= 50)) return (err.textContent = 'Quantity must be 0.1 to 50');
+        if (!(kcal >= 0 && kcal <= 10000)) return (err.textContent = 'Calories must be 0 to 10,000'); if (![pr, cb, ft].every(v => v >= 0 && v <= 5000)) return (err.textContent = 'Macros must be 0 to 5,000 g');
+        try { await store.editFood(entry.id, { name: d.name, qty, slot: d.slot, confidence: d.confidence, calories: Math.round(kcal), protein: pr, carbs: cb, fat: ft }); close(); done(); } catch (e) { err.textContent = e.message || 'Could not save'; }
+      };
+    }, 520);
+  }
+
   // ── page ─────────────────────────────────────────────────────
   G.registerPage('nutrition', {
     sub: 'Calories · macros · water · meal presets', dot: 'var(--orange)', foot: 'General guidance, not medical advice.',
@@ -140,8 +174,8 @@
       const totals = (rows) => ({ cal: Math.round(S.sum(rows.map(e => e.calories))), p: Math.round(S.sum(rows.map(e => e.protein))), c: Math.round(S.sum(rows.map(e => e.carbs))), f: Math.round(S.sum(rows.map(e => e.fat))) });
 
       const draw = async () => {
-        const tg = store.targets;
-        if (!tg || !tg.calories) { root.innerHTML = `${G.empty('NO NUTRITION PLAN YET<br>Set your calorie and macro targets to begin.')}<div style="text-align:center"><button class="hl-btn pri" id="planBtn">SET UP MY PLAN</button></div>`; root.querySelector('#planBtn').onclick = () => planForm(draw); return; }
+        const noPlan = !store.targets || !store.targets.calories;
+        const tg = noPlan ? { calories: 0, protein: 0, carbs: 0, fat: 0, waterMl: 3000, plan: null } : store.targets;
         const rows = dayLog(), t = totals(rows), water = store.water[st.date] || 0, isToday = st.date === today;
         const ids = {}; ['ringC', 'ringM', 'tr', 'split', 'prot', 'io'].forEach(k => { ids[k] = G.uid(); });
         const pretty = new Date(st.date + 'T12:00:00').toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
@@ -149,12 +183,13 @@
         root.innerHTML = `
           <div class="hl-grid" style="grid-template-columns:auto 1fr auto;align-items:center;margin-bottom:12px">
             <div class="hl-pills"><button class="hl-pill" data-d="-1">‹ PREV</button><button class="hl-pill ${isToday ? 'on' : ''}" data-d="0">TODAY</button><button class="hl-pill" data-d="1" ${isToday ? 'disabled style="opacity:.35;cursor:default"' : ''}>NEXT ›</button></div>
-            <div class="hl-note" style="text-transform:uppercase">${pretty}</div><div><button class="hl-btn" id="foodBtn">+ CUSTOM FOOD</button> <button class="hl-btn" id="planBtn">EDIT PLAN</button></div></div>
+            <div class="hl-note" style="text-transform:uppercase">${pretty}</div><div><button class="hl-btn" id="foodBtn">+ CUSTOM FOOD</button> <button class="hl-btn ${noPlan ? 'pri' : ''}" id="planBtn">${noPlan ? 'SET UP PLAN' : 'EDIT PLAN'}</button></div></div>
+          ${noPlan ? G.card('SET UP YOUR PLAN', `<div class="hl-note" style="text-transform:none;line-height:1.8;font-size:10px;margin-bottom:12px">You can already log food below. Add your age, height, weight and goal to get a daily calorie target, macros, water goal and a timeline, calculated with the standard Mifflin-St Jeor formula (never below 1,500 kcal for men or 1,200 for women). The Deficit page also uses it to estimate days you don't log your burn.</div><button class="hl-btn pri" id="planBtn2">SET UP MY PLAN</button>`) : ''}
           ${G.card('QUICK LOG', `<div class="hl-quick"><input id="ql" autocomplete="off" spellcheck="false" placeholder="type a preset code…  S1   ·   2x S1   ·   S1 dinner"><button class="hl-btn pri" id="qlGo">LOG</button></div><div id="qlSug"></div><div id="qlMsg" class="hl-note" style="margin-top:6px"></div>`)}
           <div class="fin-group-label" style="margin-top:16px">TODAY</div>
           <div class="hl-grid hl-g3">
-            ${G.card('CALORIES', `<div class="hl-ring" id="${ids.ringC}"></div><div class="fx-sub" style="text-align:center">${t.cal} of ${tg.calories} kcal · ${tg.calories - t.cal >= 0 ? (tg.calories - t.cal) + ' left' : (t.cal - tg.calories) + ' over'}</div>`)}
-            ${G.card('MACROS · G', `<div class="hl-ring" id="${ids.ringM}"></div><div class="fx-sub" style="text-align:center">P ${t.p}/${tg.protein} · C ${t.c}/${tg.carbs} · F ${t.f}/${tg.fat}</div>`)}
+            ${G.card('CALORIES', `<div class="hl-ring" id="${ids.ringC}"></div><div class="fx-sub" style="text-align:center">${noPlan ? t.cal + ' kcal eaten · set a plan to see your target' : t.cal + ' of ' + tg.calories + ' kcal · ' + (tg.calories - t.cal >= 0 ? (tg.calories - t.cal) + ' left' : (t.cal - tg.calories) + ' over')}</div>`)}
+            ${G.card('MACROS · G', `<div class="hl-ring" id="${ids.ringM}"></div><div class="fx-sub" style="text-align:center">${noPlan ? `P ${t.p} · C ${t.c} · F ${t.f} g` : `P ${t.p}/${tg.protein} · C ${t.c}/${tg.carbs} · F ${t.f}/${tg.fat}`}</div>`)}
             ${G.card('WATER', `<div class="fin-stat-val">${(water / 1000).toFixed(1)}<span class="u">of ${(tg.waterMl / 1000).toFixed(1)} L</span></div>
               <div style="height:8px;border-radius:4px;background:rgba(255,255,255,.07);margin:14px 0"><div style="height:100%;width:${Math.min(100, water / tg.waterMl * 100)}%;background:var(--blue);border-radius:4px;transition:width .3s"></div></div>
               <button class="hl-btn" data-w="-250">− 250 ML</button> <button class="hl-btn pri" data-w="250">+ 250 ML</button>`)}
@@ -162,30 +197,30 @@
           <div class="hl-grid hl-g21">
             ${G.card('DIARY', SLOTS.map(s => { const es = rows.filter(e => e.slot === s);
               return `<div style="margin-bottom:12px"><div class="hl-note" style="display:flex;justify-content:space-between;text-transform:uppercase;letter-spacing:1.5px"><span>${s}</span><span>${Math.round(S.sum(es.map(e => e.calories)))} kcal</span></div>
-                ${es.length ? `<table class="hl-table">${es.map(e => `<tr><td>${e.presetCode ? `<span class="hl-code">${esc(e.presetCode)}</span> ` : ''}${esc(e.name)}${e.qty && e.qty !== 1 ? ' ×' + e.qty : ''}${e.confidence && e.confidence !== 'exact' ? ` <span class="hl-note">(${e.confidence === 'rough' ? 'rough' : '~'})</span>` : ''}</td><td>${e.calories} kcal</td><td>P ${e.protein} C ${e.carbs} F ${e.fat}</td><td><span class="hl-x" data-del="${e.id}">✕</span></td></tr>`).join('')}</table>` : '<div class="hl-note" style="padding:6px 0">—</div>'}</div>`; }).join(''))}
-            ${G.card('MEAL PRESETS', `<table class="hl-table">${store.presets.slice().sort((a, b) => (b.favorite - a.favorite) || (b.useCount - a.useCount) || a.code.localeCompare(b.code)).map(p => `<tr><td><span class="hl-x" data-fav="${p.id}" style="color:${p.favorite ? 'var(--sig-900)' : 'inherit'}">${p.favorite ? '★' : '☆'}</span></td><td data-log="${p.code}" style="cursor:pointer"><span class="hl-code">${esc(p.code)}</span> ${esc(p.name)}</td><td>${p.calories}</td>
+                ${es.length ? `<table class="hl-table">${es.map(e => `<tr><td>${e.presetCode ? `<span class="hl-code">${esc(e.presetCode)}</span> ` : ''}${esc(e.name)}${e.qty && e.qty !== 1 ? ' ×' + e.qty : ''}${e.confidence && e.confidence !== 'exact' ? ` <span class="hl-note">(${e.confidence === 'rough' ? 'rough' : '~'})</span>` : ''}</td><td>${e.calories} kcal</td><td>P ${e.protein} C ${e.carbs} F ${e.fat}</td><td style="white-space:nowrap"><span class="hl-x" data-editfood="${e.id}" title="Edit">✎</span> <span class="hl-x" data-del="${e.id}" title="Delete">✕</span></td></tr>`).join('')}</table>` : '<div class="hl-note" style="padding:6px 0">—</div>'}</div>`; }).join(''), '<button class="hl-btn" id="copyDay" title="Copy yesterday\'s entries onto this day">COPY PREVIOUS DAY</button> <button class="hl-btn" id="expFood">EXPORT CSV</button>')}
+            ${G.card('MEAL PRESETS', `${store.presets.length ? '' : `<div class="hl-empty" style="padding:18px 8px">NO PRESETS YET<br>A preset is a saved meal: type its code (like S1) to log it in one go.<br><br><button class="hl-btn pri" id="starter">ADD 10 STARTER PRESETS</button></div>`}<table class="hl-table">${store.presets.slice().sort((a, b) => (b.favorite - a.favorite) || (b.useCount - a.useCount) || a.code.localeCompare(b.code)).map(p => `<tr><td><span class="hl-x" data-fav="${p.id}" style="color:${p.favorite ? 'var(--sig-900)' : 'inherit'}">${p.favorite ? '★' : '☆'}</span></td><td data-log="${p.code}" style="cursor:pointer"><span class="hl-code">${esc(p.code)}</span> ${esc(p.name)}</td><td>${p.calories}</td>
               <td style="white-space:nowrap"><span class="hl-x" data-edit="${p.id}" title="Edit">✎</span> <span class="hl-x" data-dup="${p.id}" title="Duplicate">⧉</span> <span class="hl-x" data-delp="${p.id}" title="Delete">✕</span></td></tr>`).join('')}</table>`, '<button class="hl-btn pri" id="newPreset">+ NEW PRESET</button>')}
           </div>
           <div class="fin-group-label">TRENDS & PLAN</div>
           ${G.card('TRENDS', `<div class="hl-pills" style="margin-bottom:12px"><button class="hl-pill ${st.range === 7 ? 'on' : ''}" data-r="7">7D</button><button class="hl-pill ${st.range === 30 ? 'on' : ''}" data-r="30">30D</button></div>
             <div class="hl-grid hl-g2" style="margin-bottom:0"><div><div class="hl-label" style="margin-bottom:6px">CALORIES VS TARGET</div><div class="hl-chart sm" id="${ids.tr}"></div></div><div><div class="hl-label" style="margin-bottom:6px">PROTEIN VS TARGET · G</div><div class="hl-chart sm" id="${ids.prot}"></div></div>
             <div><div class="hl-label" style="margin-bottom:6px">CALORIES IN VS OUT</div><div class="hl-chart sm" id="${ids.io}"></div><div class="hl-note" id="ioNote" style="margin-top:4px"></div></div><div><div class="hl-label" style="margin-bottom:6px">MACRO SPLIT · % OF CALORIES</div><div class="hl-chart sm" id="${ids.split}"></div></div></div>`)}
-          ${G.card('YOUR PLAN', `<table class="hl-table"><tr><td>BMR</td><td>${tg.plan?.bmr ? F.num(tg.plan.bmr) + ' kcal' : '—'}</td><td>TDEE</td><td>${tg.plan?.tdee ? F.num(tg.plan.tdee) + ' kcal' : '—'}</td></tr>
+          ${G.card('YOUR PLAN', noPlan ? G.empty('NO PLAN YET<br>Use SET UP PLAN above to calculate your targets.') : `<table class="hl-table"><tr><td>BMR</td><td>${tg.plan?.bmr ? F.num(tg.plan.bmr) + ' kcal' : '—'}</td><td>TDEE</td><td>${tg.plan?.tdee ? F.num(tg.plan.tdee) + ' kcal' : '—'}</td></tr>
             <tr><td>Daily target</td><td>${F.num(tg.calories)} kcal</td><td>Macros</td><td>P ${tg.protein} · C ${tg.carbs} · F ${tg.fat} g</td></tr>
             <tr><td>Water</td><td>${(tg.waterMl / 1000).toFixed(1)} L</td><td>Timeline</td><td>${tg.plan?.weeks ? '~' + tg.plan.weeks + ' weeks to goal' : '—'}</td></tr></table>`)}`;
 
-        window.gridRingChart(ids.ringC, [{ label: 'Calories', value: t.cal, maxValue: tg.calories, color: t.cal > tg.calories * 1.05 ? '#f97316' : '#76b372' }], { baseInnerRadius: 70, strokeWidth: 16, defaultLabel: 'OF TARGET' });
-        window.gridRingChart(ids.ringM, [{ label: 'Protein', value: t.p, maxValue: tg.protein, color: '#3b82f6' }, { label: 'Carbs', value: t.c, maxValue: tg.carbs, color: '#14b8a6' }, { label: 'Fat', value: t.f, maxValue: tg.fat, color: '#f59e0b' }], { baseInnerRadius: 42, strokeWidth: 12, defaultLabel: 'OF MACROS' });
+        window.gridRingChart(ids.ringC, [{ label: 'Calories', value: noPlan ? 0 : t.cal, maxValue: noPlan ? 1 : tg.calories, color: t.cal > tg.calories * 1.05 ? '#f97316' : '#76b372' }], { baseInnerRadius: 70, strokeWidth: 16, defaultLabel: noPlan ? 'NO TARGET YET' : 'OF TARGET' });
+        window.gridRingChart(ids.ringM, [{ label: 'Protein', value: noPlan ? 0 : t.p, maxValue: noPlan ? 1 : tg.protein, color: '#3b82f6' }, { label: 'Carbs', value: noPlan ? 0 : t.c, maxValue: noPlan ? 1 : tg.carbs, color: '#14b8a6' }, { label: 'Fat', value: noPlan ? 0 : t.f, maxValue: noPlan ? 1 : tg.fat, color: '#f59e0b' }], { baseInnerRadius: 42, strokeWidth: 12, defaultLabel: noPlan ? 'NO TARGET YET' : 'OF MACROS' });
         trends(tg, ids); bind();
       };
 
       const trends = async (tg, ids) => {
         const dates = Array.from({ length: st.range }, (_, i) => addDays(today, -(st.range - 1 - i))), x = dates.map(F.short);
         const by = dates.map(d => totals(store.log.filter(e => e.date === d))), logged = by.map(b => b.cal > 0);
-        const colr = (v, i) => !logged[i] ? 'rgba(255,255,255,.08)' : v > tg.calories * 1.05 ? '#f97316' : v >= tg.calories * 0.95 ? '#76b372' : '#3b6839';
+        const colr = (v, i) => !logged[i] ? 'rgba(255,255,255,.08)' : !tg.calories ? '#76b372' : v > tg.calories * 1.05 ? '#f97316' : v >= tg.calories * 0.95 ? '#76b372' : '#3b6839';
         const axis = { grid: { left: 42, right: 14, top: 18, bottom: 24 }, tooltip: { trigger: 'axis' }, xAxis: { type: 'category', data: x, axisLabel: { interval: Math.max(0, Math.ceil(x.length / 8) - 1) } } };
-        window.ethosChart(ids.tr).setOption({ ...axis, yAxis: { type: 'value' }, series: [{ type: 'bar', barMaxWidth: 22, data: by.map((b, i) => ({ value: b.cal, itemStyle: { color: colr(b.cal, i), borderRadius: [4, 4, 0, 0] } })), markLine: { silent: true, symbol: 'none', lineStyle: { color: 'rgba(240,240,240,.38)', type: 'dashed' }, data: [{ yAxis: tg.calories }], label: { formatter: 'TARGET', color: 'rgba(240,240,240,.38)', fontSize: 9 } } }] }, true);
-        window.ethosChart(ids.prot).setOption({ ...axis, yAxis: { type: 'value' }, series: [Object.assign(window.bkArea('#3b82f6', { fillOpacity: 0.15 }), { data: by.map((b, i) => (logged[i] ? b.p : null)), connectNulls: true, markLine: { silent: true, symbol: 'none', lineStyle: { color: 'rgba(240,240,240,.38)', type: 'dashed' }, data: [{ yAxis: tg.protein }], label: { formatter: 'TARGET', color: 'rgba(240,240,240,.38)', fontSize: 9 } } })] }, true);
+        window.ethosChart(ids.tr).setOption({ ...axis, yAxis: { type: 'value' }, series: [{ type: 'bar', barMaxWidth: 22, data: by.map((b, i) => ({ value: b.cal, itemStyle: { color: colr(b.cal, i), borderRadius: [4, 4, 0, 0] } })), markLine: { silent: true, symbol: 'none', lineStyle: { color: 'rgba(240,240,240,.38)', type: 'dashed' }, data: tg.calories ? [{ yAxis: tg.calories }] : [], label: { formatter: 'TARGET', color: 'rgba(240,240,240,.38)', fontSize: 9 } } }] }, true);
+        window.ethosChart(ids.prot).setOption({ ...axis, yAxis: { type: 'value' }, series: [Object.assign(window.bkArea('#3b82f6', { fillOpacity: 0.15 }), { data: by.map((b, i) => (logged[i] ? b.p : null)), connectNulls: true, markLine: { silent: true, symbol: 'none', lineStyle: { color: 'rgba(240,240,240,.38)', type: 'dashed' }, data: tg.protein ? [{ yAxis: tg.protein }] : [], label: { formatter: 'TARGET', color: 'rgba(240,240,240,.38)', fontSize: 9 } } })] }, true);
         const lg = by.filter((_, i) => logged[i]), tot = { p: S.sum(lg.map(b => b.p)) * 4, c: S.sum(lg.map(b => b.c)) * 4, f: S.sum(lg.map(b => b.f)) * 9 };
         const sc = window.ethosChart(ids.split);
         if (lg.length) sc.setOption({ tooltip: { trigger: 'item', formatter: '{b}: {d}%' }, series: [Object.assign(window.bkPie({ radius: ['55%', '85%'] }), { data: [{ name: 'Protein', value: tot.p, itemStyle: { color: '#3b82f6' } }, { name: 'Carbs', value: tot.c, itemStyle: { color: '#14b8a6' } }, { name: 'Fat', value: tot.f, itemStyle: { color: '#f59e0b' } }], label: { show: true, formatter: '{b} {d}%', color: 'rgba(240,240,240,.65)', fontSize: 9 } })] }, true);
@@ -233,6 +268,19 @@
         root.querySelectorAll('[data-log]').forEach(td => td.onclick = () => doLog(td.dataset.log));
         root.querySelectorAll('[data-r]').forEach(b => b.onclick = () => { st.range = +b.dataset.r; draw(); });
         root.querySelector('#newPreset').onclick = () => presetForm(null, null, draw);
+        const pb2 = root.querySelector('#planBtn2'); if (pb2) pb2.onclick = () => planForm(draw);
+        const starter = root.querySelector('#starter');
+        if (starter) starter.onclick = async () => { starter.disabled = true; starter.textContent = 'ADDING…'; try { for (const [code, name, kcal, p, c, f, slot] of STARTERS) await store.savePreset({ code, name, serving: '1 serving', calories: kcal, protein: p, carbs: c, fat: f, defaultSlot: slot }); G.toast('10 STARTER PRESETS ADDED. EDIT THEM TO MATCH YOUR MEALS'); } catch (e) { G.toast((e.message || 'COULD NOT ADD PRESETS').toUpperCase()); } draw(); };
+        root.querySelectorAll('[data-editfood]').forEach(x => x.onclick = () => foodEditForm(store.log.find(e => e.id === x.dataset.editfood), draw));
+        const cd = root.querySelector('#copyDay');
+        if (cd) cd.onclick = async () => {
+          const prev = addDays(st.date, -1), n = store.log.filter(e => e.date === prev).length;
+          if (!n) return G.toast('NOTHING LOGGED ON ' + prev);
+          if (dayLog().length && !confirm(`This day already has ${dayLog().length} entries. Copy ${n} more from ${prev}?`)) return;
+          try { const c = await store.copyDay(prev, st.date); G.toast(`COPIED ${c} ENTRIES FROM ${prev}`); } catch (e) { G.toast((e.message || 'COPY FAILED').toUpperCase()); } draw();
+        };
+        const ex = root.querySelector('#expFood');
+        if (ex) ex.onclick = () => G.csv('grid-food-log.csv', [['date', 'meal', 'name', 'quantity', 'calories', 'protein_g', 'carbs_g', 'fat_g', 'confidence', 'preset_code'], ...store.log.slice().sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0)).map(e => [e.date, e.slot, e.name, e.qty || 1, e.calories, e.protein, e.carbs, e.fat, e.confidence, e.presetCode])]);
         root.querySelector('#foodBtn').onclick = () => foodForm(st.date, draw);
         root.querySelector('#planBtn').onclick = () => planForm(draw);
         root.querySelectorAll('[data-edit]').forEach(x => x.onclick = () => presetForm(store.presets.find(p => p.id === x.dataset.edit), null, draw));
