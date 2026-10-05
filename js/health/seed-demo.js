@@ -23,6 +23,14 @@
       elevGainM: Math.round(jit(long ? 90 : 45, 25)), calories: Math.round(km * 68), gear: off > 150 ? 'Pegasus 40' : 'Vomero 17', sourceFormat: 'fit', splits });
   }
 
+  // best efforts and HR zones derived from each demo run's splits (real imports compute these from the track)
+  runs.forEach(r => {
+    const secs = r.splits.map(x => x.sec), win = (n) => { if (secs.length < n) return null; let b = Infinity; for (let i = 0; i + n <= secs.length; i++) b = Math.min(b, secs.slice(i, i + n).reduce((a, c) => a + c, 0)); return Math.round(b); };
+    r.bestEfforts = {}; const m = Math.min(...secs); if (isFinite(m)) { r.bestEfforts['1000'] = m; r.bestEfforts['1609'] = Math.round(m * 1.609 * 1.01); }
+    [[3, '3000'], [5, '5000'], [10, '10000']].forEach(([n, k]) => { const w = win(n); if (w) r.bestEfforts[k] = w; });
+    const z = r.movingSec, f = r.avgHr / 190; r.hrZones = { z1: Math.round(z * 0.03), z2: Math.round(z * (f < 0.8 ? 0.22 : 0.12)), z3: Math.round(z * (f < 0.8 ? 0.5 : 0.38)), z4: Math.round(z * (f < 0.8 ? 0.22 : 0.37)), z5: Math.round(z * 0.05) };
+  });
+
   // ── health: 90 days, correlated with training ──
   const runByDate = {}; runs.forEach(r => { runByDate[r.date] = r; });
   const daily = [], sleep = [];
@@ -75,6 +83,25 @@
 
   const desc = (a) => a.slice().sort((x, y) => (x.date < y.date ? 1 : -1));
   G.seed = {
+    /** Demo-mode importer target: add parsed runs to the in-memory history. */
+    removeRun(id) { const i = runs.findIndex(x => x.id === id); if (i >= 0) runs.splice(i, 1); },
+    addRuns(rs) { rs.forEach((r, i) => runs.push({ ...r, id: 'u' + Date.now() + i })); },
+    /** Full detail for one run. Seeded runs have no stored track, so draw a plausible loop + streams from their splits. */
+    runDetail(id) {
+      const r = runs.find(x => x.id === id); if (!r) return null;
+      if (r.streams && r.route) return r;
+      const km = r.distanceM / 1000, n = 120, dist = [], pace = [], hr = [], ele = [], cad = [], route = [];
+      const sp = r.splits && r.splits.length ? r.splits : [{ sec: r.movingSec / km, hr: r.avgHr, elevDelta: 0 }];
+      let elev = 900; const cx = 12.97, cy = 77.59, rad = Math.max(0.004, km / 80);
+      for (let i = 0; i < n; i++) {
+        const d = (i / (n - 1)) * r.distanceM, s = sp[Math.min(sp.length - 1, Math.floor(d / 1000))];
+        dist.push(Math.round(d)); pace.push(Math.round(s.sec + Math.sin(i / 6) * 6)); hr.push(Math.round((s.hr || r.avgHr) + Math.sin(i / 9) * 3));
+        elev += (s.elevDelta || 0) / (n / sp.length); ele.push(Math.round(elev * 10) / 10); cad.push(Math.round(r.cadence + Math.sin(i / 5) * 3));
+        const a = (i / (n - 1)) * Math.PI * 2; route.push([+(cx + Math.cos(a) * rad).toFixed(5), +(cy + Math.sin(a) * rad * 1.3).toFixed(5)]);
+      }
+      const secs = r.splits.map(x => x.sec), fastest = secs.length ? Math.min(...secs) : r.movingSec / km;
+      return { ...r, route, streams: { dist, pace, hr, ele, cad }, bestEfforts: r.bestEfforts || { 1000: Math.round(fastest), 5000: km >= 5 ? Math.round(r.movingSec / km * 5 * 0.98) : undefined } };
+    },
     get(kind, p = {}) {
       const rows = { daily: desc(daily), sleep: desc(sleep), runs: runs.slice().sort((a, b) => (a.startTime < b.startTime ? 1 : -1)), presets, foodlog: desc(foodlog), targets, water: desc(water) }[kind];
       if (!rows) return [];

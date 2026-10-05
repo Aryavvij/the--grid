@@ -23,6 +23,7 @@ router.get('/', async (req, res, next) => {
       select: {
         id: true, date: true, startTime: true, name: true, distanceM: true, movingSec: true, elapsedSec: true,
         avgHr: true, maxHr: true, cadence: true, elevGainM: true, calories: true, gear: true, sourceFormat: true,
+        hrZones: true, bestEfforts: true,
       },
     }));
   } catch (err) { next(err); }
@@ -56,8 +57,9 @@ const runSchema = z.object({
   gear:         z.string().trim().max(120).nullish(),
   splits:       z.array(z.any()).max(500).nullish(),
   hrZones:      z.record(z.string(), z.number()).nullish(),
-  route:        z.array(z.array(z.number()).length(2)).max(2000).nullish(),
-  streams:      z.record(z.string(), z.array(z.number().nullable()).max(2000)).nullish(),
+  bestEfforts:  z.record(z.string(), z.number()).nullish(),
+  route:        z.array(z.array(z.number()).length(2)).max(500).nullish(),
+  streams:      z.record(z.string(), z.array(z.number().nullable()).max(500)).nullish(),
   fileHash:     z.string().min(8).max(128),
   sourceFormat: z.enum(['fit', 'gpx', 'tcx', 'csv']),
 });

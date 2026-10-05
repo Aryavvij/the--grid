@@ -452,7 +452,8 @@ model RunActivity {
   calories     Int?
   gear         String?
   splits       Json? // [{ km, sec, hr, elevDelta }]
-  hrZones      Json?    @map("hr_zones")
+  hrZones      Json?    @map("hr_zones") // { z1..z5 } seconds
+  bestEfforts  Json?    @map("best_efforts") // { "1000": sec, "1609": sec, "5000": sec, ... } fastest window per distance
   route        Json? // simplified polyline [[lat,lon]...]
   streams      Json? // downsampled { dist, pace, hr, ele, cad } for detail charts
   fileHash     String   @map("file_hash")
