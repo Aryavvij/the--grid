@@ -39,6 +39,38 @@ router.delete('/weight/:date', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// ─── Calories burned (entered by hand from the user's own tracker app) ───────
+// Stored in health_daily.calories_total with source "manual". No device integration.
+
+router.get('/burn', async (req, res, next) => {
+  try {
+    const q = z.object({ from: dateStr.optional(), to: dateStr.optional() }).safeParse(req.query);
+    if (!q.success) return res.status(400).json({ error: q.error.issues[0].message });
+    const where = { userId: req.user.id, caloriesTotal: { not: null } };
+    if (q.data.from || q.data.to) where.date = { ...(q.data.from && { gte: q.data.from }), ...(q.data.to && { lte: q.data.to }) };
+    const rows = await db.healthDaily.findMany({ where, orderBy: { date: 'asc' }, take: 1500, select: { date: true, caloriesTotal: true } });
+    res.json(rows.map(r => ({ date: r.date, kcal: r.caloriesTotal })));
+  } catch (err) { next(err); }
+});
+
+router.put('/burn/:date', validate(z.object({ kcal: z.number().int().min(500).max(12000) })), async (req, res, next) => {
+  try {
+    const d = dateStr.safeParse(req.params.date);
+    if (!d.success) return res.status(400).json({ error: d.error.issues[0].message });
+    await db.healthDaily.upsert({ where: { userId_date: { userId: req.user.id, date: d.data } }, update: { caloriesTotal: req.body.kcal, source: 'manual' }, create: { userId: req.user.id, date: d.data, caloriesTotal: req.body.kcal, source: 'manual' } });
+    res.json({ date: d.data, kcal: req.body.kcal });
+  } catch (err) { next(err); }
+});
+
+router.delete('/burn/:date', async (req, res, next) => {
+  try {
+    const d = dateStr.safeParse(req.params.date);
+    if (!d.success) return res.status(400).json({ error: d.error.issues[0].message });
+    await db.healthDaily.updateMany({ where: { userId: req.user.id, date: d.data }, data: { caloriesTotal: null } });
+    res.json({ message: 'Deleted' });
+  } catch (err) { next(err); }
+});
+
 // ─── Photos ───────────────────────────────────────────────────────────────────
 
 // JPEG only: checked by prefix AND by the file's magic bytes, so nothing else can be stored.

@@ -16,11 +16,5 @@
       "src": "/(.*)",
       "dest": "api/index.js"
     }
-  ],
-  "crons": [
-    {
-      "path": "/api/health/cron/sync",
-      "schedule": "30 1 * * *"
-    }
   ]
 }

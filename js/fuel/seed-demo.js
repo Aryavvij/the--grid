@@ -1,4 +1,4 @@
-/* Deterministic mock data for demo mode: 90 days of health, 12 months of runs, 14 days of nutrition.
+/* Deterministic mock data for demo mode: 12 months of runs, 60 days of food, weight and burn entries.
    One persona, numbers consistent across every page. Same shape as the API responses. */
 (function () {
   const G = window.Grid, C = G.calc, F = G.fmt;
@@ -31,36 +31,14 @@
     const z = r.movingSec, f = r.avgHr / 190; r.hrZones = { z1: Math.round(z * 0.03), z2: Math.round(z * (f < 0.8 ? 0.22 : 0.12)), z3: Math.round(z * (f < 0.8 ? 0.5 : 0.38)), z4: Math.round(z * (f < 0.8 ? 0.22 : 0.37)), z5: Math.round(z * 0.05) };
   });
 
-  // ── health: 90 days, correlated with training ──
+  // ── calories burned: typed in by hand from the user's tracker app (about 3 days in 4); the rest fall back to the plan's TDEE ──
   const runByDate = {}; runs.forEach(r => { runByDate[r.date] = r; });
-  const daily = [], sleep = [];
-  let prevLoad = 60;
-  for (let off = 89; off >= 0; off--) {
-    const d = day(off), ds = F.date(d), run = runByDate[ds];
-    const hardYesterday = prevLoad > 90;
-    const sleepMin = Math.round(jit(hardYesterday ? 430 : 410, 48));
-    const deep = Math.round(sleepMin * jit(0.145, 0.035)), rem = Math.round(sleepMin * jit(0.195, 0.035)), awake = Math.round(jit(38, 12));
-    const light = sleepMin - deep - rem, eff = +(100 * sleepMin / (sleepMin + awake)).toFixed(1);
-    const sObj = { minutesAsleep: sleepMin, deepMin: deep, remMin: rem, efficiency: eff };
-    const start = new Date(d); start.setHours(0, 0, 0, 0); start.setMinutes(Math.round(jit(-45, 40)));
-    const end = new Date(start.getTime() + (sleepMin + awake) * 60000);
-    sleep.push({ id: 's' + off, date: ds, startTime: start.toISOString(), endTime: end.toISOString(), minutesAsleep: sleepMin, minutesAwake: awake, lightMin: light, deepMin: deep, remMin: rem, efficiency: eff,
-      score: C.sleepScore(sObj), sleepingHr: Math.round(jit(48, 3)),
-      stages: (() => { let t = start.getTime(), out = []; const order = ['light', 'deep', 'light', 'rem', 'light', 'deep', 'rem', 'light', 'awake', 'rem', 'light']; const tot = sleepMin + awake; order.forEach((ty, i) => { const dur = ty === 'awake' ? awake : Math.round(tot / order.length * jit(1, 0.3)); out.push({ type: ty, start: new Date(t).toISOString(), end: new Date(t + dur * 60000).toISOString() }); t += dur * 60000; }); return out; })() });
-    const zones = run ? { outOfRange: 1300, fatBurn: Math.round(run.movingSec / 60 * 0.35 + 25), cardio: Math.round(run.movingSec / 60 * 0.5), peak: Math.round(run.movingSec / 60 * 0.08) } : { outOfRange: 1380, fatBurn: Math.round(jit(32, 14)), cardio: Math.round(jit(6, 5)), peak: 0 };
-    const load = C.cardioLoad(zones);
-    daily.push({ id: 'd' + off, date: ds, restingHr: Math.round(jit(55 + (hardYesterday ? 2 : 0), 2)), hrvMs: +jit(hardYesterday ? 56 : 63, 6).toFixed(0) * 1, spo2Avg: +jit(96.3, 0.7).toFixed(1), spo2Min: +jit(92.5, 1.3).toFixed(1),
-      skinTempDelta: +jit(0.05, 0.35).toFixed(1), breathingRate: +jit(14.8, 0.7).toFixed(1), steps: Math.round(jit(run ? 12500 : 8200, 1900)), distanceM: Math.round(jit(run ? 9800 : 6200, 1300)),
-      caloriesTotal: Math.round(jit(run ? 2850 : 2420, 140)), caloriesActive: Math.round(jit(run ? 700 : 300, 80)), azmMinutes: Math.round(run ? run.movingSec / 60 * 1.6 : jit(14, 8)), sedentaryMin: Math.round(jit(560, 60)),
-      cardioLoad: load, hrZones: zones, source: 'demo', _sleepScore: sObj && C.sleepScore(sObj) });
-    prevLoad = load;
+  const burn = [];
+  for (let off = 89; off >= 1; off--) {
+    if (rng() < 0.25) continue;
+    const ds = F.date(day(off)), run = runByDate[ds];
+    burn.push({ date: ds, kcal: Math.round(jit(run ? 2850 : 2420, 140)) });
   }
-  // readiness needs baselines, so fill it in a second pass
-  daily.forEach((d, i) => {
-    const win = daily.slice(Math.max(0, i - 28), i + 1);
-    d.readiness = C.readiness({ hrv: d.hrvMs, hrvBase: G.stats.avg(win.map(x => x.hrvMs)), rhr: d.restingHr, rhrBase: G.stats.avg(win.map(x => x.restingHr)), sleepScore: d._sleepScore, loadRatio: C.loadRatio(daily.slice(0, i + 1).map(x => x.cardioLoad)) });
-    delete d._sleepScore;
-  });
 
   // ── nutrition ──
   const presets = [
@@ -94,6 +72,8 @@
     addPhoto(p) { const row = { id: 'ph' + Date.now() + Math.random().toString(36).slice(2, 5), ...p }; photos.push(row); photos.sort((a, b) => (a.date < b.date ? -1 : 1)); return row; },
     delPhoto(id) { const i = photos.findIndex(x => x.id === id); if (i >= 0) photos.splice(i, 1); },
     photo(id) { return photos.find(x => x.id === id) || null; },
+    setBurn(date, kcal) { const i = burn.findIndex(b => b.date === date); if (i >= 0) burn[i].kcal = kcal; else burn.push({ date, kcal }); },
+    delBurn(date) { const i = burn.findIndex(b => b.date === date); if (i >= 0) burn.splice(i, 1); },
     removeRun(id) { const i = runs.findIndex(x => x.id === id); if (i >= 0) runs.splice(i, 1); },
     addRuns(rs) { rs.forEach((r, i) => runs.push({ ...r, id: 'u' + Date.now() + i })); },
     /** Full detail for one run. Seeded runs have no stored track, so draw a plausible loop + streams from their splits. */
@@ -113,7 +93,7 @@
       return { ...r, route, streams: { dist, pace, hr, ele, cad }, bestEfforts: r.bestEfforts || { 1000: Math.round(fastest), 5000: km >= 5 ? Math.round(r.movingSec / km * 5 * 0.98) : undefined } };
     },
     get(kind, p = {}) {
-      const rows = { daily: desc(daily), sleep: desc(sleep), runs: runs.slice().sort((a, b) => (a.startTime < b.startTime ? 1 : -1)), presets, foodlog: desc(foodlog), targets, water: desc(water), weight: weight.slice(), photos: photos.slice() }[kind];
+      const rows = { runs: runs.slice().sort((a, b) => (a.startTime < b.startTime ? 1 : -1)), presets, foodlog: desc(foodlog), targets, water: desc(water), weight: weight.slice(), photos: photos.slice(), burn: burn.slice() }[kind];
       if (!rows) return [];
       if (Array.isArray(rows) && (p.from || p.to)) return rows.filter(r => (!p.from || r.date >= p.from) && (!p.to || r.date <= p.to));
       return Array.isArray(rows) && p.limit ? rows.slice(0, +p.limit) : rows;

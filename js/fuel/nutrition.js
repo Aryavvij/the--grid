@@ -46,24 +46,7 @@
     async saveTargets(t) { if (!G.isDemo()) store.targets = await gridFetch('/api/nutrition/targets', { method: 'PUT', body: JSON.stringify(t) }); else store.targets = demo.targets = { ...t }; },
   };
 
-  // ── modal helper ─────────────────────────────────────────────
-  function modal(title, bodyHtml, onMount) {
-    document.querySelectorAll('.hl-modal').forEach(m => m.remove());
-    const m = document.createElement('div'); m.className = 'hl-modal';
-    m.style.cssText = 'position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.65);display:flex;align-items:center;justify-content:center;padding:16px';
-    m.innerHTML = `<div style="width:min(560px,100%);max-height:92vh;overflow:auto;background:var(--carbon-2);border:1px solid var(--carbon-4);border-radius:12px;padding:20px">
-      <div style="display:flex;justify-content:space-between;margin-bottom:14px"><span class="hl-label">${title}</span><span class="hl-x" data-close style="font-size:16px">✕</span></div>${bodyHtml}</div>`;
-    document.body.appendChild(m);
-    const close = () => m.remove();
-    m.addEventListener('mousedown', (e) => { if (e.target === m) close(); });
-    m.querySelector('[data-close]').onclick = close;
-    document.addEventListener('keydown', function esc_(e) { if (e.key === 'Escape') { close(); document.removeEventListener('keydown', esc_); } });
-    onMount(m, close); return m;
-  }
-  const field = (label, input) => `<label style="display:block;margin-bottom:10px"><span class="hl-note" style="display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:1.2px">${label}</span>${input}</label>`;
-  const inp = (name, v = '', extra = '') => `<input name="${name}" value="${esc(v)}" ${extra} style="width:100%;font:inherit;font-size:12px;color:var(--text);background:var(--carbon-1);border:1px solid var(--carbon-4);border-radius:6px;padding:8px 10px;outline:none">`;
-  const sel = (name, opts, v) => `<select name="${name}" style="width:100%;font:inherit;font-size:12px;color:var(--text);background:var(--carbon-1);border:1px solid var(--carbon-4);border-radius:6px;padding:8px 10px">${opts.map(([k, l]) => `<option value="${k}" ${k === v ? 'selected' : ''}>${l}</option>`).join('')}</select>`;
-  const formData = (m) => Object.fromEntries([...m.querySelectorAll('[name]')].map(e => [e.name, e.type === 'checkbox' ? e.checked : e.value.trim()]));
+  const modal = G.modal, field = G.field, inp = G.input, sel = G.select, formData = G.formData;
   const numOr = (v) => (v === '' || v == null ? NaN : Number(v));
 
   // ── forms ────────────────────────────────────────────────────
@@ -74,7 +57,7 @@
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">${field('Serving', inp('serving', p.serving || '1 serving'))}${field('Default meal', sel('defaultSlot', [['', 'Auto (by time of day)'], ...SLOTS.map(s => [s, s])], p.defaultSlot || ''))}</div>
       <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px">${field('Calories', inp('calories', p.calories ?? '', 'inputmode="numeric"'))}${field('Protein g', inp('protein', p.protein ?? 0, 'inputmode="decimal"'))}${field('Carbs g', inp('carbs', p.carbs ?? 0, 'inputmode="decimal"'))}${field('Fat g', inp('fat', p.fat ?? 0, 'inputmode="decimal"'))}</div>
       <div class="hl-note" id="kcalHint" style="min-height:16px;margin-bottom:10px"></div><div id="err" style="color:var(--red);font-size:11px;min-height:16px;margin-bottom:8px"></div>
-      <div style="display:flex;gap:8px;justify-content:flex-end"><button class="hl-btn" data-calc>CALORIES FROM MACROS</button><button class="hl-btn pri" data-save>${existing ? 'SAVE CHANGES' : 'CREATE PRESET'}</button></div>`, (m, close) => {
+      <div class="modal-actions"><button class="btn-cancel" data-cancel>CANCEL</button><button class="btn-cancel" data-calc>CALORIES FROM MACROS</button><button class="btn-save" data-save>${existing ? 'SAVE CHANGES' : 'CREATE PRESET'}</button></div>`, (m, close) => {
       const hint = () => { const d = formData(m), est = Math.round(4 * (+d.protein || 0) + 4 * (+d.carbs || 0) + 9 * (+d.fat || 0)), kc = +d.calories; m.querySelector('#kcalHint').style.color = '';
         if (kc >= 0 && est && Math.abs(kc - est) > 0.1 * Math.max(kc, est)) { m.querySelector('#kcalHint').textContent = `HEADS UP: ${d.protein || 0}P / ${d.carbs || 0}C / ${d.fat || 0}F is about ${est} kcal, not ${kc}.`; m.querySelector('#kcalHint').style.color = 'var(--orange)'; } else m.querySelector('#kcalHint').textContent = est ? `MACROS ≈ ${est} KCAL` : ''; };
       m.querySelectorAll('input').forEach(i => i.addEventListener('input', hint)); hint();
@@ -101,7 +84,7 @@
       ${field('How sure are you?', sel('confidence', [['exact', 'Exact (label / weighed)'], ['estimated', 'Estimated'], ['rough', 'Rough guess']], 'estimated'))}
       <label style="display:flex;gap:8px;align-items:center;font-size:11px;margin-bottom:10px"><input type="checkbox" name="asPreset"> SAVE AS A PRESET</label>
       <div id="codeRow" style="display:none">${field('Preset code', inp('code', '', 'maxlength="12"'))}</div>
-      <div id="err" style="color:var(--red);font-size:11px;min-height:16px;margin-bottom:8px"></div><div style="text-align:right"><button class="hl-btn pri" data-save>ADD TO DIARY</button></div>`, (m, close) => {
+      <div id="err" style="color:var(--red);font-size:11px;min-height:16px;margin-bottom:8px"></div><div class="modal-actions"><button class="btn-cancel" data-cancel>CANCEL</button><button class="btn-save" data-save>ADD TO DIARY</button></div>`, (m, close) => {
       m.querySelector('[name=asPreset]').onchange = (e) => { m.querySelector('#codeRow').style.display = e.target.checked ? 'block' : 'none'; };
       m.querySelector('[data-save]').onclick = async () => {
         const d = formData(m), err = m.querySelector('#err'), kcal = numOr(d.calories), pr = numOr(d.protein), cb = numOr(d.carbs), ft = numOr(d.fat);
@@ -128,7 +111,7 @@
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">${field('Goal', sel('goal', [['lose', 'Lose weight'], ['maintain', 'Maintain'], ['gain', 'Gain weight']], v.goal))}${field('Pace', sel('pace', [['gentle', 'Gentle'], ['steady', 'Steady'], ['aggressive', 'Aggressive']], v.pace))}${field('Goal weight kg', inp('goalKg', v.goalKg))}</div>
       <div id="out" style="background:var(--carbon-1);border:1px solid var(--carbon-4);border-radius:8px;padding:12px;margin-bottom:10px;font-size:11px;line-height:1.8"></div>
       <details style="margin-bottom:12px"><summary class="hl-note" style="cursor:pointer">METHODOLOGY</summary><div class="hl-note" style="line-height:1.8;margin-top:6px">BMR: Mifflin-St Jeor. TDEE: BMR x standard activity multiplier (1.2 / 1.375 / 1.55 / 1.725 / 1.9). Timeline: about 3,500 kcal per lb. Protein 0.8-1.0 g/lb (1.0 when losing or athlete), fat 0.35 g/lb, carbs the remaining calories. Never below 1,500 kcal (male) or 1,200 kcal (female). General guidance, not medical advice.</div></details>
-      <div style="text-align:right"><button class="hl-btn pri" data-save>SAVE AS MY TARGETS</button></div>`, (m, close) => {
+      <div class="modal-actions"><button class="btn-cancel" data-cancel>CANCEL</button><button class="btn-save" data-save>SAVE AS MY TARGETS</button></div>`, (m, close) => {
       let last = null;
       const run = () => {
         const d = formData(m), goalKg = numOr(d.goalKg), out = m.querySelector('#out');
@@ -148,7 +131,7 @@
 
   // ── page ─────────────────────────────────────────────────────
   G.registerPage('nutrition', {
-    title: 'Nutrition', sub: 'Calories · macros · water · meal presets',
+    sub: 'Calories · macros · water · meal presets', dot: 'var(--orange)', foot: 'General guidance, not medical advice.',
     async render(root) {
       const today = F.date(new Date()); st.date = st.date || today; if (st.date > today) st.date = today;
       await store.load(today);
@@ -168,12 +151,13 @@
             <div class="hl-pills"><button class="hl-pill" data-d="-1">‹ PREV</button><button class="hl-pill ${isToday ? 'on' : ''}" data-d="0">TODAY</button><button class="hl-pill" data-d="1" ${isToday ? 'disabled style="opacity:.35;cursor:default"' : ''}>NEXT ›</button></div>
             <div class="hl-note" style="text-transform:uppercase">${pretty}</div><div><button class="hl-btn" id="foodBtn">+ CUSTOM FOOD</button> <button class="hl-btn" id="planBtn">EDIT PLAN</button></div></div>
           ${G.card('QUICK LOG', `<div class="hl-quick"><input id="ql" autocomplete="off" spellcheck="false" placeholder="type a preset code…  S1   ·   2x S1   ·   S1 dinner"><button class="hl-btn pri" id="qlGo">LOG</button></div><div id="qlSug"></div><div id="qlMsg" class="hl-note" style="margin-top:6px"></div>`)}
-          <div class="hl-grid hl-g3" style="margin-top:14px">
-            ${G.card('CALORIES', `<div class="hl-ring" id="${ids.ringC}"></div><div class="hl-delta flat" style="text-align:center">${t.cal} of ${tg.calories} kcal · ${tg.calories - t.cal >= 0 ? (tg.calories - t.cal) + ' left' : (t.cal - tg.calories) + ' over'}</div>`)}
-            ${G.card('MACROS · G', `<div class="hl-ring" id="${ids.ringM}"></div><div class="hl-delta flat" style="text-align:center">P ${t.p}/${tg.protein} · C ${t.c}/${tg.carbs} · F ${t.f}/${tg.fat}</div>`)}
-            ${G.card('WATER', `<div class="hl-tile"><div class="hl-val">${(water / 1000).toFixed(1)}<span class="hl-unit">of ${(tg.waterMl / 1000).toFixed(1)} L</span></div>
-              <div style="height:8px;border-radius:4px;background:rgba(255,255,255,.07);margin:12px 0"><div style="height:100%;width:${Math.min(100, water / tg.waterMl * 100)}%;background:var(--blue);border-radius:4px;transition:width .3s"></div></div>
-              <button class="hl-btn" data-w="-250">− 250 ML</button> <button class="hl-btn pri" data-w="250">+ 250 ML</button></div>`)}
+          <div class="fin-group-label" style="margin-top:16px">TODAY</div>
+          <div class="hl-grid hl-g3">
+            ${G.card('CALORIES', `<div class="hl-ring" id="${ids.ringC}"></div><div class="fx-sub" style="text-align:center">${t.cal} of ${tg.calories} kcal · ${tg.calories - t.cal >= 0 ? (tg.calories - t.cal) + ' left' : (t.cal - tg.calories) + ' over'}</div>`)}
+            ${G.card('MACROS · G', `<div class="hl-ring" id="${ids.ringM}"></div><div class="fx-sub" style="text-align:center">P ${t.p}/${tg.protein} · C ${t.c}/${tg.carbs} · F ${t.f}/${tg.fat}</div>`)}
+            ${G.card('WATER', `<div class="fin-stat-val">${(water / 1000).toFixed(1)}<span class="u">of ${(tg.waterMl / 1000).toFixed(1)} L</span></div>
+              <div style="height:8px;border-radius:4px;background:rgba(255,255,255,.07);margin:14px 0"><div style="height:100%;width:${Math.min(100, water / tg.waterMl * 100)}%;background:var(--blue);border-radius:4px;transition:width .3s"></div></div>
+              <button class="hl-btn" data-w="-250">− 250 ML</button> <button class="hl-btn pri" data-w="250">+ 250 ML</button>`)}
           </div>
           <div class="hl-grid hl-g21">
             ${G.card('DIARY', SLOTS.map(s => { const es = rows.filter(e => e.slot === s);
@@ -182,6 +166,7 @@
             ${G.card('MEAL PRESETS', `<table class="hl-table">${store.presets.slice().sort((a, b) => (b.favorite - a.favorite) || (b.useCount - a.useCount) || a.code.localeCompare(b.code)).map(p => `<tr><td><span class="hl-x" data-fav="${p.id}" style="color:${p.favorite ? 'var(--sig-900)' : 'inherit'}">${p.favorite ? '★' : '☆'}</span></td><td data-log="${p.code}" style="cursor:pointer"><span class="hl-code">${esc(p.code)}</span> ${esc(p.name)}</td><td>${p.calories}</td>
               <td style="white-space:nowrap"><span class="hl-x" data-edit="${p.id}" title="Edit">✎</span> <span class="hl-x" data-dup="${p.id}" title="Duplicate">⧉</span> <span class="hl-x" data-delp="${p.id}" title="Delete">✕</span></td></tr>`).join('')}</table>`, '<button class="hl-btn pri" id="newPreset">+ NEW PRESET</button>')}
           </div>
+          <div class="fin-group-label">TRENDS & PLAN</div>
           ${G.card('TRENDS', `<div class="hl-pills" style="margin-bottom:12px"><button class="hl-pill ${st.range === 7 ? 'on' : ''}" data-r="7">7D</button><button class="hl-pill ${st.range === 30 ? 'on' : ''}" data-r="30">30D</button></div>
             <div class="hl-grid hl-g2" style="margin-bottom:0"><div><div class="hl-label" style="margin-bottom:6px">CALORIES VS TARGET</div><div class="hl-chart sm" id="${ids.tr}"></div></div><div><div class="hl-label" style="margin-bottom:6px">PROTEIN VS TARGET · G</div><div class="hl-chart sm" id="${ids.prot}"></div></div>
             <div><div class="hl-label" style="margin-bottom:6px">CALORIES IN VS OUT</div><div class="hl-chart sm" id="${ids.io}"></div><div class="hl-note" id="ioNote" style="margin-top:4px"></div></div><div><div class="hl-label" style="margin-bottom:6px">MACRO SPLIT · % OF CALORIES</div><div class="hl-chart sm" id="${ids.split}"></div></div></div>`)}
@@ -206,12 +191,12 @@
         if (lg.length) sc.setOption({ tooltip: { trigger: 'item', formatter: '{b}: {d}%' }, series: [Object.assign(window.bkPie({ radius: ['55%', '85%'] }), { data: [{ name: 'Protein', value: tot.p, itemStyle: { color: '#3b82f6' } }, { name: 'Carbs', value: tot.c, itemStyle: { color: '#14b8a6' } }, { name: 'Fat', value: tot.f, itemStyle: { color: '#f59e0b' } }], label: { show: true, formatter: '{b} {d}%', color: 'rgba(240,240,240,.65)', fontSize: 9 } })] }, true);
         else document.getElementById(ids.split).innerHTML = G.empty('NOTHING LOGGED IN THIS RANGE');
         // calories in vs out: burn comes from the health data (Fitbit); skipped quietly when it is not synced
-        const burn = (await G.data('daily', { from: dates[0], to: today })).reduce((o, r) => (o[r.date] = r.caloriesTotal, o), {});
+        const burn = (await G.data('burn', { from: dates[0], to: today })).reduce((o, r) => (o[r.date] = r.kcal, o), {});
         const out = dates.map(d => burn[d] ?? null);
         window.ethosChart(ids.io).setOption({ ...axis, yAxis: { type: 'value' }, legend: { top: 0, right: 0 }, series: [Object.assign(window.bkBar('#76b372', { count: x.length }), { name: 'In', data: by.map(b => b.cal || null) }), { type: 'line', name: 'Out', data: out, symbol: 'none', lineStyle: { color: '#f97316', width: 2 }, connectNulls: true }] }, true);
         const both = dates.map((_, i) => (logged[i] && out[i] != null ? by[i].cal - out[i] : null)).filter(v => v != null);
         const note = document.getElementById('ioNote');
-        if (note) note.textContent = both.length ? `NET OVER ${both.length} LOGGED DAYS: ${S.sum(both) >= 0 ? '+' : ''}${F.num(S.sum(both))} KCAL (${S.sum(both) >= 0 ? 'SURPLUS' : 'DEFICIT'})` : 'NEEDS FOOD LOGS AND SYNCED FITBIT DATA';
+        if (note) note.textContent = both.length ? `NET OVER ${both.length} LOGGED DAYS: ${S.sum(both) >= 0 ? '+' : ''}${F.num(S.sum(both))} KCAL (${S.sum(both) >= 0 ? 'SURPLUS' : 'DEFICIT'})` : 'NEEDS FOOD LOGS AND BURN ENTRIES (LOG THEM ON THE DEFICIT PAGE)';
       };
 
       const msg = (t, action) => { const el = root.querySelector('#qlMsg'); if (!el) return; el.innerHTML = esc(t) + (action ? ` <button class="hl-btn pri" id="qlAct">${action}</button>` : ''); };

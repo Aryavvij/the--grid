@@ -1,0 +1,78 @@
+/* Runs, Nutrition, Deficit and the Gym PROGRESS tab.
+   Built from Grid's own components (page-header, fin-section, fin-stat-card, fin-budget-table, form-*, btn-*, modal-*).
+   This file only adds layout helpers, chart sizes and a few small widgets, all using Grid's tokens. */
+
+/* layout rows (same 16px rhythm as Finances) */
+.hl-grid { display: grid; gap: 16px; margin-bottom: 16px; align-items: stretch; }
+.hl-grid > .fin-section { margin-bottom: 0; min-width: 0; }
+.hl-g2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.hl-g3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.hl-g4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.hl-g6 { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+.hl-g21 { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); }
+@media (max-width: 1100px) { .hl-g4, .hl-g6 { grid-template-columns: repeat(2, minmax(0, 1fr)); } .hl-g3, .hl-g21 { grid-template-columns: 1fr; } }
+@media (max-width: 640px)  { .hl-g2, .hl-g4, .hl-g6 { grid-template-columns: 1fr; } }
+
+.fx-tools { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.fx-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
+.fx-foot { margin-top: 22px; font-size: 9px; letter-spacing: 1.2px; color: var(--text-muted); text-align: center; }
+
+/* stat cards: Grid's fin-stat-card, but not clickable */
+.fx-stats { margin-bottom: 16px; }
+.fx-stats .fin-stat-card { cursor: default; min-width: 0; }
+.fx-stats .fin-stat-card:hover { border-color: var(--card-border); }
+.fx-sub { font-size: 9px; letter-spacing: 1px; color: var(--text-muted); margin-top: 6px; line-height: 1.5; }
+.fx-sub.good { color: var(--green); } .fx-sub.bad { color: var(--orange); }
+.fx-spark { height: 30px; margin-top: 8px; }
+.fin-stat-val .u { font-size: 11px; color: var(--text-muted); margin-left: 4px; font-weight: 400; letter-spacing: 1px; }
+
+/* sub-card hover for clickable cards (personal-best tiles) */
+.fx-click { cursor: pointer; transition: border-color .18s; } .fx-click:hover { border-color: rgba(118,179,114,.3); }
+
+/* segmented pills: same look as Grid's gym sub-tabs */
+.hl-pills { display: inline-flex; border: 1px solid var(--card-border); border-radius: 4px; overflow: hidden; }
+.hl-pill { padding: 7px 14px; font-family: var(--font); font-size: 10px; font-weight: 700; letter-spacing: 1.5px; color: var(--text-muted); background: transparent; border: 0; border-right: 1px solid var(--card-border); cursor: pointer; text-transform: uppercase; transition: all .18s; }
+.hl-pill:last-child { border-right: 0; }
+.hl-pill:hover { color: var(--text-dim); }
+.hl-pill.on { color: var(--green); background: var(--green-dim); }
+.hl-pill:disabled { opacity: .35; cursor: default; }
+
+/* buttons: Grid's gym-action-btn / gym-cal-btn */
+.hl-btn { display: inline-flex; align-items: center; gap: 6px; background: var(--card); border: 1px solid var(--card-border); border-radius: 4px; padding: 7px 12px; color: var(--text-dim); font-family: var(--font); font-size: 9px; font-weight: 700; letter-spacing: 1px; cursor: pointer; transition: all .18s; text-transform: uppercase; }
+.hl-btn:hover { border-color: var(--green); color: var(--green); }
+.hl-btn.pri { border-color: var(--green); color: var(--green); background: var(--green-dim); }
+.hl-btn.pri:hover { opacity: .85; }
+.hl-btn.danger { color: var(--red); border-color: rgba(239,68,68,.4); }
+.hl-btn:disabled { opacity: .5; cursor: default; }
+
+/* charts */
+.hl-chart { width: 100%; height: 240px; }
+.hl-chart.sm { height: 180px; } .hl-chart.lg { height: 300px; }
+.hl-ring { width: 100%; height: 200px; }
+
+/* tables: Grid's fin-budget-table */
+.hl-table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.hl-table th { font-size: 9px; font-weight: 700; letter-spacing: 1.5px; color: var(--text-muted); text-align: left; padding: 0 8px 10px 0; border-bottom: 1px solid var(--card-border); text-transform: uppercase; }
+.hl-table td { font-size: 11px; color: var(--text-dim); padding: 9px 8px 9px 0; border-bottom: 1px solid rgba(255,255,255,.03); letter-spacing: .5px; }
+.hl-table td:first-child { color: var(--text); }
+.hl-table tr[data-run]:hover td, .hl-table tr[data-ex]:hover td { background: rgba(255,255,255,.02); }
+
+.hl-note { font-size: 9px; letter-spacing: 1.2px; color: var(--text-muted); text-transform: uppercase; }
+.hl-empty { padding: 30px 12px; text-align: center; font-size: 10px; letter-spacing: 1.5px; color: var(--text-muted); text-transform: uppercase; line-height: 1.9; }
+.hl-code { display: inline-block; font-size: 9px; font-weight: 700; letter-spacing: 1px; color: var(--green); border: 1px solid rgba(118,179,114,.35); border-radius: 3px; padding: 1px 6px; }
+.hl-chip { display: inline-flex; align-items: center; gap: 6px; font-size: 9px; letter-spacing: 1.4px; padding: 3px 8px; border-radius: 3px; color: var(--text-muted); border: 1px solid rgba(255,255,255,.08); text-transform: uppercase; }
+.hl-chip .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); }
+.hl-x { cursor: pointer; color: var(--text-muted); transition: color .18s; } .hl-x:hover { color: var(--red); }
+.hl-label { font-size: 9px; letter-spacing: 2px; color: var(--text-muted); text-transform: uppercase; }
+
+/* nutrition quick-log */
+.hl-quick { display: flex; gap: 8px; align-items: center; }
+.hl-quick input { flex: 1; background: var(--card); border: 1px solid var(--card-border); border-radius: 6px; padding: 11px 14px; color: var(--text); font-family: var(--font); font-size: 13px; letter-spacing: .5px; outline: none; transition: border-color .18s; }
+.hl-quick input:focus { border-color: var(--green); }
+.hl-suggest { margin-top: 6px; background: var(--bg-2); border: 1px solid var(--card-border); border-radius: 6px; overflow: hidden; }
+.hl-suggest div { display: flex; justify-content: space-between; gap: 12px; padding: 8px 12px; font-size: 11px; cursor: pointer; }
+.hl-suggest div.on, .hl-suggest div:hover { background: var(--green-dim); }
+
+/* toast with an UNDO action (Grid's #access-toast has none), styled to match it */
+.fx-toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: #1a1a1a; border: 1px solid var(--card-border); border-radius: 4px; padding: 10px 20px; font-size: 9px; letter-spacing: 1.5px; color: var(--text-dim); z-index: 9999; white-space: nowrap; max-width: 92vw; overflow: hidden; text-overflow: ellipsis; }
+.fx-toast button { margin-left: 12px; font: inherit; color: var(--green); background: none; border: 0; cursor: pointer; text-decoration: underline; letter-spacing: 1.5px; }

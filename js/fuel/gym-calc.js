@@ -60,22 +60,7 @@
     return out;
   }
 
-  /** Per training day: volume plus the NEXT morning's readiness and sleep score (the recovery cost of that session). */
-  function recoveryPairs(logs, daily, sleep) {
-    const dMap = Object.fromEntries((daily || []).map(d => [d.date, d])), sMap = Object.fromEntries((sleep || []).map(s => [s.date, s]));
-    const byDate = {}; logs.forEach(l => { if (validDate(l.date)) byDate[l.date] = (byDate[l.date] || 0) + sessionVolume(l); });
-    return Object.keys(byDate).sort().map(date => { const n = addDays(date, 1); return { date, volume: Math.round(byDate[date]), readiness: dMap[n]?.readiness ?? null, sleepScore: sMap[n]?.score ?? null, hrv: dMap[n]?.hrvMs ?? null }; });
-  }
-
-  /** Pearson correlation between volume and next-day readiness (null under 8 paired sessions). */
-  function volumeReadinessCorr(pairs) {
-    const p = pairs.filter(x => x.readiness != null); if (p.length < 8) return null;
-    const mx = p.reduce((s, x) => s + x.volume, 0) / p.length, my = p.reduce((s, x) => s + x.readiness, 0) / p.length;
-    const sxy = p.reduce((s, x) => s + (x.volume - mx) * (x.readiness - my), 0), sx = Math.sqrt(p.reduce((s, x) => s + (x.volume - mx) ** 2, 0)), sy = Math.sqrt(p.reduce((s, x) => s + (x.readiness - my) ** 2, 0));
-    return sx && sy ? +(sxy / (sx * sy)).toFixed(2) : null;
-  }
-
-  const api = { validDate, e1rm, sessionVolume, sessionSets, exerciseNames, history, withPRs, plateau, prBoard, weeklySets, recoveryPairs, volumeReadinessCorr, addDays, weekStart };
+  const api = { validDate, e1rm, sessionVolume, sessionSets, exerciseNames, history, withPRs, plateau, prBoard, weeklySets, addDays, weekStart };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else (root.Grid = root.Grid || {}).gym = api;
 })(typeof window !== 'undefined' ? window : globalThis);

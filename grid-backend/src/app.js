@@ -55,7 +55,6 @@ app.use('/api/habits',   require('./routes/habits'));   // legacy — superseded
 app.use('/api/metrics',  require('./routes/metrics'));
 app.use('/api/planning', require('./routes/planning'));
 app.use('/api/gym',      require('./routes/gym'));
-app.use('/api/health',    require('./routes/health'));
 app.use('/api/runs',      require('./routes/runs'));
 app.use('/api/nutrition', require('./routes/nutrition'));
 app.use('/api/progress',  require('./routes/progress'));

@@ -28,7 +28,7 @@
   }
 
   G.registerPage('runs', {
-    title: 'Runs', sub: 'Strava exports · monthly and yearly overview',
+    sub: 'Strava exports · monthly and yearly overview', dot: 'var(--green)', foot: 'Run metrics are computed from your imported files.',
     async render(root) {
       st.detail = null;                                     // always open on the list, never a stale detail view
       let all = [];
@@ -79,8 +79,10 @@
             <div class="hl-pills">${years.map(y => `<button class="hl-pill ${st.year === y ? 'on' : ''}" data-year="${y}">${y}</button>`).join('')}</div>
             <div style="text-align:right"><button class="hl-btn pri" id="upBtn">+ IMPORT RUNS</button></div></div>
           ${st.mode === 'month' ? `<div class="hl-pills" style="margin-bottom:14px">${MONTHS.map((m, i) => `<button class="hl-pill ${st.month === i ? 'on' : ''}" data-month="${i}">${m}</button>`).join('')}</div>` : ''}
-          <div class="hl-grid hl-g4" id="t1"></div><div class="hl-grid hl-g4" id="t2"></div>
+          <div class="fin-group-label">OVERVIEW</div>
+          <div id="t1"></div><div id="t2"></div>
           ${inP.length ? `
+          <div class="fin-group-label">TRENDS</div>
           <div class="hl-grid hl-g2">
             ${G.card(st.mode === 'year' ? 'DISTANCE BY MONTH · KM' : 'WEEKLY MILEAGE · KM', `<div class="hl-chart" id="${ids.main}"></div>`)}
             ${G.card(st.mode === 'year' ? 'YEAR HEATMAP' : 'MONTH CALENDAR', `<div class="hl-chart" id="${ids.heat}"></div>`)}
@@ -102,7 +104,9 @@
             ${G.card('PACE VS HEART RATE', `<div class="hl-chart sm" id="${ids.sc}"></div>`, '<span class="hl-note">DOWN-RIGHT OVER TIME = FITTER</span>')}
             ${G.card('GEAR', '<div id="gear"></div>')}
           </div>` : G.empty('NO RUNS IN THIS PERIOD')}
+          <div class="fin-group-label">RECORDS</div>
           ${G.card('PERSONAL BESTS', '<div id="pbs"></div>', '<span class="hl-note">FASTEST WINDOW WITHIN A RUN · NEEDS A TRACK FILE</span>')}
+          <div class="fin-group-label" style="margin-top:16px">ALL RUNS</div>
           ${G.card('RUNS', '<div id="list"></div>')}`;
 
         G.tiles(root.querySelector('#t1'), [
@@ -172,8 +176,8 @@
         const thisYear = String(st.year);
         el.innerHTML = `<div class="hl-grid hl-g6" style="margin-bottom:0">${BEST.filter(([k]) => pb[k]).map(([k, label]) => {
           const b = pb[k], fresh = b.run.date.startsWith(thisYear), d = +k;
-          return `<div class="hl-card hl-tile" style="cursor:pointer;${st.bestKey === k ? 'border-color:var(--green)' : ''}" data-best="${k}"><div class="hl-label">${label}${fresh ? ' <span style="color:var(--sig-900)">· PR</span>' : ''}</div>
-            <div class="hl-val" style="font-size:22px">${tFmt(b.sec)}</div><div class="hl-delta flat">${F.pace(b.sec / (d / 1000))} · ${b.run.date}</div></div>`; }).join('')}</div>
+          return `<div class="fin-stat-card fx-click" style="${st.bestKey === k ? 'border-color:var(--green)' : ''}" data-best="${k}"><div class="fin-stat-label">${label}${fresh ? ' <span style="color:var(--sig-900)">· PR</span>' : ''}</div>
+            <div class="fin-stat-val" style="font-size:18px">${tFmt(b.sec)}</div><div class="fx-sub">${F.pace(b.sec / (d / 1000))} · ${b.run.date}</div></div>`; }).join('')}</div>
           <div class="hl-chart sm" id="prChart" style="margin-top:12px"></div><div class="hl-note" style="text-align:center">${(BEST.find(b => b[0] === st.bestKey) || [])[1] || ''} · EVERY RUN (DOTS) AND RUNNING BEST (LINE)</div>`;
         const pts = all.filter(r => r.bestEfforts && r.bestEfforts[st.bestKey]).map(r => [r.date, r.bestEfforts[st.bestKey]]);
         let m = Infinity; const line = pts.map(([d, v]) => { m = Math.min(m, v); return [d, m]; });
