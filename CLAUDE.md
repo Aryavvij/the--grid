@@ -3,6 +3,8 @@
 Personal dashboard for students & adults: habits, gym, finance, calendar, projects, resume.
 Carbon-green aesthetic. Deployed on Vercel (frontend + serverless API). Postgres is hosted on Supabase.
 
+> **Working on Runs, Nutrition, Deficit or the Gym PROGRESS tab?** Read `docs/HANDOFF.md` first (what each page does, API, tables, how to test and deploy, open items).
+
 ## Repo layout
 
 | Path | What it is |
