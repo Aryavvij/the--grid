@@ -13,10 +13,11 @@
   }
 
   G.registerPage('health', {
+    google: true,
     title: 'Today', sub: new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' }),
     async render(root) {
       const all = (await G.data('daily', { limit: 90 })).slice().reverse();
-      if (!all.length) { root.innerHTML = G.empty('NO HEALTH DATA YET<br>Connect Google Health to start syncing (Phase 3).'); return; }
+      if (!all.length) { root.innerHTML = G.empty('NO HEALTH DATA YET<br>Press CONNECT GOOGLE HEALTH (top right) to start syncing.'); return; }
       const sleep = (await G.data('sleep', { limit: 90 })).slice().reverse();
       const runs = await G.data('runs', { limit: 30 });
       const [targets, foodToday] = await Promise.all([G.data('targets'), G.data('foodlog', { from: F.date(new Date()), to: F.date(new Date()) })]);

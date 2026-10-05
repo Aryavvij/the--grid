@@ -6,11 +6,12 @@
     <div style="height:6px;border-radius:3px;background:rgba(255,255,255,.07)"><div style="height:100%;width:${Math.max(3, Math.min(100, score))}%;border-radius:3px;background:${score >= 70 ? 'var(--green)' : score >= 45 ? 'var(--orange)' : 'var(--red)'}"></div></div></div>`;
 
   G.registerPage('recovery', {
+    google: true,
     title: 'Recovery & Insights', sub: 'Readiness · baselines · early warnings', ranges: [14, 30, 90],
     async render(root, { range }) {
       const all = (await G.data('daily', { limit: 90 })).slice().reverse();
       const sleep = (await G.data('sleep', { limit: 90 })).slice().reverse();
-      if (!all.length) { root.innerHTML = G.empty('NO RECOVERY DATA YET<br>Connect Google Health to start syncing (Phase 3).'); return; }
+      if (!all.length) { root.innerHTML = G.empty('NO RECOVERY DATA YET<br>Press CONNECT GOOGLE HEALTH (top right) to start syncing.'); return; }
       const today = all.at(-1), win = all.slice(-28), rows = all.slice(-range), x = rows.map(r => F.short(r.date));
       const hrvB = S.avg(win.map(r => r.hrvMs)), rhrB = S.avg(win.map(r => r.restingHr)), ss = sleep.at(-1)?.score, ratio = C().loadRatio(all.map(r => r.cardioLoad));
       const ids = ['gauge', 'hist', 'hrv', 'rhr', 'spo2', 'tmp', 'over'].reduce((o, k) => (o[k] = G.uid(), o), {});

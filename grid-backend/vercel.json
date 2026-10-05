@@ -5,7 +5,9 @@
       "src": "api/index.js",
       "use": "@vercel/node",
       "config": {
-        "includeFiles": ["node_modules/.prisma/client/**"]
+        "includeFiles": [
+          "node_modules/.prisma/client/**"
+        ]
       }
     }
   ],
@@ -13,6 +15,12 @@
     {
       "src": "/(.*)",
       "dest": "api/index.js"
+    }
+  ],
+  "crons": [
+    {
+      "path": "/api/health/cron/sync",
+      "schedule": "30 1 * * *"
     }
   ]
 }

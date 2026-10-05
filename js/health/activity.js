@@ -4,10 +4,11 @@
   const pct = (a, b) => (b ? ((a - b) / b) * 100 : null);
 
   G.registerPage('activity', {
+    google: true,
     title: 'Activity & Load', sub: 'Steps · cardio load · active zone minutes · calories', ranges: [7, 30, 90],
     async render(root, { range }) {
       const all = (await G.data('daily', { limit: 90 })).slice().reverse();
-      if (!all.length) { root.innerHTML = G.empty('NO ACTIVITY DATA YET<br>Connect Google Health to start syncing (Phase 3).'); return; }
+      if (!all.length) { root.innerHTML = G.empty('NO ACTIVITY DATA YET<br>Press CONNECT GOOGLE HEALTH (top right) to start syncing.'); return; }
       const rows = all.slice(-range), prev = all.slice(-range * 2, -range), today = all.at(-1), x = rows.map(r => F.short(r.date));
       const col = (k) => rows.map(r => r[k]);
       const ids = ['steps', 'load', 'azm', 'ex'].reduce((o, k) => (o[k] = G.uid(), o), {});
