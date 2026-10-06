@@ -8,9 +8,10 @@ Four additions to Grid, all in the same visual language as the existing app: **R
 ## Current state
 - Live frontend: https://the-grid-tracker.vercel.app (Vercel project `the-grid`, **not** Git-connected: deploy by running `vercel --prod --yes` from the Grid root).
 - Live backend: https://the-grid-1t3x.vercel.app (Vercel project `the-grid-1t3x`, Git-connected, root `grid-backend/`; a push to `main` deploys it).
-- Git: everything is on `main` (last commit `14b0f27`). `Understanding/`, `cv_format.pdf` and `grid_project_brief.pdf` are the user's untracked files; leave them.
-- Tests: `node tests/run-all.js` runs 8 suites, 190 checks, all passing. It takes a few minutes here: `progress.test.js` and `runparser.test.js` each run 40 s+ because this folder is in iCloud Drive and Node pulls `node_modules` files down on `require`. Slow, not hung.
-- Database (Supabase): all migrations applied. The new tables are empty until the user adds data.
+- Git: everything is on `main`. The 2026-10-06 full-site check (see below and `docs/GUIDE.md`) is committed locally; pushing and deploying it waits on the user's OK because of the migration below. `Understanding/`, `cv_format.pdf` and `grid_project_brief.pdf` are the user's untracked files; leave them.
+- Tests: `node tests/run-all.js` runs 9 suites, all passing. It takes a few minutes here: `progress.test.js` and `runparser.test.js` each run 40 s+ because this folder is in iCloud Drive and Node pulls `node_modules` files down on `require`. Slow, not hung.
+- Database (Supabase): all migrations applied **except `20261006120000_project_progress_gym_registry`** (adds `projects.progress` and `gym_splits.registry`). Apply it to production *before* the backend that uses it goes live, or project and gym-split queries fail: `npx prisma migrate deploy` in `grid-backend/`, then push, then deploy the frontend. Ask the user first.
+- Deploy quirk: `vercel --prod --yes` can print `Not authorized` after uploading even though the deployment was created and is live. Check with `vercel ls` / `vercel inspect` before retrying.
 - **Not yet verified by the user:** a real Strava import on their live account. Everything was tested in demo mode, with a faked API, and end to end against a real local backend with a local Postgres, but not on their production account.
 
 ## How the code is organised
@@ -89,12 +90,22 @@ New: `run_activities` (unique user + file hash), `meal_presets`, `food_logs`, `w
 - Strava: file uploads only (no Strava API), to avoid API terms and rate limits.
 - Pages must never fail silently: after a blank-page report, `Grid.show` was hardened (loading state, timeouts, shape validation, notice with RETRY). If a page looks blank again, check the console and the notice first.
 
+## 2026-10-06 full-site check
+Every page was exercised in demo mode, then end to end against a local backend + Postgres: data entered on every page, browser storage wiped, logged back in, everything checked to come back from the server. Findings and fixes are listed for the user in `docs/GUIDE.md` section 5. Things worth knowing when you touch these areas:
+- **Timetable:** an hour stored as `''` is free time and ends the block before it. `getSlotLabel`, `hvBlockAt`, the Home slots, `ttToBlocks` / `blocksToTt` and the block editor all follow that rule now. Before, end times were lost and gaps were swallowed.
+- **Dates:** use `gridIsoDate(d)` for any `YYYY-MM-DD` key. `toISOString()` is UTC and shifts dates a day in India.
+- **Gym exercise registry** (`gymExerciseRegistry`, `gymMuscleGroups`) syncs through `PUT /api/gym/registry` (stored on the active split, newer `savedAt` wins, older gets 409). Call `gymRegistryChanged()` after any user edit to it.
+- **Résumé PDF** is `js/resume-pdf.js` (pure, tested), rendered into an iframe that is also what prints. Measured against `cv_format.pdf` with headless Chrome + pdftotext; keep the spacing values unless re-measuring.
+- **Real accounts start empty:** no sample timetable, no sample gym split, no Mindgraph padding (the padding is demo-only).
+- **Local e2e gotchas on this Mac:** the preview launcher cannot read iCloud Drive or the scratchpad (processes hang on `open`). Copy `grid-backend` (without `.env`) and the frontend to a temp folder and run both servers from the shell. Run the API with that folder as its working directory, so dotenv can't pick up the production `.env`.
+
 ## Open items and ideas
 1. User to try a real Strava import on the live account and report anything odd.
 2. ~~Demo data thinner than real use~~ Done 2026-10-06: food, burn and weight now span 12 months like runs, following one story (cut, ~3-month maintenance block, second cut, 79.0 → 72.5 kg). Before this, the Deficit 90D view showed 37 skipped days because food stopped at 60 days. Still no demo progress photos, deliberately (no fake body photos).
 3. Optional cleanup: drop the unused `health_sleep` / `health_tokens` tables (needs a migration and the user's OK).
-4. Possible features: edit a run's date, merge duplicate runs, weekly summary email or digest, a goal-weight line on the deficit chart, barcode lookup for food.
-5. The Metriq folder on disk and Docker Desktop are leftovers the user said they will handle.
+4. Small known gaps: run splits list only full kilometres (no partial last split); the habit modal's "Target Goal Score" field is not stored or used.
+5. Possible features: edit a run's date, merge duplicate runs, weekly summary email or digest, a goal-weight line on the deficit chart, barcode lookup for food.
+6. The Metriq folder on disk and Docker Desktop are leftovers the user said they will handle.
 
 ## Files worth knowing about
 - `docs/HEALTH_EXPANSION_PLAN.md`: long history and the original phased plan (top section records the scope change; the rest about Google Health is historical).
