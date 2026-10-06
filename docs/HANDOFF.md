@@ -9,7 +9,7 @@ Four additions to Grid, all in the same visual language as the existing app: **R
 - Live frontend: https://the-grid-tracker.vercel.app (Vercel project `the-grid`, **not** Git-connected: deploy by running `vercel --prod --yes` from the Grid root).
 - Live backend: https://the-grid-1t3x.vercel.app (Vercel project `the-grid-1t3x`, Git-connected, root `grid-backend/`; a push to `main` deploys it).
 - Git: everything is on `main` (last commit `14b0f27`). `Understanding/`, `cv_format.pdf` and `grid_project_brief.pdf` are the user's untracked files; leave them.
-- Tests: `node tests/run-all.js` runs 8 suites, 190 checks, all passing.
+- Tests: `node tests/run-all.js` runs 8 suites, 190 checks, all passing. It takes a few minutes here: `progress.test.js` and `runparser.test.js` each run 40 s+ because this folder is in iCloud Drive and Node pulls `node_modules` files down on `require`. Slow, not hung.
 - Database (Supabase): all migrations applied. The new tables are empty until the user adds data.
 - **Not yet verified by the user:** a real Strava import on their live account. Everything was tested in demo mode, with a faked API, and end to end against a real local backend with a local Postgres, but not on their production account.
 
@@ -35,7 +35,7 @@ Grid runs in two modes (see `CLAUDE.md`). The new pages follow the same rule: `G
 - **Demo mode:** every read comes from `js/fuel/seed-demo.js` (`Grid.seed.get(kind)`); edits live in memory only and vanish on reload.
 - **Login mode:** reads go through `Grid.data()` to the API; writes use `gridFetch()` directly.
 - **Every feature must work on both paths.** When you add a feature, add the demo branch (seed method) and the API branch.
-- Known gap: Grid also has "sandbox" preview accounts (`@sandbox.invalid`, see `gridIsPreview()`). The new pages only recognise plain demo mode, not sandbox accounts, so a sandbox account sees empty pages.
+- Sandbox accounts (`@sandbox.invalid`, see `gridIsPreview()`): the new pages only recognise plain demo mode, so a sandbox account would see empty pages. **Not reachable today**: nothing in the frontend calls `POST /api/auth/sandbox`; the DEMO button runs `launchLocalDemo()`. Only matters if sandbox signup is ever wired up (then seed these tables in the backend's `seedSandbox()`).
 
 ## How each page works
 
@@ -91,7 +91,7 @@ New: `run_activities` (unique user + file hash), `meal_presets`, `food_logs`, `w
 
 ## Open items and ideas
 1. User to try a real Strava import on the live account and report anything odd.
-2. Demo mode data is thinner than "months of real use": about 60 days of food and weight, no progress photos. Sandbox accounts do not show demo data on these pages (see the dual storage note).
+2. ~~Demo data thinner than real use~~ Done 2026-10-06: food, burn and weight now span 12 months like runs, following one story (cut, ~3-month maintenance block, second cut, 79.0 → 72.5 kg). Before this, the Deficit 90D view showed 37 skipped days because food stopped at 60 days. Still no demo progress photos, deliberately (no fake body photos).
 3. Optional cleanup: drop the unused `health_sleep` / `health_tokens` tables (needs a migration and the user's OK).
 4. Possible features: edit a run's date, merge duplicate runs, weekly summary email or digest, a goal-weight line on the deficit chart, barcode lookup for food.
 5. The Metriq folder on disk and Docker Desktop are leftovers the user said they will handle.

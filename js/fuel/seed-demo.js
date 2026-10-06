@@ -1,10 +1,14 @@
-/* Deterministic mock data for demo mode: 12 months of runs, 60 days of food, weight and burn entries.
-   One persona, numbers consistent across every page. Same shape as the API responses. */
+/* Deterministic mock data for demo mode: 12 months of runs, food, weight and burn entries.
+   One persona, numbers consistent across every page. Same shape as the API responses.
+   The year tells one story: a cut, a ~3-month maintenance block, then a second cut to today. */
 (function () {
   const G = window.Grid, C = G.calc, F = G.fmt;
   const rng = (seed => () => { seed |= 0; seed = (seed + 0x6D2B79F5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; })(20261005);
   const jit = (c, spread) => c + (rng() - 0.5) * 2 * spread;
   const day = (offset) => { const d = new Date(); d.setHours(12, 0, 0, 0); d.setDate(d.getDate() - offset); return d; };
+  // Phases by days-ago. Maintenance eats back roughly what's burned, so the deficit,
+  // food and weight charts all agree with each other across the whole year.
+  const MAINT = (off) => off <= 249 && off >= 160;
 
   // ── runs: ~3.5 per week for 12 months, gradually faster ──
   const runs = [];
@@ -34,7 +38,7 @@
   // ── calories burned: typed in by hand from the user's tracker app (about 3 days in 4); the rest fall back to the plan's TDEE ──
   const runByDate = {}; runs.forEach(r => { runByDate[r.date] = r; });
   const burn = [];
-  for (let off = 89; off >= 1; off--) {
+  for (let off = 364; off >= 1; off--) {
     if (rng() < 0.25) continue;
     const ds = F.date(day(off)), run = runByDate[ds];
     burn.push({ date: ds, kcal: Math.round(jit(run ? 2850 : 2420, 140)) });
@@ -47,11 +51,12 @@
     ['L2', 'Dal Rice Combo', 580, 22, 92, 11, 'lunch'], ['D1', 'Paneer Wrap', 540, 28, 52, 24, 'dinner'], ['SHAKE', 'Post-workout Shake', 260, 40, 18, 3, 'snack'], ['COFFEE', 'Black Coffee', 5, 0, 1, 0, 'breakfast'],
   ].map((p, i) => ({ id: 'p' + i, code: p[0], name: p[1], calories: p[2], protein: p[3], carbs: p[4], fat: p[5], defaultSlot: p[6], serving: '1 serving', favorite: i < 3, useCount: 40 - i * 3 }));
   const foodlog = []; let fid = 0;
-  for (let off = 59; off >= 0; off--) {
+  for (let off = 364; off >= 0; off--) {
     const ds = F.date(day(off));
     if (off > 0 && rng() < 0.06) continue;                                           // a day with nothing logged
     const treat = rng() < 0.08 ? [['D1', 'snack'], ['S3', 'snack']] : [];            // occasional surplus day
-    [['B1', 'breakfast'], ['COFFEE', 'breakfast'], [rng() > 0.5 ? 'L1' : 'L2', 'lunch'], ['S1', 'snack'], [rng() > 0.5 ? 'D1' : 'L1', 'dinner'], [rng() > 0.4 ? 'SHAKE' : 'S2', 'snack'], ...treat].forEach(([code, slot]) => {
+    const maint = MAINT(off) ? [['S3', 'snack'], ['S2', 'snack']] : [];              // ~+470 kcal: eating at maintenance
+    [['B1', 'breakfast'], ['COFFEE', 'breakfast'], [rng() > 0.5 ? 'L1' : 'L2', 'lunch'], ['S1', 'snack'], [rng() > 0.5 ? 'D1' : 'L1', 'dinner'], [rng() > 0.4 ? 'SHAKE' : 'S2', 'snack'], ...maint, ...treat].forEach(([code, slot]) => {
       if (off === 0 && (slot === 'dinner' || slot === 'snack' && code !== 'S1')) return;       // today is partly logged
       const p = presets.find(x => x.code === code);
       foodlog.push({ id: 'f' + (fid++), date: ds, slot, name: p.name, serving: p.serving, qty: 1, calories: p.calories, protein: p.protein, carbs: p.carbs, fat: p.fat, presetCode: p.code, confidence: 'exact' });
@@ -60,8 +65,12 @@
   const targets = { calories: 2350, protein: 160, carbs: 250, fat: 70, waterMl: 3000, plan: { sex: 'male', age: 21, kg: 72, cm: 175, level: 'moderate', bmr: C.bmr({ sex: 'male', kg: 72, cm: 175, age: 21 }) } };
   targets.plan.tdee = C.tdee(targets.plan.bmr, 'moderate');
   const water = Array.from({ length: 35 }, (_, i) => ({ date: F.date(day(34 - i)), ml: Math.round(jit(2400, 500)) }));
-  // weight every ~2 days, drifting down with the deficit; photos are user-uploaded (none in demo until added)
-  const weight = []; for (let off = 59; off >= 0; off -= 2) weight.push({ date: F.date(day(off)), kg: +(74.6 - (59 - off) * 0.035 + (rng() - 0.5) * 0.5).toFixed(1) });
+  // weight every ~2 days following the phases: 79.0 → 76.3 (cut), flat-ish through
+  // maintenance, then 76.6 → 72.5 today. Photos are user-uploaded (none in demo until added).
+  const trendKg = (off) => off > 249 ? 76.3 + (off - 250) / 114 * 2.7
+                         : off >= 160 ? 76.6 - (off - 160) / 89 * 0.3
+                         : 72.5 + off / 159 * 4.1;
+  const weight = []; for (let off = 364; off >= 0; off -= 2) weight.push({ date: F.date(day(off)), kg: +(trendKg(off) + (rng() - 0.5) * 0.5).toFixed(1) });
   const photos = [];
 
   const desc = (a) => a.slice().sort((x, y) => (x.date < y.date ? 1 : -1));
