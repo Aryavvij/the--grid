@@ -1,9 +1,25 @@
 const express = require('express');
 const db      = require('../lib/db');
 const { requireAuth } = require('../middleware/auth');
+const { validate, z } = require('../middleware/validate');
 
 const router = express.Router();
 router.use(requireAuth);
+
+const habitSchema = z.object({
+  name:       z.string().trim().min(1, 'Name is required').max(120),
+  icon:       z.string().trim().max(40).nullish(),
+  color:      z.string().trim().max(20).nullish(),
+  frequency:  z.string().trim().max(20).optional(),
+  targetDays: z.array(z.number().int().min(0).max(6)).max(7).optional(),
+  sortOrder:  z.number().int().min(0).max(10000).optional(),
+  archived:   z.boolean().optional(),
+});
+
+const logSchema = z.object({
+  date:      z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date is required (YYYY-MM-DD)'),
+  completed: z.boolean().optional(),
+});
 
 // GET /api/habits
 router.get('/', async (req, res, next) => {
@@ -17,10 +33,9 @@ router.get('/', async (req, res, next) => {
 });
 
 // POST /api/habits
-router.post('/', async (req, res, next) => {
+router.post('/', validate(habitSchema), async (req, res, next) => {
   try {
     const { name, icon, color, frequency, targetDays } = req.body;
-    if (!name) return res.status(400).json({ error: 'Name is required' });
     const habit = await db.habit.create({
       data: { userId: req.user.id, name, icon, color, frequency: frequency || 'daily', targetDays },
     });
@@ -29,7 +44,7 @@ router.post('/', async (req, res, next) => {
 });
 
 // PUT /api/habits/:id
-router.put('/:id', async (req, res, next) => {
+router.put('/:id', validate(habitSchema.partial()), async (req, res, next) => {
   try {
     const habit = await db.habit.findFirst({ where: { id: req.params.id, userId: req.user.id } });
     if (!habit) return res.status(404).json({ error: 'Habit not found' });
@@ -52,10 +67,9 @@ router.delete('/:id', async (req, res, next) => {
 });
 
 // POST /api/habits/:id/log  — toggle completion for a date
-router.post('/:id/log', async (req, res, next) => {
+router.post('/:id/log', validate(logSchema), async (req, res, next) => {
   try {
     const { date, completed = true } = req.body;
-    if (!date) return res.status(400).json({ error: 'Date is required (YYYY-MM-DD)' });
 
     const habit = await db.habit.findFirst({ where: { id: req.params.id, userId: req.user.id } });
     if (!habit) return res.status(404).json({ error: 'Habit not found' });

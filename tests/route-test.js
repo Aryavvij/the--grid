@@ -9,6 +9,7 @@ require.cache[stubDb] = { id: stubDb, filename: stubDb, loaded: true, exports: n
 const express = require(root + '../node_modules/express');
 const app = express(); app.use(express.json());
 app.use('/api/runs', require(root + 'routes/runs')); app.use('/api/nutrition', require(root + 'routes/nutrition')); app.use('/api/resume', require(root + 'routes/resume'));
+['projects', 'calendar', 'gym', 'habits', 'finance'].forEach(n => app.use('/api/' + n, require(root + 'routes/' + n)));
 const srv = app.listen(4012, async () => {
   const j = (p, m, b) => fetch('http://localhost:4012' + p, { method: m, headers: { 'Content-Type': 'application/json' }, body: b ? JSON.stringify(b) : undefined }).then(async r => [r.status, await r.json().catch(() => ({}))]);
   const t = (n, ok) => { console.log(ok ? 'ok  ' : 'FAIL', n); if (!ok) process.exitCode = 1; };
@@ -43,6 +44,20 @@ const srv = app.listen(4012, async () => {
   t('resume save keeps entries and __profile', r[0] === 200 && calls.at(-1)[2].update.sections.internships[0].org === 'Acme' && calls.at(-1)[2].update.sections.__profile.skills.languages === 'Go');
   r = await j('/api/resume', 'PUT', {}); t('resume save rejects missing sections', r[0] === 400);
   r = await j('/api/resume', 'PUT', { sections: { projects: 'nope' } }); t('resume save rejects non-list section', r[0] === 400);
+  // older routes used to hand the body straight to the database: now validated, and owner/id can't be set
+  const last = () => calls.at(-1)[2].data;
+  r = await j('/api/projects/mine', 'PUT', { title: 'Thesis', progress: 55, userId: 'attacker', id: 'other' }); t('project edit keeps progress, drops owner and id', r[0] === 200 && last().progress === 55 && !('userId' in last()) && !('id' in last()));
+  r = await j('/api/projects/mine', 'PUT', { progress: 500 }); t('project progress capped at 100', r[0] === 400);
+  r = await j('/api/projects', 'POST', { title: 'New', progress: 30 }); t('project create stores progress', r[0] === 201 && last().progress === 30);
+  r = await j('/api/calendar/events', 'POST', { title: 'Physio', startTime: 'not a date' }); t('calendar rejects a bad start time', r[0] === 400);
+  r = await j('/api/calendar/events/mine', 'PUT', { title: 'Moved', userId: 'attacker' }); t('calendar edit drops owner', r[0] === 200 && !('userId' in last()));
+  r = await j('/api/gym/logs', 'POST', { workoutDate: 'today', exercises: [] }); t('gym log rejects a bad date', r[0] === 400);
+  r = await j('/api/gym/logs/mine', 'PUT', { notes: 'x', userId: 'attacker' }); t('gym log edit drops owner', r[0] === 200 && !('userId' in last()));
+  r = await j('/api/gym/registry', 'PUT', { savedAt: 5, exercises: { CHEST: { exercises: [{ name: 'BENCH', pr: '80.0' }] } }, muscleGroups: [{ name: 'CHEST' }] }); t('gym exercise registry saves', r[0] === 200 && r[1].savedAt === 5);
+  r = await j('/api/gym/registry', 'PUT', { exercises: {} }); t('gym registry needs savedAt', r[0] === 400);
+  r = await j('/api/habits/mine/log', 'POST', { date: '6 Oct' }); t('habit tick rejects a bad date', r[0] === 400);
+  r = await j('/api/finance/transactions', 'POST', { amount: 0, date: '2026-10-06', type: 'expense' }); t('expense of 0 rejected', r[0] === 400);
+  r = await j('/api/finance/transactions/mine', 'PUT', { amount: 10, userId: 'attacker' }); t('expense edit drops owner', r[0] === 200 && !('userId' in last()));
   // API responses must not be cacheable (private, per-user data)
   const app2 = require(GRID + '/grid-backend/node_modules/express')(); app2.use('/api', (req, res, next) => { res.set('Cache-Control', 'no-store'); next(); }); app2.get('/api/x', (q, r) => r.json({ ok: 1 }));
   const srv2 = app2.listen(4016); const hr = await fetch('http://localhost:4016/api/x'); t('api responses carry Cache-Control: no-store', hr.headers.get('cache-control') === 'no-store'); srv2.close();

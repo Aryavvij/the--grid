@@ -79,9 +79,12 @@ app.use((req, res) => {
 // ─── Global error handler ─────────────────────────────────────────────────────
 app.use((err, req, res, next) => {
   console.error('[ERROR]', err);
-  const status = err.status || 500;
+  const status = err.status || err.statusCode || 500;
+  // 500s carry database/driver text (file paths, query shapes) — only show it
+  // in development. 4xx messages are meant for the user and pass through.
+  const expose = status < 500 || process.env.NODE_ENV === 'development';
   res.status(status).json({
-    error: err.message || 'Internal server error',
+    error: (expose && err.message) || 'Internal server error',
     ...(process.env.NODE_ENV === 'development' && { stack: err.stack }),
   });
 });

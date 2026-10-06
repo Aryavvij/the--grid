@@ -1,9 +1,22 @@
 const express = require('express');
 const db      = require('../lib/db');
 const { requireAuth } = require('../middleware/auth');
+const { validate, z } = require('../middleware/validate');
 
 const router = express.Router();
 router.use(requireAuth);
+
+const when = z.string().refine(s => !Number.isNaN(Date.parse(s)), 'Must be a date and time');
+
+const eventSchema = z.object({
+  title:       z.string().trim().min(1, 'title is required').max(200),
+  description: z.string().max(2000).nullish(),
+  startTime:   when,
+  endTime:     when.nullish(),
+  allDay:      z.boolean().optional(),
+  color:       z.string().trim().max(20).nullish(),
+  recurrence:  z.record(z.string(), z.unknown()).optional(),
+});
 
 // GET /api/calendar/events?from=&to=
 router.get('/events', async (req, res, next) => {
@@ -18,10 +31,9 @@ router.get('/events', async (req, res, next) => {
 });
 
 // POST /api/calendar/events
-router.post('/events', async (req, res, next) => {
+router.post('/events', validate(eventSchema), async (req, res, next) => {
   try {
     const { title, description, startTime, endTime, allDay, color, recurrence } = req.body;
-    if (!title || !startTime) return res.status(400).json({ error: 'title and startTime are required' });
     const event = await db.calendarEvent.create({
       data: { userId: req.user.id, title, description, startTime: new Date(startTime), endTime: endTime ? new Date(endTime) : null, allDay: allDay || false, color, recurrence },
     });
@@ -30,7 +42,7 @@ router.post('/events', async (req, res, next) => {
 });
 
 // PUT /api/calendar/events/:id
-router.put('/events/:id', async (req, res, next) => {
+router.put('/events/:id', validate(eventSchema.partial()), async (req, res, next) => {
   try {
     const event = await db.calendarEvent.findFirst({ where: { id: req.params.id, userId: req.user.id } });
     if (!event) return res.status(404).json({ error: 'Event not found' });
