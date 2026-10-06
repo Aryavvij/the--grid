@@ -8,7 +8,7 @@ require.cache[stubAuth] = { id: stubAuth, filename: stubAuth, loaded: true, expo
 require.cache[stubDb] = { id: stubDb, filename: stubDb, loaded: true, exports: new Proxy({}, { get: (_, n) => table(n) }) };
 const express = require(root + '../node_modules/express');
 const app = express(); app.use(express.json());
-app.use('/api/runs', require(root + 'routes/runs')); app.use('/api/nutrition', require(root + 'routes/nutrition'));
+app.use('/api/runs', require(root + 'routes/runs')); app.use('/api/nutrition', require(root + 'routes/nutrition')); app.use('/api/resume', require(root + 'routes/resume'));
 const srv = app.listen(4012, async () => {
   const j = (p, m, b) => fetch('http://localhost:4012' + p, { method: m, headers: { 'Content-Type': 'application/json' }, body: b ? JSON.stringify(b) : undefined }).then(async r => [r.status, await r.json().catch(() => ({}))]);
   const t = (n, ok) => { console.log(ok ? 'ok  ' : 'FAIL', n); if (!ok) process.exitCode = 1; };
@@ -38,6 +38,11 @@ const srv = app.listen(4012, async () => {
   r = await j('/api/nutrition/log/mine', 'PUT', { date: '2020-01-01', userId: 'attacker' }); t('food edit cannot change date or owner (stripped, then empty)', r[0] === 400);
   r = await j('/api/nutrition/log/mine', 'PUT', { slot: 'brunch' }); t('food edit rejects bad meal slot', r[0] === 400);
   r = await j('/api/nutrition/log/other', 'PUT', { qty: 1 }); t("cannot edit someone else's entry", r[0] === 404);
+  // resume: whole-blob replace, header/skills ride along as __profile
+  r = await j('/api/resume', 'PUT', { sections: { internships: [{ name: 'Intern', org: 'Acme', location: 'Pune', fullDesc: 'a\nb', onPdf: true }], __profile: { name: 'A', skills: { languages: 'Go' } } } });
+  t('resume save keeps entries and __profile', r[0] === 200 && calls.at(-1)[2].update.sections.internships[0].org === 'Acme' && calls.at(-1)[2].update.sections.__profile.skills.languages === 'Go');
+  r = await j('/api/resume', 'PUT', {}); t('resume save rejects missing sections', r[0] === 400);
+  r = await j('/api/resume', 'PUT', { sections: { projects: 'nope' } }); t('resume save rejects non-list section', r[0] === 400);
   // API responses must not be cacheable (private, per-user data)
   const app2 = require(GRID + '/grid-backend/node_modules/express')(); app2.use('/api', (req, res, next) => { res.set('Cache-Control', 'no-store'); next(); }); app2.get('/api/x', (q, r) => r.json({ ok: 1 }));
   const srv2 = app2.listen(4016); const hr = await fetch('http://localhost:4016/api/x'); t('api responses carry Cache-Control: no-store', hr.headers.get('cache-control') === 'no-store'); srv2.close();

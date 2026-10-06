@@ -1293,6 +1293,10 @@ html, body {
   padding: 28px;
   width: 420px;
   max-width: 95vw;
+  /* Long forms scroll inside the modal instead of pushing the title and
+     SAVE off-screen (the overlay is fixed, so the page can't scroll to them). */
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
 }
 .modal-title {
   font-family: 'Bebas Neue', sans-serif;
@@ -3549,131 +3553,11 @@ html, body {
 .rs-compile-btn svg{width:14px;height:14px;stroke:var(--green);fill:none;stroke-width:2.5;}
 .rs-footer-bar{display:flex;justify-content:space-between;font-size:7px;color:var(--text-muted);letter-spacing:1px;padding-top:4px;}
 
-/* A4 Styled Live Resume preview sheet */
-/* Single-column, serif, ATS-classic layout (the "Jake Ryan" template
-   format): centered name, left-aligned section headers each underlined with
-   a full-width rule, entries as a bold-left/regular-right header row plus
-   an italic subtitle row, bullet lists beneath. Georgia is used instead of
-   trying to load the original's LaTeX serif — it's installed everywhere by
-   default, so the sheet renders identically with no font network request
-   (Inter/Outfit above were referenced the same way but never actually
-   loaded via a <link>, so this follows the existing, if accidental, pattern
-   of just relying on a real system font instead). */
-.rs-pdf-sheet {
-  background: #ffffff;
-  color: #1a1a1a;
-  padding: 40px 46px;
-  font-family: Georgia, 'Times New Roman', serif;
-  border-radius: 8px;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
-  max-width: 800px;
-  margin: 0 auto;
-  min-height: 1000px;
-  box-sizing: border-box;
-}
-.rs-pdf-sheet h1 {
-  font-size: 26px;
-  font-weight: 700;
-  color: #111;
-  text-align: center;
-  margin: 0 0 6px 0;
-  letter-spacing: 0.5px;
-}
-.rs-pdf-sheet .rs-pdf-contact {
-  text-align: center;
-  font-size: 10px;
-  color: #333;
-  letter-spacing: 0.2px;
-  margin-bottom: 16px;
-}
-.rs-pdf-sheet h2 {
-  font-size: 12.5px;
-  font-weight: 700;
-  color: #111;
-  border-bottom: 1px solid #333;
-  padding-bottom: 2px;
-  margin: 14px 0 8px 0;
-  letter-spacing: 0.4px;
-}
-.rs-pdf-sheet h2:first-of-type { margin-top: 0; }
-.rs-pdf-sheet .rs-pdf-item {
-  margin-bottom: 9px;
-  text-align: left;
-}
-.rs-pdf-sheet .rs-pdf-item-hdr {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 10px;
-  font-weight: 700;
-  font-size: 11.5px;
-  color: #111;
-}
-.rs-pdf-sheet .rs-pdf-item-date {
-  color: #111;
-  font-weight: 400;
-  font-style: italic;
-  font-size: 10.5px;
-  white-space: nowrap;
-}
-.rs-pdf-sheet .rs-pdf-item-sub {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 10px;
-  font-style: italic;
-  font-size: 10.5px;
-  color: #333;
-  margin-top: 1px;
-}
-.rs-pdf-sheet .rs-pdf-item-bullets {
-  margin: 4px 0 0 0;
-  padding-left: 16px;
-  list-style: disc;
-}
-.rs-pdf-sheet .rs-pdf-item-bullets li {
-  font-size: 10px;
-  color: #222;
-  line-height: 1.38;
-  margin-bottom: 1px;
-}
-/* Technical Skills: bold category label inline with its comma-separated
-   list, one row per category — matches the reference's own skills block. */
-.rs-pdf-sheet .rs-pdf-skills-row {
-  font-size: 10px;
-  color: #222;
-  line-height: 1.6;
-}
-.rs-pdf-sheet .rs-pdf-skills-row b { color: #111; }
-
-@media print {
-  /* Hide all elements except the preview sheet */
-  body > * {
-    display: none !important;
-  }
-  /* Only force display:block on the wrapper chain (in case a parent tab
-     container is display:none) — forcing it on every descendant too would
-     collapse the two-column layout below back to a single column the
-     moment this actually prints. Descendants just need visibility. */
-  #page-resume, #rs-pdf, #rsPdfPreviewWrapper, #rsPdfPreviewSheet {
-    display: block !important;
-    visibility: visible !important;
-  }
-  #rsPdfPreviewSheet * {
-    visibility: visible !important;
-  }
-  #rsPdfPreviewSheet {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
-    margin: 0;
-    padding: 0;
-    box-shadow: none;
-    background: white !important;
-    color: black !important;
-  }
-}
+/* Resume preview: an 8.5in page in an iframe (js/resume-pdf.js), scaled to
+   fit narrow screens by rsFitPdfFrame(). Printing happens inside the frame. */
+#rsPdfStage { position: relative; overflow: hidden; margin: 0 auto; width: 816px; height: 1056px; max-width: 100%; }
+#rsPdfFrame { display: block; border: 0; background: #fff; width: 816px; height: 1056px;
+  transform-origin: top left; box-shadow: 0 4px 20px rgba(0,0,0,0.25); }
 
 /* ══ HOME PAGE ══════════════════════════════════════ */
 .hm-wrap{padding:24px 28px;display:flex;flex-direction:column;gap:20px;height:100%;overflow-y:auto;box-sizing:border-box;}
@@ -4363,18 +4247,6 @@ html, body {
   .hb-stat-row, .fin-stat-row, .nl-stat-row, .rw-stat-row, .rs-stats,
   .cn-zone-c { grid-template-columns: 1fr !important; }
   .gk-panel, .dc-panel { width: 96vw; }
-}
-
-/* ── One-page PDF: compact rhythm so a full profile fits a single sheet ──
-   #rsPdfPreviewSheet h2 is an ID selector, so it would otherwise beat the
-   .rs-pdf-sheet h2 class rule above regardless of source order — kept in
-   sync with it rather than left to silently override it. */
-.rs-pdf-item { page-break-inside: avoid; }
-#rsPdfPreviewSheet h2 { font-size:12.5px; letter-spacing:0.4px; margin:14px 0 8px 0;
-  border-bottom:1px solid #333; padding-bottom:2px; }
-@media print {
-  @page { size: A4; margin: 12mm; }
-  #rsPdfPreviewSheet { font-size:10px; }
 }
 
 /* ══ MINDGRAPH ═════════════════════════════════════════════════════════════
@@ -6025,14 +5897,17 @@ html, body {
             SELECT DATABASE NODES TO ADD TO RESUME
           </div>
           
-          <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap: 16px;" id="rsPdfSelectors">
+          <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 16px;" id="rsPdfSelectors">
             <!-- Grouped checkboxes dynamically rendered by JS -->
           </div>
           
-          <button class="rs-compile-btn" onclick="generateResumePdf()" style="margin-top:20px; width:100%;">
-            <svg viewBox="0 0 24 24"><polyline points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-            SYNTHESIZE RUNWAY RESUME PDF STRUCTURE
-          </button>
+          <div style="display:flex; gap:10px; margin-top:20px; flex-wrap:wrap;">
+            <button class="fin-modify-btn" onclick="openRsProfileModal()" style="padding:0 18px; min-height:46px;">HEADER &amp; SKILLS</button>
+            <button class="rs-compile-btn" onclick="generateResumePdf()" style="flex:1; min-width:220px;">
+              <svg viewBox="0 0 24 24"><polyline points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+              SYNTHESIZE RUNWAY RESUME PDF STRUCTURE
+            </button>
+          </div>
           <div id="rsCompilerStatus" style="margin-top:8px; font-size:10px; color:var(--text-muted); text-align:center; letter-spacing:0.5px;"></div>
         </div>
         
@@ -6041,14 +5916,14 @@ html, body {
           <div class="rw-section-title" style="justify-content:space-between; margin-bottom:16px;">
             <span>
               <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" fill="none" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="2" y1="7" x2="22" y2="7"/><line x1="2" y1="17" x2="22" y2="17"/></svg>
-              RESUME LAYOUT SYNTHESIS PREVIEW (A4 SCREEN COMPATIBLE)
+              RESUME PREVIEW (US LETTER · REFERENCE FORMAT)
             </span>
-            <button class="fin-modify-btn" onclick="window.print()" style="padding:6px 14px;">PRINT / SAVE AS PDF</button>
+            <button class="fin-modify-btn" onclick="printResumePdf()" style="padding:6px 14px;">PRINT / SAVE AS PDF</button>
           </div>
           
-          <!-- Live resume sheet -->
-          <div id="rsPdfPreviewSheet" class="rs-pdf-sheet">
-            <!-- Rendered dynamically -->
+          <!-- Live resume page: js/resume-pdf.js renders it; the same page is what prints -->
+          <div id="rsPdfStage">
+            <iframe id="rsPdfFrame" title="Resume preview"></iframe>
           </div>
         </div>
       </div>
@@ -6069,6 +5944,7 @@ html, body {
               <div>
                 <div style="font-size: 10px; color:var(--text-muted); letter-spacing:1px; margin-bottom:4px;">TIMELINE / DATE</div>
                 <div style="font-size: 12px; font-weight:700; color:var(--text);" id="rsDetailModalDate">Present</div>
+                <div style="font-size: 11px; color:var(--text-dim); margin-top:6px; line-height:1.5;" id="rsDetailModalOrg"></div>
               </div>
               <div>
                 <div style="font-size: 10px; color:var(--text-muted); letter-spacing:1px; margin-bottom:6px;">TECHNOLOGIES / SKILLS SYNC</div>
@@ -6086,8 +5962,8 @@ html, body {
                 <div style="font-size: 13px; font-style:italic; color:var(--green);" id="rsDetailModalSummary">A beautiful outline of the project...</div>
               </div>
               <div>
-                <div style="font-size: 10px; color:var(--text-muted); letter-spacing:1px; margin-bottom:4px;">FULL DETAILED LOG</div>
-                <div style="font-size: 11px; color:var(--text-dim); line-height:1.6;" id="rsDetailModalFullDesc">
+                <div style="font-size: 10px; color:var(--text-muted); letter-spacing:1px; margin-bottom:4px;">RESUME BULLET POINTS</div>
+                <div style="font-size: 11px; color:var(--text-dim); line-height:1.6; white-space:pre-line;" id="rsDetailModalFullDesc">
                   Here are the details of the project...
                 </div>
               </div>
@@ -6764,47 +6640,134 @@ function seedDemoData() {
   // 10. Portfolio Resume Data (rsTabData) — keys MUST match what renderRsContent
   // and the Overview stat counts (rsTabData[key].length) actually read:
   // projects / internships / positions / courses / research / achievements.
+  // Every entry carries the reference résumé format's fields: org + location
+  // fill the subheading's second row, fullDesc holds one bullet per line, and
+  // onPdf:false keeps an entry in the portfolio but off the one-page PDF.
+  const B = (...lines) => lines.join('\n');
   const rsTabData = {
     projects: [
-      { badge:'completed',  badgeLabel:'COMPLETED',  date:'Q3_2023',  name:'AEON NEURAL ENGINE',   desc:'Developed a high-frequency trading simulation using C++ and WebAssembly. Optimized throughput by 40% using custom memory allocators.', fullDesc: 'Designed and engineered a full trading simulation using C++20 standard libraries and WebAssembly for browser deployment. Implemented lock-free concurrent ring buffers and custom slab allocators to achieve optimal latency. Connected to a Kafka messaging stream for real-time order book updates.', tags:['C++20','WASM','KAFKA'] },
-      { badge:'active-proj',badgeLabel:'ACTIVE',     date:'PRESENT',  name:'ETHOS_OS KERNEL',      desc:'Designing a productivity-first desktop interface focusing on information density and keyboard-driven workflows for researchers.', fullDesc: 'Designing a productivity-oriented shell using React, SQLite, and custom flex grid rules. Focused on high information density, completely keyboard-driven navigation, and zero-overhead workspace layouts for academic research and software developers.', tags:['REACT','TAILWIND','SQLITE'] },
-      { badge:'completed',  badgeLabel:'COMPLETED',  date:'Q1_2023',  name:'DISTRIBUTED LOG ENGINE',desc:'Built a fault-tolerant distributed logging system handling 50k events/sec using Kafka streams and Redis caching.', fullDesc: 'Built a fault-tolerant distributed logging system handling 50k events/sec using Kafka streams and Redis caching. Achieved sub-5ms replication delays and robust partition recovery under heavy simulation stress testing.', tags:['KAFKA','REDIS','GO'] },
-      { badge:'completed',  badgeLabel:'COMPLETED',  date:'Q4_2022',  name:'ML INFERENCE CLUSTER', desc:'Deployed a multi-node PyTorch inference cluster with dynamic batching, reducing P99 latency from 840ms to 120ms.', fullDesc: 'Deployed a multi-node PyTorch inference cluster with dynamic batching, reducing P99 latency from 840ms to 120ms. Engineered custom request queue scheduling and warm cache strategies to ensure reliable service under surge workloads.', tags:['PYTORCH','CUDA','K8S'] },
-      { badge:'active-proj',badgeLabel:'ACTIVE',     date:'PRESENT',  name:'NEURO_QUERY ENGINE',   desc:'Designing an LLM-powered natural language to SQL pipeline with context-aware schema introspection and query validation.', fullDesc: 'Designing an LLM-powered natural language to SQL pipeline with context-aware schema introspection and query validation. Developed semantic vector lookup structures to dynamically inject matching database schema contexts into prompt generation phases.', tags:['PYTHON','POSTGRES','GPT-4'] },
-      { badge:'completed',  badgeLabel:'COMPLETED',  date:'Q1_2024',  name:'THE GRID PERSONAL OS', desc:'Single-file vanilla-JS operating system for habits, gym, finances and deep work, with a full offline-first sync layer.', fullDesc: 'Built a single-file vanilla-JS personal operating system spanning habits, gym, finances, calendar and deep work, backed by an Express + Prisma API and an offline write queue that replays once connectivity returns.', tags:['VANILLA_JS','ECHARTS','OFFLINE_CACHE'] }
+      { badge:'active-proj',badgeLabel:'ACTIVE',     date:'Jan. 2024 – Present', name:'The Grid Personal OS', org:'JavaScript, Express, Prisma, PostgreSQL',
+        desc:'Single-file personal operating system for habits, gym, finances and deep work, with offline-first sync.',
+        fullDesc: B('Built a single-page vanilla-JS dashboard for habits, gym, finances, calendar and deep work',
+                    'Designed an Express + Prisma API on Postgres with JWT cookie auth, zod validation and rate limiting',
+                    'Added an offline write queue that replays changes once connectivity returns'),
+        tags:['JavaScript','ECharts','PostgreSQL'] },
+      { badge:'completed',  badgeLabel:'COMPLETED',  date:'Jan. 2023 – Apr. 2023', name:'Distributed Log Engine', org:'Go, Kafka, Redis',
+        desc:'Fault-tolerant distributed logging system handling 50k events/sec using Kafka streams and Redis caching.',
+        fullDesc: B('Built a fault-tolerant logging pipeline sustaining 50k events/sec on Kafka streams with Redis caching',
+                    'Held replication delay under 5 ms and recovered partitions cleanly under stress tests'),
+        tags:['Go','Kafka','Redis'] },
+      { badge:'completed',  badgeLabel:'COMPLETED',  date:'Oct. 2022 – Dec. 2022', name:'ML Inference Cluster', org:'PyTorch, CUDA, Kubernetes',
+        desc:'Multi-node PyTorch inference cluster with dynamic batching, cutting P99 latency from 840ms to 120ms.',
+        fullDesc: B('Cut P99 latency from 840 ms to 120 ms with a multi-node PyTorch cluster and dynamic batching',
+                    'Wrote request-queue scheduling and cache warm-up to keep the service stable under traffic surges'),
+        tags:['PyTorch','CUDA','Kubernetes'] },
+      { badge:'completed',  badgeLabel:'COMPLETED',  date:'July 2023 – Sep. 2023', name:'Aeon Trading Simulator', org:'C++20, WebAssembly, Kafka', onPdf:false,
+        desc:'High-frequency trading simulation in C++ and WebAssembly; throughput up 40% with custom allocators.',
+        fullDesc: B('Built a trading simulation in C++20 compiled to WebAssembly for the browser',
+                    'Raised throughput 40% with lock-free ring buffers and custom slab allocators'),
+        tags:['C++','WebAssembly','Kafka'] },
+      { badge:'active-proj',badgeLabel:'ACTIVE',     date:'Mar. 2025 – Present', name:'NeuroQuery', org:'Python, PostgreSQL, LLMs', onPdf:false,
+        desc:'LLM-powered natural-language-to-SQL pipeline with schema introspection and query validation.',
+        fullDesc: B('Designing a natural-language-to-SQL pipeline that injects matching schema context into prompts',
+                    'Validating generated queries against the live schema before execution'),
+        tags:['Python','PostgreSQL','LLM'] },
+      { badge:'active-proj',badgeLabel:'ACTIVE',     date:'Aug. 2024 – Present', name:'Ethos Shell', org:'React, SQLite, Tailwind', onPdf:false,
+        desc:'Keyboard-driven, information-dense desktop shell for researchers.',
+        fullDesc: B('Designing a keyboard-driven desktop shell focused on information density for researchers'),
+        tags:['React','SQLite','Tailwind'] }
     ],
     internships: [
-      { badge:'internship', badgeLabel:'INTERNSHIP', date:'Q3_2024',  name:'VERTEX SYSTEMS',        desc:'Backend Engineering Intern. Built microservice mesh with gRPC, reducing inter-service latency by 32% across 12 services.', fullDesc: 'Backend Engineering Intern. Built microservice mesh with gRPC, reducing inter-service latency by 32% across 12 services. Created automated protocol buffer compiler workflows to enforce structural API schema validation on commit phases.', tags:['GRPC','GO','KUBERNETES'] },
-      { badge:'internship', badgeLabel:'INTERNSHIP', date:'Q1_2024',  name:'NOVA ANALYTICS',        desc:'Data Engineering Intern. Designed ELT pipelines ingesting 2TB/day from 8 external APIs into a Snowflake data warehouse.', fullDesc: 'Data Engineering Intern. Designed ELT pipelines ingesting 2TB/day from 8 external APIs into a Snowflake data warehouse. Built custom robust retry-logic layers and schema drift alarm monitors inside Apache Airflow orchestrators.', tags:['PYTHON','SNOWFLAKE','AIRFLOW'] },
-      { badge:'internship', badgeLabel:'INTERNSHIP', date:'Q2_2023',  name:'CYBER_DYNAMICS CORP',   desc:'Systems Security Intern. Implemented OAuth2.0 authentication flows and performed penetration testing on legacy nodes.', fullDesc: 'Systems Security Intern. Implemented OAuth2.0 authentication flows and performed penetration testing on legacy nodes. Conducted automated and manual code audits, cataloged CVEs, and patched memory leakage issues across production servers.', tags:['SECURITY','PYTHON','DOCKER'] },
-      { badge:'internship', badgeLabel:'INTERNSHIP', date:'Q4_2022',  name:'AXIOM ROBOTICS',        desc:'Embedded Systems Intern. Wrote firmware for motor controllers in C, achieving sub-millisecond PID control loops on ARM Cortex-M4.', fullDesc: 'Embedded Systems Intern. Wrote firmware for motor controllers in C, achieving sub-millisecond PID control loops on ARM Cortex-M4 boards. Calibrated direct-memory-access (DMA) operations to maximize telemetry capture speeds.', tags:['C','ARM','RTOS'] },
-      { badge:'internship', badgeLabel:'INTERNSHIP', date:'Q3_2022',  name:'HELIX CLOUD',           desc:'Platform Engineering Intern. Automated cloud provisioning with Terraform, cutting environment spin-up time from 45 minutes to 4 minutes.', fullDesc: 'Platform Engineering Intern. Automated cloud provisioning with Terraform, cutting environment spin-up time from 45 minutes to 4 minutes. Standardized reusable platform infrastructure modules utilized across 8 engineering teams.', tags:['TERRAFORM','AWS','BASH'] }
+      { badge:'internship', badgeLabel:'INTERNSHIP', date:'May 2024 – July 2024', name:'Backend Engineering Intern', org:'Vertex Systems', location:'Bengaluru, India',
+        desc:'Built a gRPC service mesh, reducing inter-service latency by 32% across 12 services.',
+        fullDesc: B('Built a gRPC service mesh across 12 services, reducing inter-service latency by 32%',
+                    'Automated protocol-buffer compilation so every commit is checked against the API schema',
+                    'Wrote load tests that caught two regressions before release'),
+        tags:['gRPC','Go','Kubernetes'] },
+      { badge:'internship', badgeLabel:'INTERNSHIP', date:'Jan. 2024 – Apr. 2024', name:'Data Engineering Intern', org:'Nova Analytics', location:'Remote',
+        desc:'Designed ELT pipelines ingesting 2TB/day from 8 APIs into Snowflake.',
+        fullDesc: B('Designed ELT pipelines ingesting 2 TB/day from 8 external APIs into a Snowflake warehouse',
+                    'Added retry layers and schema-drift alerts to the Airflow DAGs'),
+        tags:['Python','Snowflake','Airflow'] },
+      { badge:'internship', badgeLabel:'INTERNSHIP', date:'May 2023 – July 2023', name:'Systems Security Intern', org:'CyberDynamics Corp', location:'Pune, India',
+        desc:'Implemented OAuth 2.0 flows and penetration-tested legacy services.',
+        fullDesc: B('Implemented OAuth 2.0 authentication flows for three internal services',
+                    'Penetration-tested legacy hosts, catalogued CVEs and patched memory leaks in production'),
+        tags:['Security','Python','Docker'] },
+      { badge:'internship', badgeLabel:'INTERNSHIP', date:'Oct. 2022 – Dec. 2022', name:'Embedded Systems Intern', org:'Axiom Robotics', location:'Chennai, India', onPdf:false,
+        desc:'Motor-controller firmware in C with sub-millisecond PID loops on ARM Cortex-M4.',
+        fullDesc: B('Wrote motor-controller firmware in C with sub-millisecond PID loops on ARM Cortex-M4',
+                    'Tuned DMA transfers to maximise telemetry capture rate'),
+        tags:['C','ARM','RTOS'] },
+      { badge:'internship', badgeLabel:'INTERNSHIP', date:'June 2022 – Aug. 2022', name:'Platform Engineering Intern', org:'Helix Cloud', location:'Hyderabad, India', onPdf:false,
+        desc:'Terraform provisioning that cut environment spin-up from 45 to 4 minutes.',
+        fullDesc: B('Automated provisioning with Terraform, cutting environment spin-up from 45 minutes to 4',
+                    'Standardised infrastructure modules now used by 8 engineering teams'),
+        tags:['Terraform','AWS','Bash'] }
     ],
     positions: [
-      { badge:'position', badgeLabel:'POSITION', date:'2024—NOW',  name:'TECHNICAL LEAD — ETHOS_OS', desc:'Leading a 4-person team developing a research-grade productivity OS. Owning architecture decisions, code review, and sprint planning.', fullDesc: 'Leading a 4-person team developing a research-grade productivity OS. Owning architecture decisions, code review, and sprint planning. Standardized code quality criteria, reducing staging build failures by 68%.', tags:['LEADERSHIP','SYSTEM_DESIGN','REACT'] },
-      { badge:'position', badgeLabel:'POSITION', date:'2023—2024', name:'RESEARCH ASSISTANT — SYSTEMS LAB', desc:'Assisted on distributed consensus algorithms. Contributed to 2 papers on Raft optimizations for geo-distributed clusters.', fullDesc: 'Assisted on distributed consensus algorithms. Contributed to 2 papers on Raft optimizations for geo-distributed clusters. Programmed a customized simulation grid inside C++ to test partition tolerances.', tags:['DISTRIBUTED_SYS','C++','RESEARCH'] },
-      { badge:'position', badgeLabel:'POSITION', date:'2023—2024', name:'COMPETITIVE PROG. CLUB LEAD', desc:'Led university competitive programming club. Organized 6 inter-university contests, growing membership from 18 to 94 students.', fullDesc: 'Led university competitive programming club. Organized 6 inter-university contests, growing membership from 18 to 94 students. Created customized scoring servers and trained members on algorithms and paradigms.', tags:['ALGORITHMS','TEACHING','CPP'] },
-      { badge:'position', badgeLabel:'POSITION', date:'2022—2023', name:'TEACHING ASSISTANT — OS COURSE', desc:'Assisted in grading, weekly office hours, and designing lab assignments for 120-student Operating Systems course.', fullDesc: 'Assisted in grading, weekly office hours, and designing lab assignments for 120-student Operating Systems course. Directed lab sessions covering custom Linux system call compilation and multi-threaded programming concepts.', tags:['LINUX','C','EDUCATION'] }
+      { badge:'position', badgeLabel:'POSITION', date:'Aug. 2024 – Present', name:'Technical Lead', org:'Ethos Shell (student team)', location:'Bengaluru, India',
+        desc:'Leading a 4-person team; owning architecture, code review and sprint planning.',
+        fullDesc: B('Lead a 4-person team, owning architecture decisions, code review and sprint planning',
+                    'Introduced code-quality gates that cut staging build failures by 68%'),
+        tags:['Leadership','System Design','React'] },
+      { badge:'position', badgeLabel:'POSITION', date:'July 2023 – May 2024', name:'Research Assistant', org:'Systems Lab', location:'Bengaluru, India', onPdf:false,
+        desc:'Distributed consensus research; contributed to 2 papers on Raft optimisations.',
+        fullDesc: B('Contributed to two papers on Raft optimisations for geo-distributed clusters',
+                    'Built a C++ simulation grid to test partition tolerance'),
+        tags:['Distributed Systems','C++','Research'] },
+      { badge:'position', badgeLabel:'POSITION', date:'July 2023 – May 2024', name:'Club Lead', org:'Competitive Programming Club', location:'Bengaluru, India', onPdf:false,
+        desc:'Organised 6 inter-university contests; grew membership from 18 to 94.',
+        fullDesc: B('Organised 6 inter-university contests and grew membership from 18 to 94 students'),
+        tags:['Algorithms','Teaching','C++'] },
+      { badge:'position', badgeLabel:'POSITION', date:'July 2022 – May 2023', name:'Teaching Assistant, Operating Systems', org:'School of Computing', location:'Bengaluru, India', onPdf:false,
+        desc:'Grading, office hours and lab design for a 120-student OS course.',
+        fullDesc: B('Ran weekly office hours and designed lab assignments for a 120-student Operating Systems course'),
+        tags:['Linux','C','Teaching'] }
     ],
     courses: [
-      { badge:'course', badgeLabel:'B.TECH', date:'2021—2025', name:'COMPUTER SCIENCE & ENGINEERING', desc:'Specialization in Systems & Distributed Computing. Core coursework: OS, Compilers, Networks, Distributed Systems, ML, Algorithms.', fullDesc: 'Specialization in Systems & Distributed Computing. Core coursework: OS, Compilers, Networks, Distributed Systems, ML, Algorithms. Completed capstone project focused on multi-threaded network sockets.', tags:['GPA: 9.1','HONORS','SYSTEMS'] },
-      { badge:'course', badgeLabel:'CERT',   date:'2024',      name:'ADVANCED DISTRIBUTED SYSTEMS', desc:'MIT OpenCourseWare — 6.824. Covered Raft, Spanner, MapReduce, and Zookeeper. Completed all labs with full test-suite passes.', fullDesc: 'MIT OpenCourseWare — 6.824. Covered Raft, Spanner, MapReduce, and Zookeeper. Completed all labs with full test-suite passes. Wrote custom consensus engines in Go to pass partition and network loss checks.', tags:['MIT','DISTRIBUTED','RAFT'] },
-      { badge:'course', badgeLabel:'CERT',   date:'2023',      name:'CUDA PARALLEL PROGRAMMING',   desc:'NVIDIA Deep Learning Institute. GPU architecture, warp scheduling, shared memory optimization. Final kernel 18x faster than CPU baseline.', fullDesc: 'NVIDIA Deep Learning Institute. GPU architecture, warp scheduling, shared memory optimization. Final kernel 18x faster than CPU baseline. Analyzed profiling outputs to resolve memory coalescing bottlenecks.', tags:['CUDA','GPU','NVIDIA'] },
-      { badge:'course', badgeLabel:'CERT',   date:'2023',      name:'CLOUD NATIVE ARCHITECTURE',   desc:'Linux Foundation — LFS158x. Kubernetes internals, Helm charts, service meshes, and production-grade CI/CD pipeline design.', fullDesc: 'Linux Foundation — LFS158x. Kubernetes internals, Helm charts, service meshes, and production-grade CI/CD pipeline design. Gained hands-on expertise building declarative cluster automation.', tags:['KUBERNETES','HELM','LINUX'] }
+      { badge:'course', badgeLabel:'B.TECH', date:'July 2021 – May 2025', name:'Northfield Institute of Technology', org:'B.Tech in Computer Science and Engineering, CGPA 9.1', location:'Bengaluru, India',
+        desc:'Specialisation in systems and distributed computing.', fullDesc:'Specialisation in systems and distributed computing.', tags:['CGPA 9.1','Systems'] },
+      { badge:'course', badgeLabel:'CERT',   date:'2024', name:'Advanced Distributed Systems (6.824)', org:'MIT OpenCourseWare', location:'Online', onPdf:false,
+        desc:'Raft, Spanner, MapReduce and ZooKeeper; all labs passing.', fullDesc:'Raft, Spanner, MapReduce and ZooKeeper; all labs passing.', tags:['Raft','Go'] },
+      { badge:'course', badgeLabel:'CERT',   date:'2023', name:'CUDA Parallel Programming', org:'NVIDIA Deep Learning Institute', location:'Online', onPdf:false,
+        desc:'GPU architecture, warp scheduling and shared memory; final kernel 18x faster than CPU.', fullDesc:'GPU architecture, warp scheduling and shared memory; final kernel 18x faster than CPU.', tags:['CUDA','GPU'] },
+      { badge:'course', badgeLabel:'CERT',   date:'2023', name:'Cloud Native Architecture (LFS158x)', org:'The Linux Foundation', location:'Online', onPdf:false,
+        desc:'Kubernetes internals, Helm, service meshes and CI/CD design.', fullDesc:'Kubernetes internals, Helm, service meshes and CI/CD design.', tags:['Kubernetes','Helm'] }
     ],
     research: [
-      { badge:'research', badgeLabel:'PUBLISHED', date:'2024',       name:'RAFT OPTIMIZATIONS FOR GEO-DISTRIBUTED NODES', desc:'Co-authored paper proposing adaptive heartbeat intervals in Raft consensus to reduce cross-region election timeouts by 41%. Published in IEEE PDCA.', fullDesc: 'Co-authored paper proposing adaptive heartbeat intervals in Raft consensus to reduce cross-region election timeouts by 41%. Published in IEEE PDCA. Conducted latency analysis over simulated cross-region cluster bounds.', tags:['IEEE','DISTRIBUTED','CONSENSUS'] },
-      { badge:'research', badgeLabel:'PENDING',   date:'2024',       name:'LOW-LATENCY INFERENCE SCHEDULING UNDER SLA CONSTRAINTS', desc:'Investigating preemptive GPU kernel scheduling for multi-tenant inference workloads. Submitted to USENIX ATC — peer review pending.', fullDesc: 'Investigating preemptive GPU kernel scheduling for multi-tenant inference workloads. Submitted to USENIX ATC — peer review pending. Developed a customized simulation scheduler in Python to test scheduling SLA goals.', tags:['USENIX','GPU','INFERENCE'] },
-      { badge:'research', badgeLabel:'WIP',       date:'2025',       name:'LLM-ASSISTED QUERY PLAN OPTIMIZATION',         desc:'Exploring LLM-generated query hints as alternatives to traditional cost-based optimizers in Postgres. Preliminary results show 28% improvement on TPC-H.', fullDesc: 'Exploring LLM-generated query hints as alternatives to traditional cost-based optimizers in Postgres. Preliminary results show 28% improvement on TPC-H. Standardizing model fine-tuning templates with query trees.', tags:['LLM','POSTGRES','QUERY_OPT'] }
+      { badge:'research', badgeLabel:'PUBLISHED', date:'2024', name:'Raft Optimisations for Geo-Distributed Nodes', org:'IEEE PDCA', location:'',
+        desc:'Adaptive Raft heartbeats cut cross-region election timeouts by 41%.',
+        fullDesc: B('Co-authored a paper proposing adaptive heartbeat intervals that cut cross-region election timeouts by 41%'),
+        tags:['IEEE','Distributed Systems','Consensus'] },
+      { badge:'research', badgeLabel:'PENDING',   date:'2024', name:'Low-Latency Inference Scheduling under SLAs', org:'Submitted to USENIX ATC', location:'',
+        desc:'Preemptive GPU kernel scheduling for multi-tenant inference.',
+        fullDesc: B('Studying preemptive GPU kernel scheduling for multi-tenant inference workloads'),
+        tags:['USENIX','GPU','Inference'] },
+      { badge:'research', badgeLabel:'WIP',       date:'2025', name:'LLM-Assisted Query Plan Optimisation', org:'Systems Lab', location:'',
+        desc:'LLM-generated query hints vs cost-based optimisers; 28% faster on TPC-H so far.',
+        fullDesc: B('Comparing LLM-generated query hints with Postgres\'s cost-based optimiser; 28% faster on TPC-H so far'),
+        tags:['LLM','PostgreSQL','Query Optimisation'] }
     ],
     achievements: [
-      { badge:'completed', badgeLabel:'WINNER',   date:'2024',  name:'ICPC REGIONAL FINALIST',        desc:'Ranked 3rd in ICPC Asia Regional — solved 8/12 problems in 5 hours. Advanced to national qualifier.', fullDesc: 'Ranked 3rd in ICPC Asia Regional — solved 8/12 problems in 5 hours. Advanced to national qualifier. Focused on graph algorithms, segment trees, and dynamic programming tasks.', tags:['ICPC','ALGORITHMS','CP'] },
-      { badge:'completed', badgeLabel:'WINNER',   date:'2023',  name:'NATIONAL HACKATHON — 1ST PLACE',desc:'Won national-level hackathon (300+ teams). Built a real-time satellite telemetry dashboard with WebGL globe and live NORAD feed.', fullDesc: 'Won national-level hackathon (300+ teams). Built a real-time satellite telemetry dashboard with WebGL globe and live NORAD feed. Handled front-end pipeline performance and high-frequency socket updates.', tags:['HACKATHON','REACT','WEBGL'] },
-      { badge:'completed', badgeLabel:'SCHOLAR',  date:'2021',  name:'MERIT SCHOLARSHIP — FULL RIDE', desc:'Awarded full-tuition merit scholarship based on entrance rank: top 0.3% nationally among 400,000+ candidates.', fullDesc: 'Awarded full-tuition merit scholarship based on entrance rank: top 0.3% nationally among 400,000+ candidates. Ranked in top tier among highly competitive national testing bounds.', tags:['SCHOLARSHIP','TOP_0.3%','MERIT'] },
-      { badge:'completed', badgeLabel:'HONOR',    date:'2024',  name:'DEAN\'S LIST — 4 CONSECUTIVE SEMESTERS', desc:'Maintained CGPA above 9.0 for four consecutive semesters, qualifying for Dean\'s List recognition each time.', fullDesc: 'Maintained CGPA above 9.0 for four consecutive semesters, qualifying for Dean\'s List recognition each time. Honored with university award for academic excellence and semester consistency.', tags:['ACADEMIC','CGPA_9+','CONSISTENT'] }
+      { badge:'completed', badgeLabel:'WINNER',  date:'2024', name:'ICPC Asia Regional Finalist', org:'ICPC', location:'',
+        desc:'Ranked 3rd in the regional; solved 8 of 12 problems.', fullDesc: B('Ranked 3rd in the ICPC Asia Regional, solving 8 of 12 problems'), tags:['ICPC','Algorithms'] },
+      { badge:'completed', badgeLabel:'WINNER',  date:'2023', name:'National Hackathon, 1st Place', org:'300+ teams', location:'',
+        desc:'Real-time satellite telemetry dashboard with a WebGL globe.', fullDesc: B('Won against 300+ teams with a real-time satellite telemetry dashboard on a WebGL globe'), tags:['Hackathon','WebGL'] },
+      { badge:'completed', badgeLabel:'SCHOLAR', date:'2021', name:'Full-Tuition Merit Scholarship', org:'Top 0.3% of 400,000+ candidates', location:'',
+        desc:'Awarded on entrance rank.', fullDesc: B('Awarded full tuition on entrance rank, top 0.3% of 400,000+ candidates'), tags:['Scholarship'] },
+      { badge:'completed', badgeLabel:'HONOR',   date:'2024', name:'Dean\'s List, 4 Consecutive Semesters', org:'CGPA above 9.0', location:'',
+        desc:'CGPA above 9.0 for four straight semesters.', fullDesc: B('Kept a CGPA above 9.0 for four consecutive semesters'), tags:['Academic'] }
     ]
   };
   localStorage.setItem('rsTabData', JSON.stringify(rsTabData));
+  // Header + skills rows for the PDF (a made-up person; nothing here is real).
+  localStorage.setItem('rsProfile', JSON.stringify({
+    name: 'Alex Rivera', phone: '+91 98765 43210', email: 'alex.rivera@example.com',
+    linkedin: 'linkedin.com/in/grid-demo', github: 'github.com/grid-demo', website: '',
+    skills: { languages: 'Go, Python, C/C++, JavaScript, SQL', frameworks: 'React, Express, Flask, gRPC',
+              tools: 'Git, Docker, Kubernetes, Terraform, AWS', libraries: 'PyTorch, pandas, NumPy, ECharts' },
+  }));
   // Overview's CUMULATIVE CGPA card reads this separate self-reported key —
   // rsTabData has no gpa field, so it was left blank even with the seed above.
   localStorage.setItem('gridCgpa', '9.1');
@@ -6871,6 +6834,7 @@ function seedDemoData() {
     localStorage.removeItem('gymLogs');
     localStorage.removeItem('rwProjects');
     localStorage.removeItem('rsTabData');
+    localStorage.removeItem('rsProfile');
     localStorage.removeItem('gridEntries');
     localStorage.removeItem('gridHabits');
     localStorage.removeItem('gridBudget');
@@ -6908,6 +6872,7 @@ function seedDemoData() {
       localStorage.removeItem('gymLogs');
       localStorage.removeItem('rwProjects');
       localStorage.removeItem('rsTabData');
+      localStorage.removeItem('rsProfile');
       localStorage.removeItem('gridEntries');
       localStorage.removeItem('gridHabits');
       localStorage.removeItem('gridBudget');
@@ -7119,7 +7084,7 @@ function exitDemoMode() {
 function restoreRealDataKeys() {
   const keysToRestore = [
     'gymDBVersion', 'gymSplitData', 'gymExerciseRegistry', 'gymMuscleGroups', 'gymLogs',
-    'rwProjects', 'rsTabData', 'gridEntries', 'gridHabits', 'gridBudget', 'gridTxLog', 'gridFinTelemetry',
+    'rwProjects', 'rsTabData', 'rsProfile', 'gridEntries', 'gridHabits', 'gridBudget', 'gridTxLog', 'gridFinTelemetry',
     'gridFinRecurItems', 'gridFinDebtItems', 'gridQueueItems', 'gridRsStackData', 'gridFocusLogs', 'gridWorkProjectsList', 'gridKanbanTasks', 'gridSleepData'
   ];
   keysToRestore.forEach(k => {
@@ -7269,7 +7234,7 @@ async function launchDemo() {
 function launchLocalDemo() {
   const DEMO_KEYS = [
     'gymDBVersion', 'gymSplitData', 'gymExerciseRegistry', 'gymMuscleGroups', 'gymLogs',
-    'rwProjects', 'rsTabData', 'gridEntries', 'gridHabits', 'gridBudget', 'gridTxLog',
+    'rwProjects', 'rsTabData', 'rsProfile', 'gridEntries', 'gridHabits', 'gridBudget', 'gridTxLog',
     'gridFinTelemetry', 'gridFinRecurItems', 'gridFinDebtItems', 'gridQueueItems',
     'gridRsStackData', 'gridFocusLogs', 'gridWorkProjectsList', 'gridKanbanTasks', 'gridSleepData'
   ];
@@ -7355,6 +7320,9 @@ function showUniversalModal(options) {
           html += `<option value="${val}" ${sel}>${lbl}</option>`;
         });
         html += `</select>`;
+      } else if (f.type === 'textarea') {
+        // Multi-line entry (e.g. resume bullet points, one per line).
+        html += `<textarea class="form-input" id="ucf_${f.id}" rows="${f.rows || 5}" placeholder="${escHtml(f.placeholder || '')}" style="resize:vertical; min-height:96px; line-height:1.5; font-family:inherit;">${escHtml(f.value !== undefined ? String(f.value) : '')}</textarea>`;
       } else {
         const val = f.value !== undefined ? f.value : '';
         const pl = f.placeholder || '';
@@ -11305,18 +11273,36 @@ let rsActiveTab = 'projects';
 // rsTabData[key].length) must read as genuinely empty, not a stranger's résumé.
 let rsTabData = JSON.parse(localStorage.getItem('rsTabData') || '{}');
 
+// The PDF header (name + contact line) and the four Technical Skills rows.
+// Kept out of rsTabData so every consumer can keep treating that as
+// category -> array; it rides along in the same server blob as __profile.
+const RS_PROFILE_KEY = '__profile';
+let rsProfile = JSON.parse(localStorage.getItem('rsProfile') || '{}');
+
 async function initResume() {
   const isDemo = sessionStorage.getItem('gridMode') === 'demo';
   const saved  = localStorage.getItem('rsTabData');
   if (saved) rsTabData = JSON.parse(saved);
+  rsProfile = JSON.parse(localStorage.getItem('rsProfile') || '{}');
 
   if (!isDemo) {
     try {
       const sections = await gridFetch('/api/resume');
-      if (sections && Object.keys(sections).length > 0 &&
-          (sections.projects?.length || sections.experience?.length || sections.courses?.length)) {
-        rsTabData = sections;
-        localStorage.setItem('rsTabData', JSON.stringify(rsTabData));
+      if (sections && typeof sections === 'object') {
+        const { [RS_PROFILE_KEY]: prof, ...cats } = sections;
+        // Adopt the server copy when it holds anything at all — the old check
+        // only looked at projects/experience/courses, so a résumé of just
+        // internships or positions was ignored on every other device.
+        const hasNodes = Object.keys(RS_CAT_LABELS).some(k => Array.isArray(cats[k]) && cats[k].length);
+        if (hasNodes) {
+          rsTabData = {};
+          Object.keys(RS_CAT_LABELS).forEach(k => { if (Array.isArray(cats[k])) rsTabData[k] = cats[k]; });
+          localStorage.setItem('rsTabData', JSON.stringify(rsTabData));
+        }
+        if (prof && typeof prof === 'object') {
+          rsProfile = prof;
+          localStorage.setItem('rsProfile', JSON.stringify(rsProfile));
+        }
       }
     } catch(e) { console.warn('Resume API load failed:', e); }
   }
@@ -11325,7 +11311,7 @@ async function initResume() {
 }
 
 function _syncResumeToAPI() {
-  gridSync('/api/resume', { sections: rsTabData }, 'PUT');
+  gridSync('/api/resume', { sections: { ...rsTabData, [RS_PROFILE_KEY]: rsProfile } }, 'PUT');
 }
 
 // Category -> the badge class/label combo its cards use (see .rs-card-badge.*).
@@ -11342,6 +11328,41 @@ const RS_CAT_LABELS = {
   courses: 'Course', research: 'Research paper', achievements: 'Achievement',
 };
 
+/** Form fields shared by Add and Edit. "Title", "Organisation" and "Location"
+ *  are the template's two subheading rows; bullets are one per line. */
+function rsItemFields(item) {
+  return [
+    { id: 'name',     label: 'Title — role, institution or project name', type: 'text', value: item.name || '',
+      placeholder: 'e.g. Backend Engineering Intern' },
+    { id: 'org',      label: 'Organisation — company, degree, or a project\'s tech stack', type: 'text', value: item.org || '',
+      placeholder: 'e.g. Vertex Systems / B.Tech in Computer Science / Python, Flask, React' },
+    { id: 'location', label: 'Location', type: 'text', value: item.location || '', placeholder: 'e.g. Bengaluru, India' },
+    { id: 'date',     label: 'Date / range', type: 'text', value: item.date || '', placeholder: 'e.g. June 2024 – Aug. 2024' },
+    { id: 'desc',     label: 'One-line summary (shown on the card)', type: 'text', value: item.desc || '',
+      placeholder: 'What it is, in one line' },
+    { id: 'fullDesc', label: 'Resume bullet points — one per line', type: 'textarea', rows: 5, value: item.fullDesc || '',
+      placeholder: 'Built a gRPC service mesh across 12 services, cutting latency by 32%\nAutomated schema checks on every commit' },
+    { id: 'tags',     label: 'Tags (comma separated)', type: 'text', value: (item.tags || []).join(', '),
+      placeholder: 'e.g. Python, Kafka, distributed systems' },
+    { id: 'links',    label: 'Links (comma separated)', type: 'text',
+      value: (item.links || []).map(l => (typeof l === 'string' ? l : l.url)).filter(Boolean).join(', '),
+      placeholder: 'e.g. https://github.com/you/repo' },
+  ];
+}
+const RS_FIELD_HELP = 'On the PDF: Education shows Title + Location, then Organisation (degree) + Date. ' +
+  'Experience shows Title (role) + Date, then Organisation (company) + Location, then the bullets. ' +
+  'Projects show Title | Organisation (tech stack; tags are used if empty) + Date, then the bullets.';
+
+function rsItemFromForm(v) {
+  return {
+    name: v.name, org: (v.org || '').trim(), location: (v.location || '').trim(),
+    date: v.date || '', desc: v.desc || '',
+    fullDesc: (v.fullDesc || '').trim() || v.desc || '',
+    tags: (v.tags || '').split(',').map(t => t.trim()).filter(Boolean),
+    links: (v.links || '').split(',').map(t => t.trim()).filter(Boolean),
+  };
+}
+
 /** The only way to get a new node into any Resume tab — there was none before. */
 function openAddRsItemModal() {
   const cat = rsActiveTab in RS_CAT_LABELS ? rsActiveTab : 'projects';
@@ -11350,23 +11371,16 @@ function openAddRsItemModal() {
     fields: [
       { id: 'cat', label: 'Category', type: 'select', value: cat,
         options: Object.keys(RS_CAT_LABELS).map(k => ({ value: k, label: RS_CAT_LABELS[k] })) },
-      { id: 'name',     label: 'Title',                    type: 'text', placeholder: 'e.g. Distributed Log Engine' },
-      { id: 'date',     label: 'Date / range',              type: 'text', placeholder: 'e.g. Q3 2025 or PRESENT' },
-      { id: 'desc',     label: 'One-line summary',          type: 'text', placeholder: 'What it is, in one line' },
-      { id: 'fullDesc', label: 'Full description',          type: 'text', placeholder: 'Optional — shown in the detail view' },
-      { id: 'tags',     label: 'Tags (comma separated)',    type: 'text', placeholder: 'e.g. rust, kafka, distributed-systems' },
-      { id: 'links',    label: 'Links (comma separated)',   type: 'text', placeholder: 'e.g. https://github.com/you/repo' },
+      ...rsItemFields({}),
     ],
+    description: RS_FIELD_HELP,
     onSave: (v) => {
       if (!v.name) return;
       const targetCat = v.cat || cat;
       const badge = RS_CAT_BADGE[targetCat] || RS_CAT_BADGE.projects;
       if (!rsTabData[targetCat]) rsTabData[targetCat] = [];
       rsTabData[targetCat].unshift({
-        name: v.name, date: v.date || '', desc: v.desc || '',
-        fullDesc: v.fullDesc || v.desc || '',
-        tags: (v.tags || '').split(',').map(t => t.trim()).filter(Boolean),
-        links: (v.links || '').split(',').map(t => t.trim()).filter(Boolean),
+        ...rsItemFromForm(v),
         badge: badge.badge, badgeLabel: badge.badgeLabel,
       });
       persistRsData();
@@ -11398,8 +11412,8 @@ function renderRsContent(tab) {
   area.innerHTML = items.map((item, idx) => `
     <div class="rs-card" onclick="openRsDetailModal('${tab}', ${idx})" style="cursor:pointer;">
       <div class="rs-card-top">
-        <span class="rs-card-badge ${item.badge}">${item.badgeLabel}</span>
-        <span class="rs-card-date">${item.date}</span>
+        <span class="rs-card-badge ${escHtml(item.badge)}">${escHtml(item.badgeLabel)}</span>
+        <span class="rs-card-date">${escHtml(item.date)}</span>
       </div>
       <div class="rs-card-name">${escHtml(item.name)}</div>
       <div class="rs-card-desc">${escHtml(item.desc)}</div>
@@ -11446,6 +11460,8 @@ function openRsDetailModal(tab, idx) {
   document.getElementById('rsDetailModalTitle').textContent = item.name;
   document.getElementById('rsDetailModalCategory').textContent = tab.toUpperCase();
   document.getElementById('rsDetailModalDate').textContent = (item.date || '').toUpperCase();
+  const orgEl = document.getElementById('rsDetailModalOrg');
+  if (orgEl) orgEl.textContent = [item.org, item.location].filter(Boolean).join(' · ');
   document.getElementById('rsDetailModalSummary').textContent = item.desc || '';
   document.getElementById('rsDetailModalFullDesc').textContent = item.fullDesc || item.desc || 'No detailed description yet — use EDIT to add one.';
 
@@ -11500,23 +11516,11 @@ function editRsItem(cat, idx) {
   if (!item) return;
   showUniversalModal({
     title: 'EDIT NODE',
-    fields: [
-      { id: 'name',     label: 'Title',                     type: 'text', value: item.name || '' },
-      { id: 'date',     label: 'Date / range',              type: 'text', value: item.date || '' },
-      { id: 'desc',     label: 'One-line summary',          type: 'text', value: item.desc || '' },
-      { id: 'fullDesc', label: 'Full description',          type: 'text', value: item.fullDesc || '' },
-      { id: 'tags',     label: 'Tags (comma separated)',    type: 'text', value: (item.tags || []).join(', ') },
-      { id: 'links',    label: 'Links (comma separated)',   type: 'text',
-        value: (item.links || []).map(l => (typeof l === 'string' ? l : l.url)).filter(Boolean).join(', ') },
-    ],
+    fields: rsItemFields(item),
+    description: RS_FIELD_HELP,
     onSave: v => {
       if (!v.name) return;
-      Object.assign(item, {
-        name: v.name, date: v.date || '', desc: v.desc || '',
-        fullDesc: v.fullDesc || v.desc || '',
-        tags: (v.tags || '').split(',').map(t => t.trim()).filter(Boolean),
-        links: (v.links || '').split(',').map(t => t.trim()).filter(Boolean),
-      });
+      Object.assign(item, rsItemFromForm(v));
       persistRsData();
       if (typeof renderRsContent === 'function') renderRsContent(rsActiveTab);
       if (typeof renderRsStats === 'function') renderRsStats();
@@ -11539,165 +11543,161 @@ function deleteRsItem(cat, idx) {
   if (typeof renderMindgraphIfActive === 'function') renderMindgraphIfActive();
 }
 
+// Which template section each portfolio tab feeds. Research and achievements
+// have no section in the reference format, so they start unticked.
+const RS_PDF_GROUPS = [
+  { cat: 'courses',      label: 'COURSES → EDUCATION' },
+  { cat: 'internships',  label: 'INTERNSHIPS → EXPERIENCE' },
+  { cat: 'positions',    label: 'POSITIONS → EXPERIENCE' },
+  { cat: 'projects',     label: 'PROJECTS → PROJECTS' },
+  { cat: 'research',     label: 'RESEARCH (EXTRA SECTION)', off: true },
+  { cat: 'achievements', label: 'ACHIEVEMENTS (EXTRA SECTION)', off: true },
+];
+
+/** Whether a node is on the PDF. The choice is saved on the node (onPdf) so it
+ *  survives reloads and other devices; unset means the group's default. */
+function rsOnPdf(cat, item) {
+  if (!item) return false;
+  if (item.onPdf != null) return !!item.onPdf;
+  const g = RS_PDF_GROUPS.find(x => x.cat === cat);
+  return !(g && g.off);
+}
+
+function rsTogglePdf(cat, idx, on) {
+  const item = (rsTabData[cat] || [])[idx];
+  if (!item) return;
+  item.onPdf = !!on;
+  persistRsData();
+  generateResumePdf();
+}
+
 function renderRsPdfSelectors() {
   const container = document.getElementById('rsPdfSelectors');
   if (!container) return;
-  
-  container.innerHTML = Object.keys(rsTabData).map(cat => {
-    const items = rsTabData[cat] || [];
-    const checkBoxes = items.map((item, idx) => `
-      <label style="display:flex; align-items:center; gap:8px; font-size:10px; margin-bottom:6px; cursor:pointer; text-align: left;">
-        <input type="checkbox" id="check_${cat}_${idx}" checked style="accent-color:var(--purple); cursor:pointer;">
-        <span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${item.name}">${item.name}</span>
-      </label>
-    `).join('');
+  container.innerHTML = RS_PDF_GROUPS.map(({ cat, label }) => {
+    const items = Array.isArray(rsTabData[cat]) ? rsTabData[cat] : [];
+    const boxes = items.map((item, idx) => `
+      <label style="display:flex; align-items:center; gap:8px; font-size:10px; margin-bottom:6px; cursor:pointer; text-align:left;">
+        <input type="checkbox" id="check_${cat}_${idx}" ${rsOnPdf(cat, item) ? 'checked' : ''} onchange="rsTogglePdf('${cat}', ${idx}, this.checked)" style="accent-color:var(--purple); cursor:pointer;">
+        <span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${escHtml(item.name)}">${escHtml(item.name)}</span>
+      </label>`).join('');
     return `
-      <div style="border-right:1px solid rgba(255,255,255,0.06); padding-right:10px; text-align: left;">
-        <div style="font-size:9px; font-weight:700; color:var(--purple); letter-spacing:1px; margin-bottom:10px; text-transform:uppercase;">
-          ${cat}
+      <div style="border-right:1px solid rgba(255,255,255,0.06); padding-right:10px; text-align:left; min-width:0;">
+        <div style="font-size:9px; font-weight:700; color:var(--purple); letter-spacing:1px; margin-bottom:10px;">${label}</div>
+        <div style="max-height:120px; overflow-y:auto; padding-right:4px;">
+          ${boxes || '<div style="color:var(--text-muted); font-size:8px;">No items</div>'}
         </div>
-        <div style="max-height: 120px; overflow-y:auto; padding-right:4px;">
-          ${checkBoxes || '<div style="color:var(--text-muted); font-size:8px;">No items</div>'}
-        </div>
-      </div>
-    `;
+      </div>`;
   }).join('');
 }
 
-/** Break a description into sentence-level bullets (the reference format's
- *  entries are always multi-bullet, not one summary line) — fullDesc is
- *  preferred since it's usually a few sentences; desc is the one-line
- *  fallback for items that only ever had a short summary entered. */
-function rsBullets(item, max, maxLen) {
-  const raw = String(item.fullDesc || item.desc || '').trim();
-  if (!raw) return [];
-  const parts = raw.split(/(?<=[.!?])\s+(?=[A-Z(])/).map(s => s.trim()).filter(Boolean);
-  return parts.slice(0, max).map(s => s.length > maxLen ? s.slice(0, maxLen).trim() + '…' : s);
+/** The PDF's header (name + contact line) and its four Technical Skills rows. */
+function openRsProfileModal() {
+  const p = rsProfile || {}, sk = p.skills || {};
+  const pd = JSON.parse(localStorage.getItem('gridUserProfile') || '{}');
+  showUniversalModal({
+    title: 'RESUME HEADER & SKILLS',
+    fields: [
+      { id: 'name',       label: 'Full name',       type: 'text', value: p.name || pd.name || sessionStorage.getItem('gridUserName') || '' },
+      { id: 'phone',      label: 'Phone',           type: 'text', value: p.phone || '', placeholder: 'e.g. +91 98765 43210' },
+      { id: 'email',      label: 'Email',           type: 'text', value: p.email || sessionStorage.getItem('gridUser') || '' },
+      { id: 'linkedin',   label: 'LinkedIn',        type: 'text', value: p.linkedin || '', placeholder: 'linkedin.com/in/you' },
+      { id: 'github',     label: 'GitHub',          type: 'text', value: p.github || '', placeholder: 'github.com/you' },
+      { id: 'website',    label: 'Website (optional)', type: 'text', value: p.website || '', placeholder: 'you.dev' },
+      { id: 'languages',  label: 'Skills — Languages',       type: 'text', value: sk.languages || '',  placeholder: 'Java, Python, C/C++, SQL, JavaScript' },
+      { id: 'frameworks', label: 'Skills — Frameworks',      type: 'text', value: sk.frameworks || '', placeholder: 'React, Node.js, Flask, FastAPI' },
+      { id: 'tools',      label: 'Skills — Developer Tools', type: 'text', value: sk.tools || '',      placeholder: 'Git, Docker, AWS, VS Code' },
+      { id: 'libraries',  label: 'Skills — Libraries',       type: 'text', value: sk.libraries || '',  placeholder: 'pandas, NumPy, Matplotlib' },
+    ],
+    description: 'The contact line prints as phone | email | LinkedIn | GitHub, with the links underlined. Empty fields and empty skill rows are left out.',
+    onSave: v => {
+      const t = k => (v[k] || '').trim();
+      rsProfile = {
+        name: t('name'), phone: t('phone'), email: t('email'),
+        linkedin: t('linkedin'), github: t('github'), website: t('website'),
+        skills: { languages: t('languages'), frameworks: t('frameworks'), tools: t('tools'), libraries: t('libraries') },
+      };
+      localStorage.setItem('rsProfile', JSON.stringify(rsProfile));
+      _syncResumeToAPI();
+      generateResumePdf();
+    },
+  });
 }
 
+/**
+ * Builds the résumé in the reference format (js/resume-pdf.js) into the
+ * preview iframe. The same page is what prints, so the preview is the PDF.
+ */
 function generateResumePdf() {
-  const sheet = document.getElementById('rsPdfPreviewSheet');
-  if (!sheet) return;
-  const _status = document.getElementById('rsCompilerStatus');
-
-  // ONE-PAGE BUDGET.
-  const PDF_MAX_ITEMS = 16;
-  let _pdfUsed = 0, _pdfDropped = 0;
-  const allTags = new Set();
-
-  // collectTags is false for courses/achievements — their tags tend to be
-  // topical labels ("HONORS", "GPA: 9.1", "CONSISTENT"), not technical
-  // skills, and mixing them into Technical Skills reads as wrong on a real
-  // resume. Only categories that are actually about built/used technology
-  // feed that aggregate.
-  const selectCat = (cat, collectTags) => {
-    const items = rsTabData[cat] || [];
-    const selected = [];
-    items.forEach((item, idx) => {
-      const checkbox = document.getElementById(`check_${cat}_${idx}`);
-      if (checkbox && checkbox.checked) {
-        if (_pdfUsed >= PDF_MAX_ITEMS) { _pdfDropped++; return; }
-        _pdfUsed++;
-        selected.push(item);
-        if (collectTags) (item.tags || []).forEach(t => t && allTags.add(String(t)));
-      }
-    });
-    return selected;
+  const frame = document.getElementById('rsPdfFrame');
+  const R = window.Grid && Grid.resumePdf;
+  if (!frame || !R) return;
+  const pd = JSON.parse(localStorage.getItem('gridUserProfile') || '{}');
+  const profile = { ...rsProfile,
+    name:  (rsProfile.name  || pd.name || sessionStorage.getItem('gridUserName') || '').trim(),
+    email: (rsProfile.email || sessionStorage.getItem('gridUser') || '').trim() };
+  const doc = R.fromGrid({ tabs: rsTabData, profile, picked: (cat, idx) => rsOnPdf(cat, (rsTabData[cat] || [])[idx]) });
+  frame.onload = () => {
+    const d = frame.contentDocument;
+    (d && d.fonts ? d.fonts.ready : Promise.resolve()).then(() => rsMeasurePdf(doc));
   };
+  frame.srcdoc = R.html(doc);
+}
 
-  // Standard entry: bold name (left) + date (right) on one row, then
-  // sentence-split bullets beneath. Shared by Experience/Research/
-  // Achievements — the reference format uses the same shape for all of them.
-  const renderEntry = item => {
-    const bullets = rsBullets(item, 3, 130);
-    return `
-    <div class="rs-pdf-item">
-      <div class="rs-pdf-item-hdr">
-        <span>${escHtml(item.name)}</span>
-        <span class="rs-pdf-item-date">${escHtml(item.date || '')}</span>
-      </div>
-      ${bullets.length ? `<ul class="rs-pdf-item-bullets">${bullets.map(b => `<li>${escHtml(b)}</li>`).join('')}</ul>` : ''}
-    </div>`;
-  };
+/** Sizes the preview, marks where page 1 ends, and says whether it fits. */
+function rsMeasurePdf(doc) {
+  const frame = document.getElementById('rsPdfFrame');
+  const d = frame && frame.contentDocument;
+  const page = d && d.querySelector('.rp');
+  if (!page) return;
+  const PAGE_PX = 1056, PAD_PX = 48;   // 11in and the 0.5in bottom margin at 96dpi
+  const blocks = [...page.children].filter(c => !c.classList.contains('rp-pagebreak'));
+  const last = blocks[blocks.length - 1];
+  const bottom = last ? last.getBoundingClientRect().bottom + PAD_PX : 0;
+  const over = bottom > PAGE_PX + 1;
+  const marker = d.querySelector('.rp-pagebreak');
+  if (marker) marker.hidden = !over;
+  frame.style.height = Math.max(PAGE_PX, Math.ceil(page.scrollHeight)) + 'px';
+  rsFitPdfFrame();
 
-  // Education entries: bold name (left) + date (right), then an italic
-  // detail line underneath instead of bullets — the reference format never
-  // bullets Education.
-  const renderEducation = item => `
-    <div class="rs-pdf-item">
-      <div class="rs-pdf-item-hdr">
-        <span>${escHtml(item.name)}</span>
-        <span class="rs-pdf-item-date">${escHtml(item.date || '')}</span>
-      </div>
-      ${item.desc ? `<div class="rs-pdf-item-sub"><span>${escHtml(item.desc)}</span></div>` : ''}
-    </div>`;
+  const status = document.getElementById('rsCompilerStatus');
+  if (!status) return;
+  const n = doc.sections.reduce((s, x) => s + x.items.length, 0);
+  if (!n) { status.textContent = 'Tick entries above to build your resume.'; status.style.color = 'var(--text-muted)'; return; }
+  const h = doc.header || {};
+  const notes = [over
+    ? `${n} entries — runs to ${(bottom / PAGE_PX).toFixed(1)} pages. Untick entries or trim bullets to get it onto one page (the red line marks the page end).`
+    : `${n} entries — fits on one page.`];
+  if (!h.phone && !h.linkedin && !h.github) notes.push('Add phone, LinkedIn and GitHub under HEADER & SKILLS.');
+  if (!doc.skills.length || doc.skills[0].fallback) notes.push('Set Languages / Frameworks / Developer Tools / Libraries under HEADER & SKILLS for the skills rows.');
+  status.textContent = notes.join(' ');
+  status.style.color = over ? 'var(--red)' : 'var(--text-muted)';
+}
 
-  // Project entries: bold name + italic tech-stack inline on the header row
-  // (matching "Gitlytics | Python, Flask, React…"), date at the right,
-  // bullets beneath.
-  const renderProject = item => {
-    const stack = (item.tags || []).slice(0, 5).join(', ');
-    const bullets = rsBullets(item, 3, 130);
-    return `
-    <div class="rs-pdf-item">
-      <div class="rs-pdf-item-hdr">
-        <span><b>${escHtml(item.name)}</b>${stack ? ` <i style="font-weight:400;">| ${escHtml(stack)}</i>` : ''}</span>
-        <span class="rs-pdf-item-date">${escHtml(item.date || '')}</span>
-      </div>
-      ${bullets.length ? `<ul class="rs-pdf-item-bullets">${bullets.map(b => `<li>${escHtml(b)}</li>`).join('')}</ul>` : ''}
-    </div>`;
-  };
+/** Scales the 8.5in page down to fit narrow screens; the print is unaffected. */
+function rsFitPdfFrame() {
+  const frame = document.getElementById('rsPdfFrame');
+  const stage = document.getElementById('rsPdfStage');
+  if (!frame || !stage || !stage.parentElement) return;
+  const avail = stage.parentElement.clientWidth;
+  if (!avail) return;
+  const s = Math.min(1, avail / 816), h = parseFloat(frame.style.height) || 1056;
+  frame.style.transform = s < 1 ? `scale(${s})` : '';
+  stage.style.width = Math.floor(816 * s) + 'px';
+  stage.style.height = Math.ceil(h * s) + 'px';
+}
+window.addEventListener('resize', () => { if (document.getElementById('rsPdfFrame')?.offsetParent) rsFitPdfFrame(); });
 
-  const section = (label, items, renderFn) => {
-    if (!items.length) return '';
-    return `<h2>${escHtml(label)}</h2>${items.map(renderFn).join('')}`;
-  };
-
-  // Fixed order matching the reference: Education, Experience, Projects,
-  // then whatever else the account has (Research/Achievements — the
-  // reference template has no equivalent for these, so they're appended
-  // in the same visual style rather than dropped), Technical Skills last.
-  const education  = section('EDUCATION', selectCat('courses', false), renderEducation);
-  const experience = section('EXPERIENCE', [...selectCat('internships', true), ...selectCat('positions', true)], renderEntry);
-  const projects   = section('PROJECTS', selectCat('projects', true), renderProject);
-  const research   = section('RESEARCH', selectCat('research', true), renderEntry);
-  const achieve    = section('ACHIEVEMENTS', selectCat('achievements', false), renderEntry);
-
-  // Technical Skills: one aggregated, deduplicated line — Grid stores tags
-  // as a flat list per item with no Language/Framework/Tool sub-typing, so
-  // rather than guess at a categorization the reference happens to have,
-  // this is one honest "Technical Skills" row of everything selected.
-  const skillsList = [...allTags].sort((a, b) => a.localeCompare(b)).join(', ');
-  const skills = skillsList ? `<h2>TECHNICAL SKILLS</h2><div class="rs-pdf-skills-row"><b>Technical Skills:</b> ${escHtml(skillsList)}</div>` : '';
-
-  const body = education + experience + projects + research + achieve + skills;
-
-  // Pull contact info from saved profile
-  const _rsPd = JSON.parse(localStorage.getItem('gridUserProfile') || '{}');
-  const _rsName  = _rsPd.name  || sessionStorage.getItem('gridUserName') || 'YOUR NAME';
-  const _rsEmail = sessionStorage.getItem('gridUser') || '';
-  const _rsCity  = _rsPd.city  || '';
-  const _rsOcc   = _rsPd.occupation || '';
-  const _rsContactParts = [
-    _rsEmail && _rsEmail,
-    _rsCity  && _rsCity,
-    _rsOcc   && _rsOcc,
-  ].filter(Boolean).join(' | ');
-
-  if (_status) {
-    _status.textContent = _pdfDropped
-      ? _pdfUsed + ' of ' + (_pdfUsed + _pdfDropped) + ' selected nodes included — ' + _pdfDropped +
-        ' trimmed to keep this to one page. Deselect some to choose which.'
-      : _pdfUsed + ' node' + (_pdfUsed === 1 ? '' : 's') + ' — fits one page.';
-  }
-
-  sheet.innerHTML = `
-    <h1>${_rsName}</h1>
-    <div class="rs-pdf-contact">
-      ${_rsContactParts || 'Add your contact info in Profile → Edit Details'}
-    </div>
-    ${body || '<div style="text-align:center; padding:100px; color:#888; font-family:Inter,sans-serif;">Select items from categories above and click Compile to synthesize your Resume sheet.</div>'}
-  `;
+/** Prints only the résumé page (Save as PDF in the print dialog). */
+async function printResumePdf() {
+  const frame = document.getElementById('rsPdfFrame');
+  if (!frame) return;
+  if (!frame.srcdoc) generateResumePdf();
+  const w = frame.contentWindow;
+  if (!w) return;
+  try { if (w.document.fonts) await w.document.fonts.ready; } catch (e) {}
+  w.focus();
+  w.print();
 }
 
 // ══════════════════════════════════════════════════════
@@ -12318,7 +12318,7 @@ function formatCurrency(amount) {
 function settingsExportData() {
   const keys = ['gymLogs','gymExerciseRegistry','gymMuscleGroups','gymSplitData',
                  'gridEntries','gridHabits','gridBudget','gridTxLog',
-                 'rwProjects','rsTabData','gridSettings'];
+                 'rwProjects','rsTabData','rsProfile','gridSettings'];
   const data = {};
   keys.forEach(k => { const v = localStorage.getItem(k); if (v) data[k] = JSON.parse(v); });
   data._exported = new Date().toISOString();
@@ -12347,7 +12347,7 @@ function handleImportFile(e) {
       const data = JSON.parse(ev.target.result);
       const importable = ['gymLogs','gymExerciseRegistry','gymMuscleGroups','gymSplitData',
                           'gridEntries','gridHabits','gridBudget','gridTxLog',
-                          'rwProjects','rsTabData','gridSettings'];
+                          'rwProjects','rsTabData','rsProfile','gridSettings'];
       importable.forEach(k => { if (data[k] !== undefined) localStorage.setItem(k, JSON.stringify(data[k])); });
       if (typeof gymShowToast === 'function') gymShowToast('DATA IMPORTED — Reload to see updated data.', 'var(--green)');
       e.target.value = '';
@@ -12369,7 +12369,7 @@ function settingsClearAll() {
   if (!confirm('Clear ALL data permanently? This cannot be undone.')) return;
   const keysToRemove = ['gymLogs','gymExerciseRegistry','gymMuscleGroups','gymSplitData','gymDBVersion',
                          'gridEntries','gridHabits','gridBudget','gridTxLog',
-                         'rwProjects','rsTabData','gridReadNotifs','gridFinTelemetry',
+                         'rwProjects','rsTabData','rsProfile','gridReadNotifs','gridFinTelemetry',
                          'gridFinRecurItems','gridFinDebtItems','gridQueueItems',
                          'gridRsStackData','gridFocusLogs','gridWorkProjectsList'];
   keysToRemove.forEach(k => localStorage.removeItem(k));
@@ -15281,5 +15281,6 @@ function renderGymRadar() {
 <script defer src="js/fuel/deficit.js"></script>
 <script defer src="js/fuel/gym-calc.js"></script>
 <script defer src="js/fuel/gym-progress.js"></script>
+<script defer src="js/resume-pdf.js"></script>
 </body>
 </html>
