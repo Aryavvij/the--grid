@@ -5354,7 +5354,7 @@ html, body {
         <!-- Split header -->
         <div class="gym-split-header">
           <div>
-            <div class="gym-split-title">CURRENT OPERATIONAL SPLIT: <span class="text-green">HYPERTROPHY 2.0</span></div>
+            <div class="gym-split-title">CURRENT OPERATIONAL SPLIT: <span class="text-green"></span></div>
             <div class="gym-split-sub">Cycle duration: 7 Days | Optimization target: Strength-to-Mass Ratio</div>
           </div>
           <div class="gym-recal">
@@ -6831,10 +6831,12 @@ function seedDemoData() {
     localStorage.removeItem('gymSplitData');
     localStorage.removeItem('gymExerciseRegistry');
     localStorage.removeItem('gymMuscleGroups');
+    localStorage.removeItem('gymRegistrySavedAt');
     localStorage.removeItem('gymLogs');
     localStorage.removeItem('rwProjects');
     localStorage.removeItem('rsTabData');
     localStorage.removeItem('rsProfile');
+    localStorage.removeItem('gridCgpa');
     localStorage.removeItem('gridEntries');
     localStorage.removeItem('gridHabits');
     localStorage.removeItem('gridBudget');
@@ -6869,10 +6871,12 @@ function seedDemoData() {
       localStorage.removeItem('gymSplitData');
       localStorage.removeItem('gymExerciseRegistry');
       localStorage.removeItem('gymMuscleGroups');
+      localStorage.removeItem('gymRegistrySavedAt');
       localStorage.removeItem('gymLogs');
       localStorage.removeItem('rwProjects');
       localStorage.removeItem('rsTabData');
       localStorage.removeItem('rsProfile');
+      localStorage.removeItem('gridCgpa');
       localStorage.removeItem('gridEntries');
       localStorage.removeItem('gridHabits');
       localStorage.removeItem('gridBudget');
@@ -6992,6 +6996,14 @@ const TIME_TRAVEL_UNSUPPORTED = { habits: true, resume: true, weekly: true };
 /** Every "what is today" read in a time-travelable chart should go through this. */
 function gridNow() { return TimeMachine.active ? new Date(TimeMachine.asOf) : new Date(); }
 
+/** 'YYYY-MM-DD' in local time. toISOString() is UTC, which in India (UTC+5:30)
+ *  turns local midnight into the previous day — every date key built that way
+ *  landed one day early, and anything logged before 5:30am got yesterday's date. */
+function gridIsoDate(d) {
+  d = d || new Date();
+  return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+}
+
 /** Keep only records at or before the viewed date. dateOf extracts a 'YYYY-MM-DD'-ish string. */
 function gridAsOf(list, dateOf) {
   if (!TimeMachine.active) return list;
@@ -7083,8 +7095,8 @@ function exitDemoMode() {
  *  user, not demo exploration." */
 function restoreRealDataKeys() {
   const keysToRestore = [
-    'gymDBVersion', 'gymSplitData', 'gymExerciseRegistry', 'gymMuscleGroups', 'gymLogs',
-    'rwProjects', 'rsTabData', 'rsProfile', 'gridEntries', 'gridHabits', 'gridBudget', 'gridTxLog', 'gridFinTelemetry',
+    'gymDBVersion', 'gymSplitData', 'gymExerciseRegistry', 'gymMuscleGroups', 'gymRegistrySavedAt', 'gymLogs',
+    'rwProjects', 'rsTabData', 'rsProfile', 'gridCgpa', 'gridEntries', 'gridHabits', 'gridBudget', 'gridTxLog', 'gridFinTelemetry',
     'gridFinRecurItems', 'gridFinDebtItems', 'gridQueueItems', 'gridRsStackData', 'gridFocusLogs', 'gridWorkProjectsList', 'gridKanbanTasks', 'gridSleepData'
   ];
   keysToRestore.forEach(k => {
@@ -7182,6 +7194,7 @@ async function handleSPALogin() {
 
 async function handleSPASignup() {
   const first  = document.getElementById('suFirst').value.trim();
+  const last   = (document.getElementById('suLast')?.value || '').trim();
   const email  = document.getElementById('suEmail').value.trim();
   const pw     = document.getElementById('suPw').value;
   const pwConf = document.getElementById('suPwConfirm').value;
@@ -7199,7 +7212,7 @@ async function handleSPASignup() {
   try {
     const data = await gridFetch('/api/auth/register', {
       method: 'POST',
-      body: JSON.stringify({ email, password: pw, name: first }),
+      body: JSON.stringify({ email, password: pw, name: [first, last].filter(Boolean).join(' ') }),
     });
     sessionStorage.setItem('gridUser', data.user.email);
     sessionStorage.setItem('gridUserId', data.user.id);
@@ -7233,8 +7246,8 @@ async function launchDemo() {
  */
 function launchLocalDemo() {
   const DEMO_KEYS = [
-    'gymDBVersion', 'gymSplitData', 'gymExerciseRegistry', 'gymMuscleGroups', 'gymLogs',
-    'rwProjects', 'rsTabData', 'rsProfile', 'gridEntries', 'gridHabits', 'gridBudget', 'gridTxLog',
+    'gymDBVersion', 'gymSplitData', 'gymExerciseRegistry', 'gymMuscleGroups', 'gymRegistrySavedAt', 'gymLogs',
+    'rwProjects', 'rsTabData', 'rsProfile', 'gridCgpa', 'gridEntries', 'gridHabits', 'gridBudget', 'gridTxLog',
     'gridFinTelemetry', 'gridFinRecurItems', 'gridFinDebtItems', 'gridQueueItems',
     'gridRsStackData', 'gridFocusLogs', 'gridWorkProjectsList', 'gridKanbanTasks', 'gridSleepData'
   ];
@@ -7413,8 +7426,8 @@ async function loadCalendarFromAPI() {
   _calLoaded = true;
   try {
     const now  = new Date();
-    const from = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString();
-    const to   = new Date(now.getFullYear(), now.getMonth() + 3, 0).toISOString();
+    const from = gridIsoDate(new Date(now.getFullYear(), now.getMonth() - 1, 1)) + 'T00:00:00Z';
+    const to   = gridIsoDate(new Date(now.getFullYear(), now.getMonth() + 3, 0)) + 'T23:59:59Z';
     const eventsData = await gridFetch(`/api/calendar/events?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`);
     entries = {};
     eventsData.forEach(ev => {
@@ -7557,6 +7570,24 @@ function changeMonth(dir) {
 // Gym split names by day index (0=Mon)
 let gymDaySplits = ['PUSH A','PULL A','LEGS A','STASIS','PUSH B','PULL B','BIO-REC'];
 
+const calDelBtn = (dateStr, idx) =>
+  `<span onclick="deleteCalEntry('${dateStr}', ${idx}); event.stopPropagation();" title="Delete"
+     style="float:right;cursor:pointer;color:var(--text-muted);font-size:11px;padding:0 2px 0 8px;">✕</span>`;
+
+/** Remove one calendar entry, and its server copy. There was no way to delete
+ *  an entry before, so a typo in an event was permanent. */
+function deleteCalEntry(dateStr, idx) {
+  const list = entries[dateStr] || [];
+  const e = list[idx];
+  if (!e || !confirm(`Delete "${e.title}"?`)) return;
+  list.splice(idx, 1);
+  if (!list.length) delete entries[dateStr];
+  localStorage.setItem('gridEntries', JSON.stringify(entries));
+  if (e.id) gridSync(`/api/calendar/events/${e.id}`, {}, 'DELETE');
+  renderCalendar();
+  openDrawer(dateStr);
+}
+
 function openDrawer(dateStr, day) {
   const [y, m, d] = dateStr.split('-');
   const dateObj = new Date(parseInt(y), parseInt(m)-1, parseInt(d));
@@ -7580,8 +7611,8 @@ function openDrawer(dateStr, day) {
   document.getElementById('drawerSchedule').innerHTML =
     sched.length ? sched.map(e => `
       <div class="drawer-item cls-item">
-        <div class="item-label">${e.title}</div>
-        <div class="item-meta">${e.time || '—'}${e.notes ? ' · ' + e.notes : ''}</div>
+        <div class="item-label">${escHtml(e.title)}${calDelBtn(dateStr, dayEntries.indexOf(e))}</div>
+        <div class="item-meta">${escHtml(e.time || '—')}${e.notes ? ' · ' + escHtml(e.notes) : ''}</div>
       </div>`).join('') : '<div class="drw-empty">NO CLASSES</div>';
 
   // Gym split for this day of week (0=Sun js → adjust to Mon=0)
@@ -7594,8 +7625,8 @@ function openDrawer(dateStr, day) {
   // ── TASKS (from calendar entries + weekly kanban deadlines) ──
   let taskHTML = tasks.map(e => `
     <div class="drawer-item task-item">
-      <div class="item-label">${e.title}</div>
-      <div class="item-meta">${e.notes || '—'}</div>
+      <div class="item-label">${escHtml(e.title)}${calDelBtn(dateStr, dayEntries.indexOf(e))}</div>
+      <div class="item-meta">${escHtml(e.notes || '—')}</div>
     </div>`).join('');
 
   // Pull matching kanban tasks for this day of week
@@ -7613,8 +7644,8 @@ function openDrawer(dateStr, day) {
   document.getElementById('drawerEvents').innerHTML =
     evts.length ? evts.map(e => `
       <div class="drawer-item ev-item">
-        <div class="item-label">${e.title}</div>
-        <div class="item-meta">${e.time || '—'}${e.notes ? ' · ' + e.notes : ''}</div>
+        <div class="item-label">${escHtml(e.title)}${calDelBtn(dateStr, dayEntries.indexOf(e))}</div>
+        <div class="item-meta">${escHtml(e.time || '—')}${e.notes ? ' · ' + escHtml(e.notes) : ''}</div>
       </div>`).join('') : '<div class="drw-empty">NO EVENTS</div>';
 
   // ── FINANCES: debts + subscriptions ──
@@ -7676,7 +7707,9 @@ async function drwSaveEvent() {
   document.getElementById('drwEvToggle').style.display = 'block';
   if (!isDemo) {
     try {
-      const startISO = time ? `${dateStr}T${time}:00` : `${dateStr}T00:00:00`;
+      // Wall-clock time stored as UTC and read back as-is: the server parsed a
+      // zone-less string in its own timezone, so this only worked on a UTC host.
+      const startISO = time ? `${dateStr}T${time}:00Z` : `${dateStr}T00:00:00Z`;
       const created  = await gridFetch('/api/calendar/events', {
         method: 'POST',
         body: JSON.stringify({ title, startTime: startISO, allDay: !time }),
@@ -7737,7 +7770,7 @@ async function saveEntry() {
 
   if (!isDemo) {
     try {
-      const startISO = time ? `${date}T${time}:00` : `${date}T00:00:00`;
+      const startISO = time ? `${date}T${time}:00Z` : `${date}T00:00:00Z`;
       const created  = await gridFetch('/api/calendar/events', {
         method: 'POST',
         body: JSON.stringify({ title, description: notes, startTime: startISO, allDay: !time, color: type === 'cls' ? 'blue' : type === 'task' ? 'green' : null }),
@@ -7761,44 +7794,14 @@ document.getElementById('calEntryInput').addEventListener('keydown', function(e)
 // ═══════════════════════════════════════════════════
 // GYM
 // ═══════════════════════════════════════════════════
+// A real account starts with an empty week (the demo seeds its own sample
+// split). This used to be a full "HYPERTROPHY 2.0" programme that new users
+// saw as their own and could log workouts against.
 const defaultSplit = {
-  title: "HYPERTROPHY 2.0",
-  sub: "Cycle duration: 7 Days | Optimization target: Strength-to-Mass Ratio",
-  days: [
-    { day: 'MON', title: 'PUSH A', status: 'planned', duration: '65 MIN', icon: '', rest: false, exercises: [
-      { name: 'BENCH PRESS', sets: '4 x 8-10' },
-      { name: 'OHP PRESS', sets: '3 x 10-12' },
-      { name: 'LATERAL RAISES', sets: '4 x 15' },
-      { name: 'TRICEP PUSH', sets: '3 x 12-15' }
-    ]},
-    { day: 'TUE', title: 'PULL A', status: 'queued', duration: '75 MIN', icon: '', rest: false, exercises: [
-      { name: 'DEADLIFT', sets: '3 x 5' },
-      { name: 'PULL UPS', sets: '3 x AMRAP' },
-      { name: 'SEATED ROW', sets: '3 x 10-12' },
-      { name: 'FACE PULLS', sets: '3 x 20' }
-    ]},
-    { day: 'WED', title: 'LEGS A', status: 'queued', duration: '60 MIN', icon: '', rest: false, exercises: [
-      { name: 'SQUATS', sets: '4 x 6-8' },
-      { name: 'LUNGES', sets: '3 x 12/leg' },
-      { name: 'LEG CURLS', sets: '3 x 15' },
-      { name: 'CALF RAISES', sets: '4 x 20' }
-    ]},
-    { day: 'THU', title: 'STASIS', status: 'idle', duration: '24 HRS', icon: '', rest: true, exercises: [] },
-    { day: 'FRI', title: 'PUSH B', status: 'queued', duration: '55 MIN', icon: '', rest: false, exercises: [
-      { name: 'DB INCLINE', sets: '3 x 10' },
-      { name: 'ARNOLD PRESS', sets: '3 x 12' },
-      { name: 'DIPS', sets: '3 x 12-15' }
-    ]},
-    { day: 'SAT', title: 'PULL B', status: 'queued', duration: '60 MIN', icon: '〰', rest: false, exercises: [
-      { name: 'BB ROWS', sets: '4 x 8' },
-      { name: 'LAT PULLS', sets: '3 x 10-12' },
-      { name: 'HAMMER CURL', sets: '3 x 12' }
-    ]},
-    { day: 'SUN', title: 'BIO-REC', status: 'recovery', duration: '50 MIN', icon: '', rest: false, exercises: [
-      { name: 'MOBILITY FLOW', sets: '20 MIN' },
-      { name: 'ZONE 2 CARDIO', sets: '30 MIN' }
-    ]}
-  ]
+  title: "NOT SET YET",
+  sub: "Use EDIT WEEKLY SPLIT to add your days and exercises",
+  days: ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'].map(day =>
+    ({ day, title: '—', status: 'idle', duration: '', icon: '', rest: false, exercises: [] })),
 };
 
 const initialLogs = [];
@@ -7907,6 +7910,26 @@ async function hydrateGymFromServer() {
     }
   } catch (e) { console.warn('Gym logs API load failed:', e); }
 
+  // Exercise registry + muscle groups: take the server copy when it is newer;
+  // when only this browser has one (registries made before it synced), back it up.
+  try {
+    const srv = await gridFetch('/api/gym/registry');
+    const localAt = Number(localStorage.getItem('gymRegistrySavedAt')) || 0;
+    const local = JSON.parse(localStorage.getItem('gymExerciseRegistry') || 'null');
+    const localHasAny = !!local && Object.values(local).some(g => (g.exercises || []).length);
+    if (srv && srv.exercises && (srv.savedAt || 0) > localAt) {
+      localStorage.setItem('gymDBVersion', '3.1');   // initGymData() wipes the registry on a version mismatch
+      localStorage.setItem('gymExerciseRegistry', JSON.stringify(srv.exercises));
+      if (Array.isArray(srv.muscleGroups) && srv.muscleGroups.length) {
+        localStorage.setItem('gymMuscleGroups', JSON.stringify(srv.muscleGroups));
+      }
+      localStorage.setItem('gymRegistrySavedAt', String(srv.savedAt));
+      changed = true;
+    } else if (localHasAny && (!srv || localAt > (srv.savedAt || 0))) {
+      gymRegistryChanged();
+    }
+  } catch (e) { console.warn('Gym registry API load failed:', e); }
+
   if (changed) {
     initGymData();
     recomputeGymProgression();
@@ -8005,6 +8028,7 @@ function gymAddMuscleGroup() {
       const reg = JSON.parse(localStorage.getItem('gymExerciseRegistry')) || exerciseRegistry;
       reg[name.toUpperCase()] = { exercises: [] };
       localStorage.setItem('gymExerciseRegistry', JSON.stringify(reg));
+      gymRegistryChanged();
       
       buildMuscleGrid();
     }
@@ -8046,6 +8070,7 @@ function gymAddExerciseFromOverview() {
         segs: [50, 30, 20]
       });
       localStorage.setItem('gymExerciseRegistry', JSON.stringify(reg));
+      gymRegistryChanged();
       initGymData();
       buildMuscleGrid();
       gymShowToast(`EXERCISE REGISTERED — ${name} added to ${mgName}`);
@@ -8072,11 +8097,13 @@ function editMuscleGroupNode(event, idx) {
       mg.growth = data.growth.trim() || mg.growth;
       mg.muscles = data.muscles.trim() || mg.muscles;
       localStorage.setItem('gymMuscleGroups', JSON.stringify(mgData));
+      gymRegistryChanged();
       buildMuscleGrid();
     },
     onDelete: () => {
       mgData.splice(idx, 1);
       localStorage.setItem('gymMuscleGroups', JSON.stringify(mgData));
+      gymRegistryChanged();
       buildMuscleGrid();
     }
   });
@@ -8110,6 +8137,7 @@ function deleteExerciseFromModal() {
   const reg = JSON.parse(localStorage.getItem('gymExerciseRegistry')) || exerciseRegistry;
   reg[gexEditMg].exercises.splice(gexEditIdx, 1);
   localStorage.setItem('gymExerciseRegistry', JSON.stringify(reg));
+  gymRegistryChanged();
   document.getElementById('gymExerciseModal').classList.remove('open');
   gymShowRegistry(gexEditMg, (JSON.parse(localStorage.getItem('gymMuscleGroups')) || muscleGroups).find(m => m.name === gexEditMg)?.id || '000');
 }
@@ -8416,7 +8444,8 @@ function renderWeeklySplit() {
           <div class="gym-ex-name">${ex.name}</div>
           <div class="gym-ex-sets">${ex.sets}</div>
         </div>`).join('');
-      exercisesHTML = `<div class="gym-exercises">${exCards}</div>`;
+      exercisesHTML = `<div class="gym-exercises">${exCards ||
+        '<div style="font-size:9px;color:var(--text-muted);padding:8px 0;">No exercises yet</div>'}</div>`;
     }
     
     const colClass = d.rest ? "gym-day-col gym-stasis-col" : "gym-day-col";
@@ -8628,6 +8657,7 @@ function gymEnsureRegistered(bareName, muscleGroup) {
     segs: [50, 30, 20]
   });
   localStorage.setItem('gymExerciseRegistry', JSON.stringify(exerciseRegistry));
+  gymRegistryChanged();
 }
 
 function renderLoggerPanel() {
@@ -8655,6 +8685,19 @@ function renderLoggerPanel() {
     return;
   }
   
+  if (!d.exercises.length) {
+    container.innerHTML = `
+      <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; height:180px; text-align:center; color:var(--text-muted); font-size:11px;">
+        <div style="font-weight:700; color:var(--text-dim); letter-spacing:1px;">NO EXERCISES FOR ${escHtml(d.day)}</div>
+        <div style="max-width:280px; line-height:1.4;">Add them with EDIT WEEKLY SPLIT, e.g. "INCLINE DUMBBELL PRESS | 3 x 8-10 (CHEST)".</div>
+      </div>`;
+    btn.disabled = true;
+    btn.style.opacity = 0.35;
+    btn.style.cursor = 'not-allowed';
+    btn.textContent = "NOTHING TO LOG";
+    return;
+  }
+
   btn.disabled = false;
   btn.style.opacity = 1;
   btn.style.cursor = 'pointer';
@@ -8725,6 +8768,22 @@ function gymMuscleSeries(groupName) {
 }
 
 /** Refresh stored `bars` + growth % from real logs so the cards stay truthful. */
+/* The exercise registry (exercises per muscle group, PRs you typed in, growth
+   bars) and the muscle groups used to live only in this browser, so a new
+   phone or a cleared Safari lost them. They now sync with the active split
+   (PUT /api/gym/registry). savedAt decides which copy is newer. */
+let _gymRegTimer = null;
+function gymRegistryChanged() {
+  try { localStorage.setItem('gymRegistrySavedAt', String(Date.now())); } catch (e) {}
+  clearTimeout(_gymRegTimer);
+  _gymRegTimer = setTimeout(() => {
+    gridSync('/api/gym/registry', {
+      savedAt: Number(localStorage.getItem('gymRegistrySavedAt')) || Date.now(),
+      exercises: exerciseRegistry, muscleGroups,
+    }, 'PUT');
+  }, 800);
+}
+
 function recomputeGymProgression() {
   const last10 = arr => arr.slice(-10).map(p => p.value);
   const growth = arr => {
@@ -8735,6 +8794,9 @@ function recomputeGymProgression() {
     return (pct >= 0 ? '+' : '') + pct.toFixed(1) + '%';
   };
 
+  let logs = [];
+  try { logs = JSON.parse(localStorage.getItem('gymLogs') || '[]'); } catch (e) {}
+
   Object.keys(exerciseRegistry).forEach(mg => {
     (exerciseRegistry[mg].exercises || []).forEach(ex => {
       const series = gymExerciseSeries(ex.name);
@@ -8742,6 +8804,20 @@ function recomputeGymProgression() {
         ex.bars = last10(series);
         ex.delta = growth(series) + ' VS FIRST';
       }
+      // PRs also come from the logs, so a registry rebuilt on a new device (or
+      // made before it synced) still shows the best actually lifted. A higher
+      // PR typed in by hand is kept.
+      const name = String(ex.name || '').toUpperCase();
+      let bestWt = 0, bestOrm = 0;
+      logs.forEach(l => (l.exercises || []).forEach(e => {
+        if (String(e.name || '').toUpperCase() !== name) return;
+        (e.sets || []).forEach(st => {
+          bestWt = Math.max(bestWt, +st.weight || 0);
+          bestOrm = Math.max(bestOrm, +st.orm || 0);
+        });
+      }));
+      if (bestWt > (parseFloat(ex.pr) || 0)) ex.pr = bestWt.toFixed(1);
+      if (bestOrm > (parseFloat(ex.orm) || 0)) ex.orm = bestOrm.toFixed(1);
     });
     const mSeries = gymMuscleSeries(mg);
     const mObj = muscleGroups.find(m => m.name === mg);
@@ -8762,9 +8838,9 @@ function commitWorkoutLog() {
   
   const split = JSON.parse(localStorage.getItem('gymSplitData'));
   const d = split.days[dayIdx];
-  if (d.rest) return;
+  if (d.rest || !d.exercises.length) return;
   
-  const dateStr = today.toISOString().split('T')[0];
+  const dateStr = gridIsoDate(new Date());
   const sessionLog = {
     date: dateStr,
     splitName: d.title,
@@ -8868,6 +8944,7 @@ function commitWorkoutLog() {
     localStorage.setItem('gymLogs', JSON.stringify(logs));
     localStorage.setItem('gymExerciseRegistry', JSON.stringify(reg));
     localStorage.setItem('gymMuscleGroups', JSON.stringify(muscleGroups));
+    gymRegistryChanged();
 
     // Derive every exercise + muscle-group graph from the full log history, so
     // progression tracks all sessions rather than only personal bests.
@@ -9132,6 +9209,7 @@ function saveExerciseModal() {
     }
 
     localStorage.setItem('gymExerciseRegistry', JSON.stringify(reg));
+    gymRegistryChanged();
     initGymData();
     gymShowRegistry(mg, (JSON.parse(localStorage.getItem('gymMuscleGroups')) || muscleGroups).find(m => m.name === mg)?.id || '000');
   } else {
@@ -9150,6 +9228,7 @@ function saveExerciseModal() {
       segs:   [50, 30, 20]
     });
     localStorage.setItem('gymExerciseRegistry', JSON.stringify(reg));
+    gymRegistryChanged();
     initGymData();
     gymShowRegistry(activeGymGroup, muscleGroups.find(m => m.name === activeGymGroup)?.id || '000');
   }
@@ -9162,26 +9241,11 @@ function saveExerciseModal() {
 // ═══════════════════════════════════════════════════
 
 // Timetable data: [day 0-6][hour 0-23] = label or ''
-/* Weekly timetable. Persisted to gridTimetable — previously this was a const
-   that lived only in memory, so edits were lost on reload while the STITCH
-   banner still claimed "Saved Successfully". */
-const TT_DEFAULT = [
-  // MON
-  { 2:'SLEEP',6:'MAINT',8:'DEEP_WORK',10:'ALGOS_LAB',12:'BREAK',14:'RESEARCH' },
-  // TUE
-  { 2:'SLEEP',6:'MAINT',8:'IDLE',10:'PHYSICS_SIM',12:'BREAK',14:'SYNC' },
-  // WED
-  { 2:'SLEEP',6:'MAINT',8:'DEEP_WORK',10:'ALGOS_LAB',12:'BREAK',14:'RESEARCH' },
-  // THU
-  { 2:'SLEEP',6:'MAINT',8:'DEEP_CODE',10:'OS_STRUCT',12:'BREAK',14:'RESEARCH' },
-  // FRI
-  { 2:'SLEEP',6:'MAINT',8:'SYSTEM_AUDIT',10:'PHYSICS_SIM',12:'BREAK',14:'LOGISTICS' },
-  // SAT
-  { 3:'SLEEP',6:'MAINT',8:'RECOVERY',11:'IDLE',14:'SOCIAL' },
-  // SUN
-  { 3:'SLEEP',6:'MAINT',8:'RECOVERY',11:'IDLE',14:'SOCIAL' },
-];
-
+/* Weekly timetable. Persisted to gridTimetable and synced to the server. A real
+   account starts with an empty week: the old fallback was a sample schedule
+   (SLEEP, ALGOS_LAB, PHYSICS_SIM...) that new users saw as theirs, and the first
+   edit synced all of it into their account. The demo seeds its own sample
+   timetable in seedDemoData(). */
 let ttData = (function () {
   try {
     const raw = localStorage.getItem('gridTimetable');
@@ -9190,7 +9254,7 @@ let ttData = (function () {
       if (Array.isArray(parsed) && parsed.length === 7) return parsed;
     }
   } catch (e) {}
-  return JSON.parse(JSON.stringify(TT_DEFAULT));   // deep copy so defaults stay pristine
+  return Array.from({ length: 7 }, () => ({}));
 })();
 
 function saveTimetable() {
@@ -9299,9 +9363,12 @@ function initWeekly() {
 }
 
 /** Label covering slot (di,hi) — a block's label persists until the next filled hour. */
+/* A label runs until the next stored hour. An hour stored as '' is free time:
+   it ends the block before it. (Every reader used to skip '' and keep going,
+   so a block's end time was lost and gaps were swallowed by the block before.) */
 function getSlotLabel(di, hi) {
   const day = ttData[di]; if (!day) return null;
-  for (let x = hi; x >= 0; x--) if (day[x]) return day[x];
+  for (let x = hi; x >= 0; x--) if (day[x] !== undefined && day[x] !== null) return day[x] || null;
   return null;
 }
 
@@ -9444,10 +9511,10 @@ function saveArchBlockModal() {
     day[startVal] = val;
   }
   
-  if (endVal < 24) {
-    if (day[endVal] === undefined && labelAtEnd !== null) {
-      day[endVal] = labelAtEnd;
-    }
+  if (endVal < 24 && day[endVal] === undefined) {
+    // Keep whatever came after this block; if that was free time, mark it so
+    // the block really ends at the chosen end hour.
+    day[endVal] = labelAtEnd !== null ? labelAtEnd : '';
   }
   
   cleanupTtData(_archDi);
@@ -9467,6 +9534,8 @@ function deleteArchBlock() {
   for (let h = range.start; h < range.end; h++) {
     delete day[h];
   }
+  // The freed hours stay free instead of being absorbed by the block before.
+  day[range.start] = '';
   
   cleanupTtData(_archDi);
   
@@ -9480,12 +9549,13 @@ function cleanupTtData(di) {
   const day = ttData[di];
   if (!day) return;
   const hours = Object.keys(day).map(Number).sort((a, b) => a - b);
-  let lastLabel = null;
+  let lastLabel = '';
   for (const h of hours) {
-    if (day[h] === lastLabel) {
-      delete day[h];
+    const v = day[h] || '';
+    if (v === lastLabel) {
+      delete day[h];          // repeats the label (or free time) already running
     } else {
-      lastLabel = day[h];
+      lastLabel = v;
     }
   }
 }
@@ -10163,7 +10233,9 @@ async function initRunway() {
           id:       p.id,
           name:     p.title,
           cat:      p.description || 'GENERAL',
-          progress: p.tasks ? Math.round((p.tasks.filter(t => t.done).length / Math.max(p.tasks.length,1)) * 100) : 0,
+          // progress is stored as typed; older rows (before the column) fall back to tasks done
+          progress: Number.isFinite(p.progress) && (p.progress > 0 || !(p.tasks || []).length) ? p.progress
+                  : (p.tasks || []).length ? Math.round((p.tasks.filter(t => t.done).length / p.tasks.length) * 100) : 0,
           deadline: p.deadline || '2026-12-31',
           priority: p.priority || 'medium',
           status:   p.status || 'active',
@@ -10432,7 +10504,7 @@ async function commitRwProject() {
       try {
         const created = await gridFetch('/api/projects', {
           method: 'POST',
-          body: JSON.stringify({ title: name, description: cat, deadline, priority, status }),
+          body: JSON.stringify({ title: name, description: cat, progress, deadline, priority, status }),
         });
         newProj._id = created.id;
       } catch(e) { console.warn('Project create failed:', e); }
@@ -10592,7 +10664,7 @@ function commitTransaction() {
   gridSync('/api/finance/transactions', {
     amount: Math.abs(amount),
     description: label.toUpperCase(),
-    date: now.toISOString().split('T')[0],
+    date: gridIsoDate(now),
     type: sector === 'REVENUE' ? 'income' : 'expense',
     ...(row?.id ? { categoryId: row.id } : {}),
   });
@@ -10976,7 +11048,16 @@ function renderBudgetGauge() {
 
   const rows    = budgetRowsForDisplay();
   const planned = rows.reduce((s, r) => s + (Number(r.planned) || 0), 0);
-  const actual  = rows.reduce((s, r) => s + (Number(r.actual)  || 0), 0);
+  // Spend is every expense this month. Expenses filed under a sector with no
+  // plan (OPERATIONS, OTHER...) used to be left out, so the gauge could read
+  // 0% with money already gone.
+  const plannedSectors = new Set(rows.map(r => String(r.sector).toUpperCase()));
+  const month = gridIsoDate(gridNow()).slice(0, 7);
+  const unplanned = (gridAsOf(txLog, t => _txDateIso(t.ts)) || [])
+    .filter(t => t.val < 0 && !plannedSectors.has(String(t.sector).toUpperCase())
+              && String(_txDateIso(t.ts) || '').startsWith(month))
+    .reduce((s, t) => s + Math.abs(t.val), 0);
+  const actual  = rows.reduce((s, r) => s + (Number(r.actual)  || 0), 0) + unplanned;
 
   if (!planned) {
     // The empty state is the actual entry point for a real new account, so it
@@ -11302,6 +11383,7 @@ async function initResume() {
         if (prof && typeof prof === 'object') {
           rsProfile = prof;
           localStorage.setItem('rsProfile', JSON.stringify(rsProfile));
+          if (prof.cgpa) localStorage.setItem('gridCgpa', prof.cgpa);
         }
       }
     } catch(e) { console.warn('Resume API load failed:', e); }
@@ -11612,7 +11694,7 @@ function openRsProfileModal() {
     description: 'The contact line prints as phone | email | LinkedIn | GitHub, with the links underlined. Empty fields and empty skill rows are left out.',
     onSave: v => {
       const t = k => (v[k] || '').trim();
-      rsProfile = {
+      rsProfile = { ...rsProfile,
         name: t('name'), phone: t('phone'), email: t('email'),
         linkedin: t('linkedin'), github: t('github'), website: t('website'),
         skills: { languages: t('languages'), frameworks: t('frameworks'), tools: t('tools'), libraries: t('libraries') },
@@ -11986,7 +12068,8 @@ function initHome() {
   
   if (rsData) {
     if (resumeValEl) {
-      resumeValEl.textContent = 'GPA: 9.1';
+      const cg = localStorage.getItem('gridCgpa');
+      resumeValEl.textContent = cg ? 'GPA: ' + cg : 'GPA: —';
     }
     
     const pCount = (rsData.projects || []).length;
@@ -12318,7 +12401,7 @@ function formatCurrency(amount) {
 function settingsExportData() {
   const keys = ['gymLogs','gymExerciseRegistry','gymMuscleGroups','gymSplitData',
                  'gridEntries','gridHabits','gridBudget','gridTxLog',
-                 'rwProjects','rsTabData','rsProfile','gridSettings'];
+                 'rwProjects','rsTabData','rsProfile','gridCgpa','gridSettings'];
   const data = {};
   keys.forEach(k => { const v = localStorage.getItem(k); if (v) data[k] = JSON.parse(v); });
   data._exported = new Date().toISOString();
@@ -12328,7 +12411,7 @@ function settingsExportData() {
   const url  = URL.createObjectURL(blob);
   const a    = document.createElement('a');
   a.href = url;
-  a.download = `grid-export-${new Date().toISOString().slice(0,10)}.json`;
+  a.download = `grid-export-${gridIsoDate()}.json`;
   a.click();
   URL.revokeObjectURL(url);
   if (typeof gymShowToast === 'function') gymShowToast('DATA EXPORTED — JSON file downloaded.', 'var(--green)');
@@ -12347,7 +12430,7 @@ function handleImportFile(e) {
       const data = JSON.parse(ev.target.result);
       const importable = ['gymLogs','gymExerciseRegistry','gymMuscleGroups','gymSplitData',
                           'gridEntries','gridHabits','gridBudget','gridTxLog',
-                          'rwProjects','rsTabData','rsProfile','gridSettings'];
+                          'rwProjects','rsTabData','rsProfile','gridCgpa','gridSettings'];
       importable.forEach(k => { if (data[k] !== undefined) localStorage.setItem(k, JSON.stringify(data[k])); });
       if (typeof gymShowToast === 'function') gymShowToast('DATA IMPORTED — Reload to see updated data.', 'var(--green)');
       e.target.value = '';
@@ -12369,7 +12452,7 @@ function settingsClearAll() {
   if (!confirm('Clear ALL data permanently? This cannot be undone.')) return;
   const keysToRemove = ['gymLogs','gymExerciseRegistry','gymMuscleGroups','gymSplitData','gymDBVersion',
                          'gridEntries','gridHabits','gridBudget','gridTxLog',
-                         'rwProjects','rsTabData','rsProfile','gridReadNotifs','gridFinTelemetry',
+                         'rwProjects','rsTabData','rsProfile','gridCgpa','gridReadNotifs','gridFinTelemetry',
                          'gridFinRecurItems','gridFinDebtItems','gridQueueItems',
                          'gridRsStackData','gridFocusLogs','gridWorkProjectsList'];
   keysToRemove.forEach(k => localStorage.removeItem(k));
@@ -12667,7 +12750,7 @@ function renderArcStats() {
     _hyd('arcStatDoneOf', '/ ' + all.length + ' TASKS');
   }
 
-  const today = new Date().toISOString().split('T')[0];
+  const today = gridIsoDate();
   const due = all.filter(t => t && t.deadline === today).length;
   _hyd('arcStatDeadlines', all.length ? String(due).padStart(2, '0') : null, '—');
   _hyd('arcStatDeadlinesTag', due ? 'DUE TODAY' : '');
@@ -12675,9 +12758,14 @@ function renderArcStats() {
   // Free time is derived from ttData (the source of truth) rather than rendered
   // DOM cells, so it is correct even when the weekly page has never been opened.
   const tt = (typeof ttData !== 'undefined' && Array.isArray(ttData)) ? ttData : [];
-  let booked = 0;
-  tt.forEach(day => Object.keys(day || {}).forEach(h => { if (day[h]) booked++; }));
-  if (booked) {
+  // Booked = waking hours covered by a block (this counted block starts, so a
+  // full week of 41 blocks read as 71 free hours).
+  let booked = 0, any = false;
+  tt.forEach((day, di) => { for (let h = 0; h < 24; h++) {
+    const label = getSlotLabel(di, h);
+    if (label) { any = true; if (!/SLEEP/i.test(label)) booked++; }
+  } });
+  if (any) {
     const WAKING = 7 * 16;                    // 16 waking hours x 7 days
     _hyd('arcStatFree', Math.max(0, WAKING - booked) + 'H');
     _hyd('arcStatFreeTag', 'UNBLOCKED');
@@ -12817,6 +12905,10 @@ function rsEditCgpa() {
   const num = parseFloat(val);
   if (isNaN(num) || num < 0 || num > 10) { alert('Enter a number between 0 and 10.'); return; }
   localStorage.setItem('gridCgpa', num.toFixed(2));
+  // Synced with the résumé (as __profile.cgpa) so it follows the account.
+  rsProfile = { ...rsProfile, cgpa: num.toFixed(2) };
+  localStorage.setItem('rsProfile', JSON.stringify(rsProfile));
+  _syncResumeToAPI();
   renderRsStats();
 }
 
@@ -13310,11 +13402,11 @@ function hvBlockAt(dayIdx, hour) {
   if (!day) return null;
   let label = null, start = null;
   for (let x = hour; x >= 0; x--) {
-    if (day[x]) { label = day[x]; start = x; break; }
+    if (day[x] !== undefined && day[x] !== null) { label = day[x] || null; start = x; break; }
   }
   if (!label) return null;
   let end = start + 1;
-  while (end < 24 && !day[end]) end++;
+  while (end < 24 && day[end] === undefined) end++;
   if (hour >= end) return null;             // gap, not inside the block
   return { label, start, end };
 }
@@ -13665,7 +13757,7 @@ function hvRenderHeat() {
   Object.values(volumes).forEach(v => { if(v > maxVol) maxVol = v; });
 
   while (cur <= stop) {
-    const k = cur.toISOString().slice(0, 10);
+    const k = gridIsoDate(cur);
     data.push([k, (volumes[k] || 0)]);
     cur.setDate(cur.getDate() + 1);
   }
@@ -13811,7 +13903,9 @@ function hvRenderUpcoming() {
       let last = null;
       const perHour = [];
       for (let h = 0; h < 24; h++) {
-        if (dayRow[h]) last = dayRow[h];
+        // An explicitly empty hour ('') ends the block before it — the same
+        // rule the weekly grid uses — instead of being skipped over.
+        if (dayRow[h] !== undefined && dayRow[h] !== null) last = dayRow[h] || null;
         perHour.push(last);
       }
       let i = 0;
@@ -13972,7 +14066,7 @@ function stManualEntry() {
   showUniversalModal({
     title: 'ADD PAST SESSION',
     fields: [
-      { id: 'date', label: 'Date', type: 'date', value: new Date().toISOString().slice(0, 10) },
+      { id: 'date', label: 'Date', type: 'date', value: gridIsoDate() },
       { id: 'time', label: 'Start time', type: 'time', value: '18:00' },
       { id: 'minutes', label: 'Duration (minutes)', type: 'number', placeholder: '60' },
       { id: 'category', label: 'Category', type: 'text', placeholder: 'e.g. algos' },
@@ -14016,7 +14110,7 @@ function stInRange() {
   const rows = gridAsOf(studyLogs, l => l.date);   // never show sessions after the viewed date
   if (!_stRangeDays) return rows.slice();
   const cut = gridNow(); cut.setDate(cut.getDate() - _stRangeDays);
-  const cutStr = cut.toISOString().slice(0, 10);
+  const cutStr = gridIsoDate(cut);
   return rows.filter(l => (l.date || '') >= cutStr);
 }
 
@@ -14156,7 +14250,7 @@ function planVsActual(days) {
 
   // actual minutes per category from study logs (+ focus logs when tagged)
   const cut = new Date(); cut.setDate(cut.getDate() - (days || 7));
-  const cutStr = cut.toISOString().slice(0, 10);
+  const cutStr = gridIsoDate(cut);
   const actual = {};
   (typeof studyLogs !== 'undefined' ? studyLogs : []).forEach(l => {
     if ((l.date || '') < cutStr) return;
@@ -14188,7 +14282,7 @@ function buildWeeklyDigest() {
 
   try {
     const cut = new Date(); cut.setDate(cut.getDate() - 7);
-    const cutStr = cut.toISOString().slice(0, 10);
+    const cutStr = gridIsoDate(cut);
     const rows = (typeof studyLogs !== 'undefined' ? studyLogs : []).filter(l => (l.date || '') >= cutStr);
     const mins = rows.reduce((s, l) => s + (+l.minutes || 0), 0);
     out.focus = { hours: +(mins / 60).toFixed(1), sessions: rows.length };
@@ -14350,7 +14444,7 @@ function mgCollect() {
   // CALENDAR — upcoming entries
   try {
     const map = (typeof entries !== 'undefined' && entries) ? entries : {};
-    const today = new Date().toISOString().slice(0, 10);
+    const today = gridIsoDate();
     Object.keys(map).filter(k => k >= today).sort().slice(0, 20).forEach(k =>
       (map[k] || []).forEach(e => add(e.title, 'calendar', [k, e.time || 'all day'])));
   } catch (e) {}
@@ -14630,20 +14724,24 @@ function mgBuild(force) {
     for (let i = 0; i < list.length - 1; i++) if (rnd() < 0.55) MG_EDGES.push([list[i], list[i + 1]]);
   });
 
-  // Inject synthetic density to ensure the graph looks rich and complex out of the box (315 nodes, 437 edges)
-  while (MG_NODES.length < 315) {
-    const c = cats[Math.floor(rnd() * cats.length)];
-    const p = sphere(0.92);
-    MG_NODES.push({ label: 'SYN_NODE_' + MG_NODES.length, cat: c, x: p.x, y: p.y, z: p.z, r: 2.0 + rnd() * 1.5, named: true, facts: ['Synthetic node'] });
-    const idx = MG_NODES.length - 1;
-    (byCat[c] = byCat[c] || []).push(idx);
-    if (MG_HUBS[c] !== undefined) MG_EDGES.push([MG_HUBS[c], idx]);
-  }
+  // Demo only: pad to a rich graph (315 nodes, 437 edges) so the demo shows
+  // what a full account looks like. A real account shows only its own data and
+  // grows as things are logged; this padding used to apply to every account.
+  if (GridMode.isDemo()) {
+    while (MG_NODES.length < 315) {
+      const c = cats[Math.floor(rnd() * cats.length)];
+      const p = sphere(0.92);
+      MG_NODES.push({ label: 'SYN_NODE_' + MG_NODES.length, cat: c, x: p.x, y: p.y, z: p.z, r: 2.0 + rnd() * 1.5, named: true, facts: ['Synthetic node'] });
+      const idx = MG_NODES.length - 1;
+      (byCat[c] = byCat[c] || []).push(idx);
+      if (MG_HUBS[c] !== undefined) MG_EDGES.push([MG_HUBS[c], idx]);
+    }
 
-  while (MG_EDGES.length < 437) {
-    const a = Math.floor(rnd() * 315);
-    const b = Math.floor(rnd() * 315);
-    if (a !== b && MG_NODES[a].cat === MG_NODES[b].cat) MG_EDGES.push([a, b]);
+    while (MG_EDGES.length < 437) {
+      const a = Math.floor(rnd() * 315);
+      const b = Math.floor(rnd() * 315);
+      if (a !== b && MG_NODES[a].cat === MG_NODES[b].cat) MG_EDGES.push([a, b]);
+    }
   }
 
   // faint background texture scaled to how much real data exists
@@ -15018,6 +15116,13 @@ function blocksToTt(blocks) {
     if (b.dayIndex < 0 || b.dayIndex > 6) return;
     grid[b.dayIndex][b.startHour] = b.label;
   });
+  // Keep each block's end. A block runs until the next filled hour, so an empty
+  // marker at endHour stops it there; without it, free time after a block was
+  // swallowed by that block every time the timetable came back from the server.
+  (blocks || []).forEach(b => {
+    if (b.dayIndex < 0 || b.dayIndex > 6 || !(b.endHour < 24)) return;
+    if (grid[b.dayIndex][b.endHour] === undefined) grid[b.dayIndex][b.endHour] = '';
+  });
   return grid;
 }
 
@@ -15126,8 +15231,7 @@ function gymMonthWindow(offset) {
   const now = gridNow();
   const start = new Date(now.getFullYear(), now.getMonth() - (offset || 0), 1);
   const end   = new Date(now.getFullYear(), now.getMonth() - (offset || 0) + 1, 0);
-  const fmt = d => d.toISOString().slice(0, 10);
-  return { from: fmt(start), to: fmt(end) };
+  return { from: gridIsoDate(start), to: gridIsoDate(end) };
 }
 
 function renderGymRadar() {
