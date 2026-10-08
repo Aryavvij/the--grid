@@ -8,9 +8,9 @@ Four additions to Grid, all in the same visual language as the existing app: **R
 ## Current state
 - Live frontend: https://the-grid-tracker.vercel.app (Vercel project `the-grid`, **not** Git-connected: deploy by running `vercel --prod --yes` from the Grid root).
 - Live backend: https://the-grid-1t3x.vercel.app (Vercel project `the-grid-1t3x`, Git-connected, root `grid-backend/`; a push to `main` deploys it).
-- Git: everything is on `main`. The 2026-10-06 full-site check (see below and `docs/GUIDE.md`) is committed locally; pushing and deploying it waits on the user's OK because of the migration below. `Understanding/`, `cv_format.pdf` and `grid_project_brief.pdf` are the user's untracked files; leave them.
+- Git: everything is on `main`. The 2026-10-06 full-site check (see below and `docs/GUIDE.md`) was deployed on 2026-10-08 with the user's OK. `Understanding/`, `cv_format.pdf` and `grid_project_brief.pdf` are the user's untracked files; leave them.
 - Tests: `node tests/run-all.js` runs 9 suites, all passing. It takes a few minutes here: `progress.test.js` and `runparser.test.js` each run 40 s+ because this folder is in iCloud Drive and Node pulls `node_modules` files down on `require`. Slow, not hung.
-- Database (Supabase): all migrations applied **except `20261006120000_project_progress_gym_registry`** (adds `projects.progress` and `gym_splits.registry`). Apply it to production *before* the backend that uses it goes live, or project and gym-split queries fail: `npx prisma migrate deploy` in `grid-backend/`, then push, then deploy the frontend. Ask the user first.
+- Database (Supabase): all migrations applied, including `20261006120000_project_progress_gym_registry` (adds `projects.progress` and `gym_splits.registry`, applied 2026-10-08). For any future migration: apply it to production *before* pushing a backend that uses it (ask the user first), then push, then deploy the frontend.
 - Deploy quirk: `vercel --prod --yes` can print `Not authorized` after uploading even though the deployment was created and is live. Check with `vercel ls` / `vercel inspect` before retrying.
 - **Not yet verified by the user:** a real Strava import on their live account. Everything was tested in demo mode, with a faked API, and end to end against a real local backend with a local Postgres, but not on their production account.
 
