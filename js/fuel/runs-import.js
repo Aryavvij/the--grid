@@ -205,6 +205,8 @@
       try { const up = await upload(rep.runs); rep.imported = up.imported; rep.duplicates += up.duplicates; }
       catch (e) { rep.uploadError = e.message || 'upload failed'; rep.imported = 0; }
     } else rep.imported = 0;
+    // Keep a short description of what was added so the page can show it (the full runs are large).
+    rep.added = (rep.runs || []).map(r => ({ date: r.date, startTime: r.startTime, distanceM: r.distanceM, movingSec: r.movingSec }));
     delete rep.runs;
     return rep;
   }

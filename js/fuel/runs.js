@@ -40,7 +40,12 @@
         const files = [...fileList]; if (!files.length) return;
         st.importing = { done: 0, total: files.length, name: '' }; st.report = null; draw();
         const rep = await G.runImport.run(files, { existing: all, onProgress: (p) => { st.importing = p; const bar = root.querySelector('#impBar'); if (bar) { bar.style.width = Math.round((p.done / Math.max(1, p.total)) * 100) + '%'; root.querySelector('#impName').textContent = p.name; } } });
-        st.importing = null; st.report = rep; await load(); draw();
+        st.importing = null; st.report = rep; await load();
+        // Match what was added to the saved runs (so each can be opened), and move the view to the newest one:
+        // an older run used to be saved without anything visibly changing on the page.
+        rep.added = (rep.added || []).map(a => ({ ...a, id: (all.find(r => Math.abs(new Date(r.startTime) - new Date(a.startTime)) < 2000 && Math.abs(r.distanceM - a.distanceM) < 5) || {}).id })).filter(a => a.id).sort((a, b) => (a.startTime < b.startTime ? 1 : -1));
+        if (rep.added.length) { st.year = +rep.added[0].date.slice(0, 4); st.month = +rep.added[0].date.slice(5, 7) - 1; }
+        draw();
         // Say the outcome in words as well: the numbers under the drop box are easy to miss.
         const bad = [...rep.failed, ...rep.skipped];
         if (rep.uploadError) G.toast('UPLOAD FAILED: ' + String(rep.uploadError).toUpperCase().slice(0, 120));
@@ -57,6 +62,8 @@
             <span class="hl-code" style="color:var(--orange);border-color:var(--orange)">${r.skipped.length} SKIPPED</span> <span class="hl-code" style="color:var(--red);border-color:var(--red)">${r.failed.length} FAILED</span>
             <span class="hl-note"> ${r.ignored} NON-ACTIVITY FILES IGNORED</span>
             ${r.uploadError ? `<div style="color:var(--red)">UPLOAD ERROR: ${esc(r.uploadError)}</div>` : ''}
+            ${(r.added || []).slice(0, 6).map(a => `<div class="hl-note" style="color:var(--green);cursor:pointer" data-added="${esc(a.id)}">ADDED · ${esc(a.date)} · ${F.km(a.distanceM, 2)} KM · ${tFmt(a.movingSec)} · OPEN ›</div>`).join('')}
+            ${(r.added || []).length > 6 ? `<div class="hl-note">+ ${r.added.length - 6} MORE ADDED</div>` : ''}
             ${[...r.skipped.map(x => ['SKIPPED', x]), ...r.failed.map(x => ['FAILED', x])].slice(0, 12).map(([k, x]) => `<div class="hl-note" style="color:${k === 'FAILED' ? 'var(--red)' : 'var(--orange)'}">${k} · ${esc(x.name)} · ${esc(x.reason)}</div>`).join('')}</div>` : '';
         return G.card('IMPORT STRAVA RUNS', `<div id="drop" style="border:1px dashed var(--carbon-4);border-radius:8px;padding:22px;text-align:center;cursor:pointer;transition:all .15s">
             <div class="hl-note" style="font-size:11px">DROP FILES HERE OR CLICK TO CHOOSE</div>
@@ -315,6 +322,7 @@
           drop.ondrop = (e) => { e.preventDefault(); drop.style.borderColor = ''; drop.style.background = ''; doImport(e.dataTransfer.files); };
         }
         if (up) up.onclick = () => pick && pick.click();
+        root.querySelectorAll('[data-added]').forEach(a => a.onclick = () => { st.detail = a.dataset.added; draw(); });
         root.querySelectorAll('[data-mode],[data-year],[data-month]').forEach(b => b.onclick = () => {
           if (b.dataset.mode) st.mode = b.dataset.mode; if (b.dataset.year) st.year = +b.dataset.year; if (b.dataset.month != null && b.dataset.month !== '') st.month = +b.dataset.month; draw();
         });
