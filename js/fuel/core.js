@@ -29,6 +29,7 @@
 
   const cache = (() => {
     const mem = new Map();                       // key -> JSON string
+    const vers = new Map();                      // key -> how many times it was written (lets a slow refresh notice it is out of date)
     let dbp = null;
     const open = () => dbp || (dbp = new Promise((res, rej) => {
       const r = indexedDB.open('grid-fuel-cache', 1);
@@ -58,7 +59,8 @@
         return ready;
       },
       get: (k) => mem.get(k),
-      set(k, json) { mem.set(k, json); tx('readwrite', s => s.put(json, k)).catch(() => {}); },
+      ver: (k) => vers.get(k) || 0,
+      set(k, json) { vers.set(k, (vers.get(k) || 0) + 1); mem.set(k, json); tx('readwrite', s => s.put(json, k)).catch(() => {}); },
       clear() { mem.clear(); ready = null; return tx('readwrite', s => s.clear()).catch(() => {}); },
     };
   })();
@@ -162,8 +164,10 @@
       const hit = cache.get(key);
       if (hit !== undefined) {
         if (pass.mode === 'swr') {
+          const v0 = cache.ver(key);
           pass.pending.push(fetchFresh(kind, params).then(
-            (r) => { const json = JSON.stringify(r); cache.set(key, json); return json !== hit; },
+            // Something newer was saved while this was in flight (an import, a log): keep that, drop this answer.
+            (r) => { if (cache.ver(key) !== v0) return false; const json = JSON.stringify(r); cache.set(key, json); return json !== hit; },
             (e) => {
               // A failed refresh leaves the saved copy on screen. A 401 still means "signed out" though.
               if (e && e.status === 401) failedRequest(kind, e);
@@ -198,7 +202,8 @@
       await Promise.all(qs.map(([kind, rel]) => {
         const params = absParams(rel), key = keyOf(kind, params);
         if (seen.has(key)) return null; seen.add(key);
-        return fetchFresh(kind, params).then(r => cache.set(key, JSON.stringify(r)), () => {});
+        const v0 = cache.ver(key);
+        return fetchFresh(kind, params).then(r => { if (cache.ver(key) === v0) cache.set(key, JSON.stringify(r)); }, () => {});
       }));
       cache.set(who() + '|stamp|' + page, String(Date.now()));
     }

@@ -41,6 +41,12 @@
         st.importing = { done: 0, total: files.length, name: '' }; st.report = null; draw();
         const rep = await G.runImport.run(files, { existing: all, onProgress: (p) => { st.importing = p; const bar = root.querySelector('#impBar'); if (bar) { bar.style.width = Math.round((p.done / Math.max(1, p.total)) * 100) + '%'; root.querySelector('#impName').textContent = p.name; } } });
         st.importing = null; st.report = rep; await load(); draw();
+        // Say the outcome in words as well: the numbers under the drop box are easy to miss.
+        const bad = [...rep.failed, ...rep.skipped];
+        if (rep.uploadError) G.toast('UPLOAD FAILED: ' + String(rep.uploadError).toUpperCase().slice(0, 120));
+        else if (rep.imported) G.toast(`${rep.imported} RUN${rep.imported > 1 ? 'S' : ''} ADDED` + (bad.length ? ` · ${bad.length} FILE${bad.length > 1 ? 'S' : ''} NOT READ` : ''));
+        else if (bad.length) G.toast(`NO RUNS ADDED: ${bad[0].name} · ${bad[0].reason}`.toUpperCase().slice(0, 150));
+        else G.toast(rep.duplicates ? 'ALREADY IMPORTED: NOTHING NEW' : 'NO RUNS FOUND IN THOSE FILES');
       };
 
       const importCard = () => {
@@ -51,7 +57,7 @@
             <span class="hl-code" style="color:var(--orange);border-color:var(--orange)">${r.skipped.length} SKIPPED</span> <span class="hl-code" style="color:var(--red);border-color:var(--red)">${r.failed.length} FAILED</span>
             <span class="hl-note"> ${r.ignored} NON-ACTIVITY FILES IGNORED</span>
             ${r.uploadError ? `<div style="color:var(--red)">UPLOAD ERROR: ${esc(r.uploadError)}</div>` : ''}
-            ${[...r.skipped.map(x => ['SKIPPED', x]), ...r.failed.map(x => ['FAILED', x])].slice(0, 12).map(([k, x]) => `<div class="hl-note">${k} · ${esc(x.name)} · ${esc(x.reason)}</div>`).join('')}</div>` : '';
+            ${[...r.skipped.map(x => ['SKIPPED', x]), ...r.failed.map(x => ['FAILED', x])].slice(0, 12).map(([k, x]) => `<div class="hl-note" style="color:${k === 'FAILED' ? 'var(--red)' : 'var(--orange)'}">${k} · ${esc(x.name)} · ${esc(x.reason)}</div>`).join('')}</div>` : '';
         return G.card('IMPORT STRAVA RUNS', `<div id="drop" style="border:1px dashed var(--carbon-4);border-radius:8px;padding:22px;text-align:center;cursor:pointer;transition:all .15s">
             <div class="hl-note" style="font-size:11px">DROP FILES HERE OR CLICK TO CHOOSE</div>
             <div class="hl-note" style="margin-top:6px">.FIT · .GPX · .TCX · .GZ · STRAVA EXPORT .ZIP · ACTIVITIES.CSV · DUPLICATES ARE SKIPPED AUTOMATICALLY</div></div>${rep}
