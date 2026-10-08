@@ -18,6 +18,8 @@
   /** Sports we accept as "a run". Unknown/missing sport is accepted (flagged by caller if it wants). */
   function isRunSport(sport) { return sport == null || sport === '' || /run|jog|treadmill/i.test(String(sport)) || String(sport) === '9'; }
 
+  const SPEED_WINDOW_S = 3;      // moving or stopped is judged over +/- this many seconds, not one second at a time
+
   /** Cumulative distance + moving time per point. Returns parallel arrays. */
   function track(points) {
     const pts = points.filter(p => p.t != null && isFinite(p.t)).sort((a, b) => a.t - b.t);
@@ -28,10 +30,19 @@
       if (b.dist != null && a.dist != null) dd = Math.max(0, b.dist - a.dist);
       else if (a.lat != null && b.lat != null) dd = haversine(a, b);
       else dd = 0;
-      const speed = dt > 0 ? dd / dt : 0;
-      const moving = dt > 0 && dt <= PAUSE_GAP_S && speed >= MIN_SPEED;
       dist.push(dist[i - 1] + (dt <= PAUSE_GAP_S || b.dist != null ? dd : 0));
-      mov.push(mov[i - 1] + (moving ? dt : 0));
+    }
+    // Moving time. A single second can show no distance change on a steady run (some files, such as Strava's FIT
+    // export, only update the distance every other second), so speed is taken over a short window around each point.
+    let lo = 0, hi = 0;
+    for (let i = 1; i < pts.length; i++) {
+      const dt = (pts[i].t - pts[i - 1].t) / 1000, W = SPEED_WINDOW_S * 1000;
+      while (pts[lo].t < pts[i].t - W) lo++;
+      if (hi < i) hi = i;
+      while (hi + 1 < pts.length && pts[hi + 1].t <= pts[i].t + W) hi++;
+      const span = (pts[hi].t - pts[lo].t) / 1000;
+      const speed = span > 0 ? (dist[hi] - dist[lo]) / span : (dt > 0 ? (dist[i] - dist[i - 1]) / dt : 0);
+      mov.push(mov[i - 1] + (dt > 0 && dt <= PAUSE_GAP_S && speed >= MIN_SPEED ? dt : 0));
     }
     return { pts, dist, mov };
   }

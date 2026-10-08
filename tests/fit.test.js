@@ -121,3 +121,21 @@ t('13 no records -> empty points, so the run builder says "no usable track point
 // 14. speed: a 10,000-point file decodes fast
 body = [defMsg(D)]; for (let i = 0; i < 10000; i++) body.push(rec(D, i)); const big = fitFile(Buffer.concat(body)); const t0 = Date.now(); const n = FIT.decode(big).records.length;
 t('14 10,000 records in under 200 ms', n === 10000 && Date.now() - t0 < 200, Date.now() - t0 + ' ms');
+
+// 15. Strava's own FIT export: each second is TWO record messages (distance in one, position/altitude/speed in the other),
+//     and the distance only changes every other second. Read as separate points this gave "distance under 100 m".
+const DA = { local: 0, gmn: 20, fields: [[253, 'uint32'], [5, 'uint32']] };
+const DP = { local: 1, gmn: 20, fields: [[253, 'uint32'], [0, 'sint32'], [1, 'sint32'], [2, 'uint16'], [6, 'uint16']] };
+body = [defMsg(DA), defMsg(DP)];
+for (let i = 0; i < 400; i++) { const dEven = Math.floor(i / 2) * 2 * 3.333; body.push(dataMsg(DA, [T0 + i, Math.round(dEven * 100)]), dataMsg(DP, [T0 + i, Math.round((12.97 + (i * 3.333) / DEG) * SC), Math.round(77.59 * SC), (900 + 500) * 5, 3333]));
+}
+d = FIT.decode(fitFile(Buffer.concat(body))); r = FIT.toRun(d);
+t('15 800 records at 400 timestamps merge into 400 points, each with distance AND position', d.records.length === 800 && r.points.length === 400 && r.points.every(p => p.dist != null && p.lat != null));
+built = RP.buildRun(r.points, { ...r.meta, sourceFormat: 'fit', fileHash: 'z' });
+t('15 builds a run of ~1.33 km (not "under 100 m")', built.ok && near(built.run.distanceM, 1327, 8), JSON.stringify(built.ok ? built.run.distanceM : built.reason));
+t('15 a steady run is moving the whole time (399 s of 399 s), pace 5:00/km', built.ok && near(built.run.movingSec, 399, 4) && near(built.run.movingSec / (built.run.distanceM / 1000), 300, 6), built.ok && built.run.movingSec);
+
+// 16. a placeholder speed (e.g. 64.5 m/s) is not used to invent distance on a file with no distance field
+const DX = { local: 0, gmn: 20, fields: [[253, 'uint32'], [73, 'uint32']] };
+body = [defMsg(DX)]; for (let i = 0; i < 60; i++) body.push(dataMsg(DX, [T0 + i, i % 2 ? 64540 : 3000]));
+r = run(body); t('16 speeds over 25 m/s ignored', r.points.every(p => p.dist != null) && r.points.at(-1).dist < 100, r.points.at(-1).dist);

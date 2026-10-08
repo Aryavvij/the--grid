@@ -120,9 +120,18 @@
   /** Decoded FIT -> what the run builder takes: { points:[{t,lat,lon,ele,dist,hr,cad}], meta:{sport, calories} }. */
   function toRun(d) {
     const SC = 180 / 2147483648;
-    const pts = d.records.filter(r => r.ts != null && r.ts >= MIN_REAL_TS).map(r => {
+    // Some writers (Strava's own FIT export) split one second into several record messages: one with the
+    // distance, another with position, altitude and speed. Merge records that share a timestamp into one point.
+    const merged = new Map();
+    for (const r of d.records) {
+      if (r.ts == null || r.ts < MIN_REAL_TS) continue;
+      const cur = merged.get(r.ts);
+      if (cur) Object.assign(cur, r); else merged.set(r.ts, { ...r });
+    }
+    const pts = [...merged.values()].map(r => {
       const alt = r.ealt != null ? r.ealt / 5 - 500 : r.alt != null ? r.alt / 5 - 500 : undefined;
-      const spd = r.espd != null ? r.espd / 1000 : r.spd != null ? r.spd / 1000 : null;
+      let spd = r.espd != null ? r.espd / 1000 : r.spd != null ? r.spd / 1000 : null;
+      if (spd != null && spd > 25) spd = null;                      // faster than any runner: a placeholder value, not a speed
       const hasPos = r.lat != null && r.lon != null && !(r.lat === 0 && r.lon === 0);       // (0, 0) is "no fix", not a place
       return { t: (r.ts + FIT_EPOCH_S) * 1000, lat: hasPos ? r.lat * SC : undefined, lon: hasPos ? r.lon * SC : undefined, ele: alt,
         dist: r.dist != null ? r.dist / 100 : undefined, hr: r.hr, cad: r.cad, spd };
