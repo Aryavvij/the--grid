@@ -3,9 +3,9 @@
   const G = window.Grid, F = G.fmt, S = G.stats;
   const MONTHS = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
   const DOW = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
-  const BEST = [['1000', '1 KM'], ['1609', '1 MILE'], ['3000', '3 KM'], ['5000', '5 KM'], ['10000', '10 KM'], ['21098', 'HALF']];
+  const BEST = [['1000', '1 KM'], ['1609', '1 MILE'], ['3000', '3 KM'], ['5000', '5 KM'], ['10000', '10 KM'], ['15000', '15 KM'], ['21098', '21 KM']];
   const ZCOL = ['#3b82f6', '#14b8a6', '#76b372', '#f97316', '#ef4444'];
-  const st = { mode: 'year', year: null, month: null, detail: null, sort: ['date', -1], bestKey: '5000', report: null, importing: null };
+  const st = { mode: 'year', year: null, month: null, detail: null, sort: ['date', -1], bestKey: '5000', report: null, importing: null, showAllRuns: false };
 
   const pace = (r) => r.movingSec / (r.distanceM / 1000);
   const dowIdx = (iso) => (new Date(iso + 'T12:00:00').getDay() + 6) % 7;
@@ -21,7 +21,7 @@
   function personalBests(all) {
     const out = {};
     for (const [k] of BEST) {
-      let best = null; all.forEach(r => { const v = r.bestEfforts && r.bestEfforts[k]; if (v && (!best || v < best.sec)) best = { sec: v, run: r }; });
+      let best = null; all.forEach(r => { const v = r.bestEfforts && (r.bestEfforts[k] || (k === '21098' ? r.bestEfforts['21000'] : null)); if (v && (!best || v < best.sec)) best = { sec: v, run: r }; });
       if (best) out[k] = best;
     }
     return out;
@@ -94,13 +94,16 @@
           <div id="t1"></div><div id="t2"></div>
           ${inP.length ? `
           <div class="fin-group-label">TRENDS</div>
+          <div style="margin-bottom:14px">
+            ${G.card(st.mode === 'year' ? 'YEAR HEATMAP' : 'MONTH CALENDAR', `<div class="hl-chart" id="${ids.heat}" style="height:155px;width:100%"></div>`)}
+          </div>
           <div class="hl-grid hl-g2">
-            ${G.card(st.mode === 'year' ? 'DISTANCE BY MONTH · KM' : 'WEEKLY MILEAGE · KM', `<div class="hl-chart" id="${ids.main}"></div>`)}
-            ${G.card(st.mode === 'year' ? 'YEAR HEATMAP' : 'MONTH CALENDAR', `<div class="hl-chart" id="${ids.heat}"></div>`)}
+            ${G.card(st.mode === 'year' ? 'DISTANCE BY MONTH · KM' : 'WEEKLY MILEAGE · KM', `<div class="hl-chart sm" id="${ids.main}"></div>`)}
+            ${st.mode === 'year' ? G.card('CUMULATIVE DISTANCE · THIS YEAR VS LAST', `<div class="hl-chart sm" id="${ids.yoy}"></div>`) : G.card('PACE VS HEART RATE', `<div class="hl-chart sm" id="${ids.sc}"></div>`, '<span class="hl-note">DOWN-RIGHT OVER TIME = FITTER</span>')}
           </div>
           ${st.mode === 'year' ? `<div class="hl-grid hl-g2">
-            ${G.card('CUMULATIVE DISTANCE · THIS YEAR VS LAST', `<div class="hl-chart sm" id="${ids.yoy}"></div>`)}
             ${G.card('AVERAGE PACE BY MONTH · MIN/KM', `<div class="hl-chart sm" id="${ids.pace}"></div>`, '<span class="hl-note">LOWER IS FASTER</span>')}
+            ${G.card('PACE VS HEART RATE', `<div class="hl-chart sm" id="${ids.sc}"></div>`, '<span class="hl-note">DOWN-RIGHT OVER TIME = FITTER</span>')}
           </div>
           <div class="hl-grid hl-g21">
             ${G.card('WEEKLY DISTANCE · 4-WEEK AVERAGE', `<div class="hl-chart sm" id="${ids.wk}"></div>`, '<span id="ramp"></span>')}
@@ -110,10 +113,6 @@
             ${G.card('DAY OF WEEK', `<div class="hl-chart sm" id="${ids.dow}"></div>`)}
             ${G.card('TIME OF DAY', `<div class="hl-chart sm" id="${ids.tod}"></div>`)}
             ${G.card('HEART-RATE ZONES', `<div class="hl-chart sm" id="${ids.zones}"></div>`)}
-          </div>
-          <div class="hl-grid hl-g2">
-            ${G.card('PACE VS HEART RATE', `<div class="hl-chart sm" id="${ids.sc}"></div>`, '<span class="hl-note">DOWN-RIGHT OVER TIME = FITTER</span>')}
-            ${G.card('GEAR', '<div id="gear"></div>')}
           </div>` : G.empty('NO RUNS IN THIS PERIOD')}
           <div class="fin-group-label">RECORDS</div>
           ${G.card('PERSONAL BESTS', '<div id="pbs"></div>', '<span class="hl-note">FASTEST WINDOW WITHIN A RUN · NEEDS A TRACK FILE</span>')}
@@ -185,12 +184,12 @@
         const pb = personalBests(all), el = root.querySelector('#pbs');
         if (!Object.keys(pb).length) { el.innerHTML = G.empty('NO BEST EFFORTS YET<br>Import .fit / .gpx / .tcx files (CSV summaries have no track)'); return; }
         const thisYear = String(st.year);
-        el.innerHTML = `<div class="hl-grid hl-g6" style="margin-bottom:0">${BEST.filter(([k]) => pb[k]).map(([k, label]) => {
+        el.innerHTML = `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-bottom:0">${BEST.filter(([k]) => pb[k]).map(([k, label]) => {
           const b = pb[k], fresh = b.run.date.startsWith(thisYear), d = +k;
           return `<div class="fin-stat-card fx-click" style="${st.bestKey === k ? 'border-color:var(--green)' : ''}" data-best="${k}"><div class="fin-stat-label">${label}${fresh ? ' <span style="color:var(--sig-900)">· PR</span>' : ''}</div>
             <div class="fin-stat-val" style="font-size:18px">${tFmt(b.sec)}</div><div class="fx-sub">${F.pace(b.sec / (d / 1000))} · ${b.run.date}</div></div>`; }).join('')}</div>
           <div class="hl-chart sm" id="prChart" style="margin-top:12px"></div><div class="hl-note" style="text-align:center">${(BEST.find(b => b[0] === st.bestKey) || [])[1] || ''} · EVERY RUN (DOTS) AND RUNNING BEST (LINE)</div>`;
-        const pts = all.filter(r => r.bestEfforts && r.bestEfforts[st.bestKey]).map(r => [r.date, r.bestEfforts[st.bestKey]]);
+        const pts = all.filter(r => r.bestEfforts && (r.bestEfforts[st.bestKey] || (st.bestKey === '21098' ? r.bestEfforts['21000'] : null))).map(r => [r.date, r.bestEfforts[st.bestKey] || r.bestEfforts['21000']]);
         let m = Infinity; const line = pts.map(([d, v]) => { m = Math.min(m, v); return [d, m]; });
         window.ethosChart('prChart').setOption({ grid: { left: 52, right: 14, top: 14, bottom: 26 }, tooltip: { trigger: 'axis', valueFormatter: (v) => tFmt(v) }, xAxis: { type: 'time' },
           yAxis: { type: 'value', scale: true, inverse: true, axisLabel: { formatter: (v) => tFmt(v) } },
@@ -199,11 +198,21 @@
 
       const list = (inP) => {
         const [key, dir] = st.sort, val = { date: (r) => r.startTime, distance: (r) => r.distanceM, time: (r) => r.movingSec, pace: pace, hr: (r) => r.avgHr || 0, elev: (r) => r.elevGainM || 0 }[key];
-        const rows = inP.slice().sort((a, b) => (val(a) < val(b) ? -dir : val(a) > val(b) ? dir : 0)).slice(0, 25);
+        const sorted = inP.slice().sort((a, b) => (val(a) < val(b) ? -dir : val(a) > val(b) ? dir : 0));
+        const limit = st.showAllRuns ? sorted.length : 8;
+        const rows = sorted.slice(0, limit);
         const th = (k, label) => `<th data-sort="${k}" style="cursor:pointer">${label}${st.sort[0] === k ? (st.sort[1] < 0 ? ' ▼' : ' ▲') : ''}</th>`;
-        root.querySelector('#list').innerHTML = `<table class="hl-table"><tr>${th('date', 'Date')}<th>Name</th>${th('distance', 'Distance')}${th('time', 'Time')}${th('pace', 'Pace')}${th('hr', 'Avg HR')}${th('elev', 'Elev')}</tr>${rows.map(r =>
-          `<tr data-run="${r.id}" style="cursor:pointer"><td>${r.date}</td><td>${esc(r.name || 'Run')}</td><td>${F.km(r.distanceM, 2)} km</td><td>${tFmt(r.movingSec)}</td><td>${F.pace(pace(r))}</td><td>${r.avgHr || '—'}</td><td>${Math.round(r.elevGainM || 0)} m</td></tr>`).join('')}</table>
-          ${inP.length > 25 ? `<div class="hl-note" style="margin-top:8px">SHOWING 25 OF ${inP.length}. CLICK A HEADER TO SORT</div>` : ''}`;
+        root.querySelector('#list').innerHTML = `
+          <div style="max-height:${st.showAllRuns ? '380px' : 'none'}; overflow-y:${st.showAllRuns ? 'auto' : 'visible'}; padding-right:2px;">
+            <table class="hl-table">
+              <thead><tr>${th('date', 'Date')}<th>Name</th>${th('distance', 'Distance')}${th('time', 'Time')}${th('pace', 'Pace')}${th('hr', 'Avg HR')}${th('elev', 'Elev')}</tr></thead>
+              <tbody>${rows.map(r => `<tr data-run="${r.id}" style="cursor:pointer"><td>${r.date}</td><td>${esc(r.name || 'Run')}</td><td>${F.km(r.distanceM, 2)} km</td><td>${tFmt(r.movingSec)}</td><td>${F.pace(pace(r))}</td><td>${r.avgHr || '—'}</td><td>${Math.round(r.elevGainM || 0)} m</td></tr>`).join('')}</tbody>
+            </table>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;flex-wrap:wrap;gap:8px">
+            <div class="hl-note">${st.showAllRuns ? `SHOWING ALL ${sorted.length} RUNS (SCROLLABLE)` : `SHOWING LATEST ${Math.min(8, sorted.length)} OF ${sorted.length} RUNS`} · CLICK A HEADER TO SORT</div>
+            ${sorted.length > 8 ? `<button class="hl-btn" id="toggleAllRuns">${st.showAllRuns ? 'SHOW LATEST 8' : `SEE ALL RUNS (${sorted.length})`}</button>` : ''}
+          </div>`;
       };
 
       // ── run detail ──────────────────────────────────────────
@@ -311,6 +320,8 @@
         const exp = root.querySelector('#expCsv');
         if (exp) exp.onclick = () => G.csv('grid-runs.csv', [['date', 'start_time', 'name', 'distance_km', 'moving_time_s', 'pace_s_per_km', 'avg_hr', 'max_hr', 'cadence_spm', 'elevation_gain_m', 'calories', 'gear', 'source'],
           ...all.slice().reverse().map(r => [r.date, r.startTime, r.name, (r.distanceM / 1000).toFixed(3), r.movingSec, Math.round(pace(r)), r.avgHr, r.maxHr, r.cadence, r.elevGainM, r.calories, r.gear, r.sourceFormat])]);
+        const toggleRuns = root.querySelector('#toggleAllRuns');
+        if (toggleRuns) toggleRuns.onclick = () => { st.showAllRuns = !st.showAllRuns; list(inP); bind(); };
         root.querySelectorAll('[data-run]').forEach(tr => tr.onclick = () => { st.detail = tr.dataset.run; draw(); });
         root.querySelectorAll('[data-best]').forEach(c => c.onclick = () => { st.bestKey = c.dataset.best; pbs(); bindBest(); });
         root.querySelectorAll('[data-sort]').forEach(h => h.onclick = () => { const k = h.dataset.sort; st.sort = [k, st.sort[0] === k ? -st.sort[1] : -1]; draw(); });

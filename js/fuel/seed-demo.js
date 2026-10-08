@@ -31,7 +31,7 @@
   runs.forEach(r => {
     const secs = r.splits.map(x => x.sec), win = (n) => { if (secs.length < n) return null; let b = Infinity; for (let i = 0; i + n <= secs.length; i++) b = Math.min(b, secs.slice(i, i + n).reduce((a, c) => a + c, 0)); return Math.round(b); };
     r.bestEfforts = {}; const m = Math.min(...secs); if (isFinite(m)) { r.bestEfforts['1000'] = m; r.bestEfforts['1609'] = Math.round(m * 1.609 * 1.01); }
-    [[3, '3000'], [5, '5000'], [10, '10000']].forEach(([n, k]) => { const w = win(n); if (w) r.bestEfforts[k] = w; });
+    [[3, '3000'], [5, '5000'], [10, '10000'], [15, '15000'], [21, '21098']].forEach(([n, k]) => { const w = win(n); if (w) r.bestEfforts[k] = w; });
     const z = r.movingSec, f = r.avgHr / 190; r.hrZones = { z1: Math.round(z * 0.03), z2: Math.round(z * (f < 0.8 ? 0.22 : 0.12)), z3: Math.round(z * (f < 0.8 ? 0.5 : 0.38)), z4: Math.round(z * (f < 0.8 ? 0.22 : 0.37)), z5: Math.round(z * 0.05) };
   });
 

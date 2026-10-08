@@ -11,15 +11,34 @@
 
   // ── data layer: same calls in both modes ─────────────────────
   const store = {
-    presets: [], log: [], water: {}, targets: null,
+    presets: [], log: [], water: {}, burn: {}, targets: null,
     async load(today) {
       const from = addDays(today, -34);
       if (G.isDemo()) {
-        if (!demo) demo = { presets: (await G.data('presets')).map(x => ({ ...x })), log: (await G.data('foodlog', { from, to: today })).map(x => ({ ...x })), water: Object.fromEntries((await G.data('water', { from, to: today })).map(w => [w.date, w.ml])), targets: { ...(await G.data('targets')) } };
+        if (!demo) demo = {
+          presets: (await G.data('presets')).map(x => ({ ...x })),
+          log: (await G.data('foodlog', { from, to: today })).map(x => ({ ...x })),
+          water: Object.fromEntries((await G.data('water', { from, to: today })).map(w => [w.date, w.ml])),
+          burn: Object.fromEntries((await G.data('burn', { from, to: today })).map(b => [b.date, b.kcal])),
+          targets: { ...(await G.data('targets')) }
+        };
         Object.assign(store, demo); return;
       }
-      const [presets, log, water, targets] = await Promise.all([G.data('presets'), G.data('foodlog', { from, to: today }), G.data('water', { from, to: today }), G.data('targets')]);
-      Object.assign(store, { presets, log, water: Object.fromEntries(water.map(w => [w.date, w.ml])), targets, _q: { from, to: today } });
+      const [presets, log, water, burn, targets] = await Promise.all([
+        G.data('presets'),
+        G.data('foodlog', { from, to: today }),
+        G.data('water', { from, to: today }),
+        G.data('burn', { from, to: today }),
+        G.data('targets')
+      ]);
+      Object.assign(store, {
+        presets,
+        log,
+        water: Object.fromEntries(water.map(w => [w.date, w.ml])),
+        burn: Object.fromEntries((burn || []).map(b => [b.date, b.kcal])),
+        targets,
+        _q: { from, to: today }
+      });
     },
     /** Saves change the store in place; write it back to the page cache so the next visit opens on it. */
     persist() {
@@ -27,6 +46,7 @@
       G.cacheSet('presets', {}, store.presets);
       G.cacheSet('foodlog', store._q, store.log);
       G.cacheSet('water', store._q, Object.entries(store.water).map(([date, ml]) => ({ date, ml })));
+      G.cacheSet('burn', store._q, Object.entries(store.burn).map(([date, kcal]) => ({ date, kcal })));
       G.cacheSet('targets', {}, store.targets);
     },
     async addFood(e) {
@@ -62,7 +82,32 @@
     },
     async delPreset(id) { if (!G.isDemo()) await gridFetch('/api/nutrition/presets/' + id, { method: 'DELETE' }); store.presets = store.presets.filter(x => x.id !== id); if (demo) demo.presets = store.presets; store.persist(); },
     async setWater(date, ml) { if (!G.isDemo()) await gridFetch('/api/nutrition/water/' + date, { method: 'PUT', body: JSON.stringify({ ml }) }); store.water[date] = ml; store.persist(); },
+    async setBurn(date, kcal) {
+      if (!G.isDemo()) await gridFetch('/api/progress/burn/' + date, { method: 'PUT', body: JSON.stringify({ kcal }) });
+      else if (G.seed?.setBurn) G.seed.setBurn(date, kcal);
+      store.burn[date] = kcal;
+      if (demo) demo.burn[date] = kcal;
+      store.persist();
+    },
     async saveTargets(t) { if (!G.isDemo()) store.targets = await gridFetch('/api/nutrition/targets', { method: 'PUT', body: JSON.stringify(t) }); else store.targets = demo.targets = { ...t }; store.persist(); },
+    async applyGoal(goalKey) {
+      // goalKey: 'maintain' | 'cut' | 'bulk'
+      const t = store.targets || {};
+      const pl = t.plan || { sex: 'male', age: 21, kg: 72, cm: 175, level: 'moderate', pace: 'steady' };
+      const calcGoal = goalKey === 'cut' ? 'lose' : goalKey === 'bulk' ? 'gain' : 'maintain';
+      const goalKg = pl.goalKg || (calcGoal === 'lose' ? Math.round(pl.kg * 0.94) : calcGoal === 'gain' ? Math.round(pl.kg * 1.06) : pl.kg);
+      const res = G.calc.plan({ ...pl, goal: calcGoal, goalKg, pace: pl.pace || 'steady' });
+      if (res.ok) {
+        await store.saveTargets({
+          calories: res.calories,
+          protein: res.protein,
+          carbs: res.carbs,
+          fat: res.fat,
+          waterMl: res.waterMl,
+          plan: { ...pl, goal: calcGoal, goalKg, bmr: res.bmr, tdee: res.tdee, weeks: res.weeks }
+        });
+      }
+    },
   };
 
   const modal = G.modal, field = G.field, inp = G.input, sel = G.select, formData = G.formData;
@@ -127,9 +172,9 @@
     modal('EDIT PLAN', `
       <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px">${field('Sex', sel('sex', [['male', 'Male'], ['female', 'Female']], v.sex))}${field('Age', inp('age', v.age))}${field('Weight kg', inp('kg', v.kg))}${field('Height cm', inp('cm', v.cm))}</div>
       ${field('Activity level', sel('level', LEVELS, v.level))}
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">${field('Goal', sel('goal', [['lose', 'Lose weight'], ['maintain', 'Maintain'], ['gain', 'Gain weight']], v.goal))}${field('Pace', sel('pace', [['gentle', 'Gentle'], ['steady', 'Steady'], ['aggressive', 'Aggressive']], v.pace))}${field('Goal weight kg', inp('goalKg', v.goalKg))}</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">${field('Goal', sel('goal', [['maintain', 'Maintenance (Maintain)'], ['lose', 'Cut (Lose Weight)'], ['gain', 'Bulk (Gain Muscle)']], v.goal))}${field('Pace', sel('pace', [['gentle', 'Gentle'], ['steady', 'Steady'], ['aggressive', 'Aggressive']], v.pace))}${field('Goal weight kg', inp('goalKg', v.goalKg))}</div>
       <div id="out" style="background:var(--carbon-1);border:1px solid var(--carbon-4);border-radius:8px;padding:12px;margin-bottom:10px;font-size:11px;line-height:1.8"></div>
-      <details style="margin-bottom:12px"><summary class="hl-note" style="cursor:pointer">METHODOLOGY</summary><div class="hl-note" style="line-height:1.8;margin-top:6px">BMR: Mifflin-St Jeor. TDEE: BMR x standard activity multiplier (1.2 / 1.375 / 1.55 / 1.725 / 1.9). Timeline: about 3,500 kcal per lb. Protein 0.8-1.0 g/lb (1.0 when losing or athlete), fat 0.35 g/lb, carbs the remaining calories. Never below 1,500 kcal (male) or 1,200 kcal (female). General guidance, not medical advice.</div></details>
+      <details style="margin-bottom:12px"><summary class="hl-note" style="cursor:pointer">METHODOLOGY</summary><div class="hl-note" style="line-height:1.8;margin-top:6px">BMR: Mifflin-St Jeor. TDEE: BMR x standard activity multiplier. Cut: deficit for fat loss (higher protein 1.0 g/lb). Maintenance: energy balance. Bulk: controlled surplus for hypertrophy. Never below 1,500 kcal (male) or 1,200 kcal (female). General guidance, not medical advice.</div></details>
       <div class="modal-actions"><button class="btn-cancel" data-cancel>CANCEL</button><button class="btn-save" data-save>SAVE AS MY TARGETS</button></div>`, (m, close) => {
       let last = null;
       const run = () => {
@@ -184,55 +229,187 @@
       const draw = async () => {
         const noPlan = !store.targets || !store.targets.calories;
         const tg = noPlan ? { calories: 0, protein: 0, carbs: 0, fat: 0, waterMl: 3000, plan: null } : store.targets;
+        const currentGoal = tg.plan?.goal === 'lose' ? 'cut' : tg.plan?.goal === 'gain' ? 'bulk' : 'maintain';
         const rows = dayLog(), t = totals(rows), water = store.water[st.date] || 0, isToday = st.date === today;
-        const ids = {}; ['ringC', 'ringM', 'tr', 'split', 'prot'].forEach(k => { ids[k] = G.uid(); });
+        const burnToday = store.burn[st.date] || null;
+        const estTdee = tg.plan?.tdee || 2400;
+        const effectiveBurn = burnToday || estTdee;
+        const netDeficit = effectiveBurn - t.cal;
+        let targetDeficit = parseInt(localStorage.getItem('nutritionDeficitTarget') || '', 10);
+        if (isNaN(targetDeficit) || targetDeficit <= 0) targetDeficit = 1000;
+        const ids = {}; ['ringC', 'splitRing', 'defChart', 'protChart'].forEach(k => { ids[k] = G.uid(); });
         const pretty = new Date(st.date + 'T12:00:00').toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
+
+        const totKcalFromMacros = t.p * 4 + t.c * 4 + t.f * 9;
+        const protPct = totKcalFromMacros ? Math.round((t.p * 4 / totKcalFromMacros) * 100) : 0;
+        const carbPct = totKcalFromMacros ? Math.round((t.c * 4 / totKcalFromMacros) * 100) : 0;
+        const fatPct = totKcalFromMacros ? Math.max(0, 100 - protPct - carbPct) : 0;
 
         root.innerHTML = `
           <div class="hl-grid" style="grid-template-columns:auto 1fr auto;align-items:center;margin-bottom:12px">
             <div class="hl-pills"><button class="hl-pill" data-d="-1">‹ PREV</button><button class="hl-pill ${isToday ? 'on' : ''}" data-d="0">TODAY</button><button class="hl-pill" data-d="1" ${isToday ? 'disabled style="opacity:.35;cursor:default"' : ''}>NEXT ›</button></div>
             <div class="hl-note" style="text-transform:uppercase">${pretty}</div><div><button class="hl-btn" id="foodBtn">+ CUSTOM FOOD</button> <button class="hl-btn ${noPlan ? 'pri' : ''}" id="planBtn">${noPlan ? 'SET UP PLAN' : 'EDIT PLAN'}</button></div></div>
           ${noPlan ? G.card('SET UP YOUR PLAN', `<div class="hl-note" style="text-transform:none;line-height:1.8;font-size:10px;margin-bottom:12px">You can already log food below. Add your age, height, weight and goal to get a daily calorie target, macros, water goal and a timeline, calculated with the standard Mifflin-St Jeor formula (never below 1,500 kcal for men or 1,200 for women).</div><button class="hl-btn pri" id="planBtn2">SET UP MY PLAN</button>`) : ''}
-          ${G.card('QUICK LOG', `<div class="hl-quick"><input id="ql" autocomplete="off" spellcheck="false" placeholder="type a preset code…  S1   ·   2x S1   ·   S1 dinner"><button class="hl-btn pri" id="qlGo">LOG</button></div><div id="qlSug"></div><div id="qlMsg" class="hl-note" style="margin-top:6px"></div>`)}
+          
+          <!-- Goal mode selection: Maintenance, Cut, Bulk -->
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap">
+            <span class="hl-note" style="letter-spacing:1.5px;color:var(--text-muted)">GOAL MODE:</span>
+            <div class="hl-pills">
+              <button class="hl-pill ${currentGoal === 'maintain' ? 'on' : ''}" data-goal="maintain">MAINTENANCE</button>
+              <button class="hl-pill ${currentGoal === 'cut' ? 'on' : ''}" data-goal="cut">CUT</button>
+              <button class="hl-pill ${currentGoal === 'bulk' ? 'on' : ''}" data-goal="bulk">BULK</button>
+            </div>
+            <span class="hl-note" style="color:var(--text-muted);font-size:10px">
+              ${currentGoal === 'cut' ? 'DEFICIT TARGET ACTIVE · HIGHER PROTEIN & WATER' : currentGoal === 'bulk' ? 'SURPLUS ACTIVE · HIGHER CARBS' : 'ENERGY BALANCE · WEIGHT MAINTENANCE'}
+            </span>
+          </div>
+
+          <!-- Quick log & burned calories -->
+          ${G.card('QUICK LOG & BURN', `
+            <div class="hl-quick"><input id="ql" autocomplete="off" spellcheck="false" placeholder="type a preset code…  S1   ·   2x S1   ·   S1 dinner"><button class="hl-btn pri" id="qlGo">LOG</button></div>
+            <div id="qlSug"></div><div id="qlMsg" class="hl-note" style="margin-top:6px"></div>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-top:14px;padding:10px 14px;background:var(--carbon-1);border:1px solid var(--carbon-4);border-radius:6px;flex-wrap:wrap;gap:10px">
+              <div style="display:flex;align-items:center;gap:10px">
+                <span class="hl-note" style="letter-spacing:1px;white-space:nowrap;color:var(--text)">CALORIES BURNED TODAY:</span>
+                <input id="burnInp" type="number" min="0" max="15000" placeholder="${estTdee}" value="${burnToday || ''}" style="width:100px;font:inherit;font-size:11px;background:var(--carbon-2);border:1px solid var(--carbon-4);color:var(--text);border-radius:4px;padding:5px 8px">
+                <button class="hl-btn pri" id="saveBurnBtn" style="padding:5px 12px">SAVE BURN</button>
+              </div>
+              <div class="hl-note" id="burnFeedback">${burnToday ? `TODAY: <b style="color:${netDeficit >= targetDeficit ? 'var(--green)' : netDeficit >= 0 ? '#a5f79e' : 'var(--orange)'}">${netDeficit >= 0 ? '+' : ''}${netDeficit} KCAL DEFICIT</b> (BURN ${burnToday} − INTAKE ${t.cal})` : `EST. TDEE: ${estTdee} KCAL · DEFICIT: ${estTdee - t.cal} KCAL`}</div>
+            </div>`)}
+
           <div class="fin-group-label" style="margin-top:16px">TODAY</div>
           <div class="hl-grid hl-g3">
             ${G.card('CALORIES', `<div class="hl-ring" id="${ids.ringC}"></div><div class="fx-sub" style="text-align:center">${noPlan ? t.cal + ' kcal eaten · set a plan to see your target' : t.cal + ' of ' + tg.calories + ' kcal · ' + (tg.calories - t.cal >= 0 ? (tg.calories - t.cal) + ' left' : (t.cal - tg.calories) + ' over')}</div>`)}
-            ${G.card('MACROS · G', `<div class="hl-ring" id="${ids.ringM}"></div><div class="fx-sub" style="text-align:center">${noPlan ? `P ${t.p} · C ${t.c} · F ${t.f} g` : `P ${t.p}/${tg.protein} · C ${t.c}/${tg.carbs} · F ${t.f}/${tg.fat}`}</div>`)}
+            ${G.card('MACRO SPLIT · % OF CALORIES', `<div class="hl-chart" id="${ids.splitRing}" style="height:140px;width:100%"></div><div class="fx-sub" style="text-align:center">${totKcalFromMacros ? `P ${t.p}g (${protPct}%) · C ${t.c}g (${carbPct}%) · F ${t.f}g (${fatPct}%)` : 'No macros logged today'}</div>`)}
             ${G.card('WATER', `<div class="fin-stat-val">${(water / 1000).toFixed(1)}<span class="u">of ${(tg.waterMl / 1000).toFixed(1)} L</span></div>
               <div style="height:8px;border-radius:4px;background:rgba(255,255,255,.07);margin:14px 0"><div style="height:100%;width:${Math.min(100, water / tg.waterMl * 100)}%;background:var(--blue);border-radius:4px;transition:width .3s"></div></div>
               <button class="hl-btn" data-w="-250">− 250 ML</button> <button class="hl-btn pri" data-w="250">+ 250 ML</button>`)}
           </div>
           <div class="hl-grid hl-g21">
-            ${G.card('DIARY', SLOTS.map(s => { const es = rows.filter(e => e.slot === s);
-              return `<div style="margin-bottom:12px"><div class="hl-note" style="display:flex;justify-content:space-between;text-transform:uppercase;letter-spacing:1.5px"><span>${s}</span><span>${Math.round(S.sum(es.map(e => e.calories)))} kcal</span></div>
-                ${es.length ? `<table class="hl-table">${es.map(e => `<tr><td>${e.presetCode ? `<span class="hl-code">${esc(e.presetCode)}</span> ` : ''}${esc(e.name)}${e.qty && e.qty !== 1 ? ' ×' + e.qty : ''}${e.confidence && e.confidence !== 'exact' ? ` <span class="hl-note">(${e.confidence === 'rough' ? 'rough' : '~'})</span>` : ''}</td><td>${e.calories} kcal</td><td>P ${e.protein} C ${e.carbs} F ${e.fat}</td><td style="white-space:nowrap"><span class="hl-x" data-editfood="${e.id}" title="Edit">✎</span> <span class="hl-x" data-del="${e.id}" title="Delete">✕</span></td></tr>`).join('')}</table>` : '<div class="hl-note" style="padding:6px 0">—</div>'}</div>`; }).join(''), '<button class="hl-btn" id="copyDay" title="Copy yesterday\'s entries onto this day">COPY PREVIOUS DAY</button> <button class="hl-btn" id="expFood">EXPORT CSV</button>')}
+            ${G.card('DIARY', SLOTS.map(s => {
+              const es = rows.filter(e => e.slot === s);
+              const slotKcal = Math.round(S.sum(es.map(e => e.calories)));
+              return `<div style="margin-bottom:18px">
+                <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid rgba(255,255,255,0.06);margin-bottom:8px">
+                  <span style="font-size:10px;font-weight:700;letter-spacing:1.5px;color:var(--text-muted);text-transform:uppercase">${s}</span>
+                  <span style="font-size:11px;font-family:monospace;letter-spacing:1px;color:var(--text);tabular-nums">${slotKcal} KCAL</span>
+                </div>
+                ${es.length ? `
+                  <div style="display:flex;flex-direction:column;gap:5px">
+                    ${es.map(e => `
+                      <div style="display:grid;grid-template-columns:minmax(180px,1fr) 90px 140px 50px;align-items:center;padding:6px 8px;border-radius:4px;transition:background .15s;font-size:11px" onmouseover="this.style.background='rgba(255,255,255,0.02)'" onmouseout="this.style.background='transparent'">
+                        <div style="display:flex;align-items:center;gap:10px;overflow:hidden;padding-right:10px">
+                          ${e.presetCode ? `<span class="hl-code" style="color:var(--green);border-color:rgba(118,179,114,0.3);padding:2px 6px;font-size:10px">${esc(e.presetCode)}</span>` : ''}
+                          <span style="color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(e.name)}${e.qty && e.qty !== 1 ? ' <span style="color:var(--text-muted);font-size:10px">×' + e.qty + '</span>' : ''}</span>
+                        </div>
+                        <div style="font-family:monospace;text-align:right;color:var(--text);tabular-nums">${e.calories} kcal</div>
+                        <div style="font-family:monospace;text-align:right;color:var(--text-muted);tabular-nums">P ${e.protein} C ${e.carbs} F ${e.fat}</div>
+                        <div style="text-align:right;white-space:nowrap">
+                          <span class="hl-x" data-editfood="${e.id}" title="Edit" style="cursor:pointer;opacity:0.6;margin-right:6px">✎</span>
+                          <span class="hl-x" data-del="${e.id}" title="Delete" style="cursor:pointer;opacity:0.6">✕</span>
+                        </div>
+                      </div>
+                    `).join('')}
+                  </div>
+                ` : `<div style="padding:4px 8px;font-size:11px;color:var(--text-muted);letter-spacing:2px">—</div>`}
+              </div>`;
+            }).join(''), '<button class="hl-btn" id="copyDay" title="Copy yesterday\'s entries onto this day">COPY PREVIOUS DAY</button> <button class="hl-btn" id="expFood">EXPORT CSV</button>')}
             ${G.card('MEAL PRESETS', `${store.presets.length ? '' : `<div class="hl-empty" style="padding:18px 8px">NO PRESETS YET<br>A preset is a saved meal: type its code (like S1) to log it in one go.<br><br><button class="hl-btn pri" id="starter">ADD 10 STARTER PRESETS</button></div>`}<table class="hl-table">${store.presets.slice().sort((a, b) => (b.favorite - a.favorite) || (b.useCount - a.useCount) || a.code.localeCompare(b.code)).map(p => `<tr><td><span class="hl-x" data-fav="${p.id}" style="color:${p.favorite ? 'var(--sig-900)' : 'inherit'}">${p.favorite ? '★' : '☆'}</span></td><td data-log="${p.code}" style="cursor:pointer"><span class="hl-code">${esc(p.code)}</span> ${esc(p.name)}</td><td>${p.calories}</td>
               <td style="white-space:nowrap"><span class="hl-x" data-edit="${p.id}" title="Edit">✎</span> <span class="hl-x" data-dup="${p.id}" title="Duplicate">⧉</span> <span class="hl-x" data-delp="${p.id}" title="Delete">✕</span></td></tr>`).join('')}</table>`, '<button class="hl-btn pri" id="newPreset">+ NEW PRESET</button>')}
           </div>
           <div class="fin-group-label">TRENDS & PLAN</div>
-          ${G.card('TRENDS', `<div class="hl-pills" style="margin-bottom:12px"><button class="hl-pill ${st.range === 7 ? 'on' : ''}" data-r="7">7D</button><button class="hl-pill ${st.range === 30 ? 'on' : ''}" data-r="30">30D</button></div>
-            <div class="hl-grid hl-g2" style="margin-bottom:0"><div><div class="hl-label" style="margin-bottom:6px">CALORIES VS TARGET</div><div class="hl-chart sm" id="${ids.tr}"></div></div><div><div class="hl-label" style="margin-bottom:6px">PROTEIN VS TARGET · G</div><div class="hl-chart sm" id="${ids.prot}"></div></div>
-            <div><div class="hl-label" style="margin-bottom:6px">MACRO SPLIT · % OF CALORIES</div><div class="hl-chart sm" id="${ids.split}"></div></div></div>`)}
+          ${G.card('TRENDS', `
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px">
+              <div class="hl-pills"><button class="hl-pill ${st.range === 7 ? 'on' : ''}" data-r="7">7D</button><button class="hl-pill ${st.range === 30 ? 'on' : ''}" data-r="30">30D</button></div>
+              <div style="display:flex;align-items:center;gap:8px">
+                <span class="hl-note" style="letter-spacing:1px">TARGET DEFICIT:</span>
+                <input id="defTgInp" type="number" min="0" max="3000" step="50" value="${targetDeficit}" style="width:75px;background:var(--carbon-2);border:1px solid var(--carbon-4);color:var(--text);font:inherit;font-size:11px;padding:3px 8px;border-radius:4px">
+                <span class="hl-note">KCAL</span>
+              </div>
+            </div>
+            <div class="hl-grid hl-g2" style="margin-bottom:0">
+              <div><div class="hl-label" style="margin-bottom:6px">DEFICIT TRACKING (BURN − INTAKE)</div><div class="hl-chart sm" id="${ids.defChart}"></div></div>
+              <div><div class="hl-label" style="margin-bottom:6px">PROTEIN VS TARGET · G</div><div class="hl-chart sm" id="${ids.protChart}"></div></div>
+            </div>`)}
           ${G.card('YOUR PLAN', noPlan ? G.empty('NO PLAN YET<br>Use SET UP PLAN above to calculate your targets.') : `<table class="hl-table"><tr><td>BMR</td><td>${tg.plan?.bmr ? F.num(tg.plan.bmr) + ' kcal' : '—'}</td><td>TDEE</td><td>${tg.plan?.tdee ? F.num(tg.plan.tdee) + ' kcal' : '—'}</td></tr>
             <tr><td>Daily target</td><td>${F.num(tg.calories)} kcal</td><td>Macros</td><td>P ${tg.protein} · C ${tg.carbs} · F ${tg.fat} g</td></tr>
             <tr><td>Water</td><td>${(tg.waterMl / 1000).toFixed(1)} L</td><td>Timeline</td><td>${tg.plan?.weeks ? '~' + tg.plan.weeks + ' weeks to goal' : '—'}</td></tr></table>`)}`;
 
         window.gridRingChart(ids.ringC, [{ label: 'Calories', value: noPlan ? 0 : t.cal, maxValue: noPlan ? 1 : tg.calories, color: t.cal > tg.calories * 1.05 ? '#f97316' : '#76b372' }], { baseInnerRadius: 70, strokeWidth: 16, defaultLabel: noPlan ? 'NO TARGET YET' : 'OF TARGET' });
-        window.gridRingChart(ids.ringM, [{ label: 'Protein', value: noPlan ? 0 : t.p, maxValue: noPlan ? 1 : tg.protein, color: '#3b82f6' }, { label: 'Carbs', value: noPlan ? 0 : t.c, maxValue: noPlan ? 1 : tg.carbs, color: '#14b8a6' }, { label: 'Fat', value: noPlan ? 0 : t.f, maxValue: noPlan ? 1 : tg.fat, color: '#f59e0b' }], { baseInnerRadius: 42, strokeWidth: 12, defaultLabel: noPlan ? 'NO TARGET YET' : 'OF MACROS' });
-        trends(tg, ids); bind();
+        
+        // Render top macro split donut chart
+        const scRing = window.ethosChart(ids.splitRing);
+        if (scRing) {
+          if (totKcalFromMacros > 0) {
+            scRing.setOption({
+              tooltip: { trigger: 'item', formatter: '{b}: {c} kcal ({d}%)' },
+              series: [Object.assign(window.bkPie ? window.bkPie({ radius: ['52%', '82%'] }) : { type: 'pie', radius: ['52%', '82%'] }, {
+                data: [
+                  { name: 'Protein', value: t.p * 4, itemStyle: { color: '#3b82f6' } },
+                  { name: 'Carbs', value: t.c * 4, itemStyle: { color: '#14b8a6' } },
+                  { name: 'Fat', value: t.f * 9, itemStyle: { color: '#f59e0b' } }
+                ],
+                label: { show: true, formatter: '{b}\n{d}%', color: 'rgba(240,240,240,.65)', fontSize: 9 }
+              })]
+            }, true);
+          } else {
+            scRing.clear();
+          }
+        }
+
+        trends(tg, ids, targetDeficit); bind();
       };
 
-      const trends = async (tg, ids) => {
+      const trends = async (tg, ids, targetDeficit) => {
         const dates = Array.from({ length: st.range }, (_, i) => addDays(today, -(st.range - 1 - i))), x = dates.map(F.short);
         const by = dates.map(d => totals(store.log.filter(e => e.date === d))), logged = by.map(b => b.cal > 0);
-        const colr = (v, i) => !logged[i] ? 'rgba(255,255,255,.08)' : !tg.calories ? '#76b372' : v > tg.calories * 1.05 ? '#f97316' : v >= tg.calories * 0.95 ? '#76b372' : '#3b6839';
-        const axis = { grid: { left: 42, right: 14, top: 18, bottom: 24 }, tooltip: { trigger: 'axis' }, xAxis: { type: 'category', data: x, axisLabel: { interval: Math.max(0, Math.ceil(x.length / 8) - 1) } } };
-        window.ethosChart(ids.tr).setOption({ ...axis, yAxis: { type: 'value' }, series: [{ type: 'bar', barMaxWidth: 22, data: by.map((b, i) => ({ value: b.cal, itemStyle: { color: colr(b.cal, i), borderRadius: [4, 4, 0, 0] } })), markLine: { silent: true, symbol: 'none', lineStyle: { color: 'rgba(240,240,240,.38)', type: 'dashed' }, data: tg.calories ? [{ yAxis: tg.calories }] : [], label: { formatter: 'TARGET', color: 'rgba(240,240,240,.38)', fontSize: 9 } } }] }, true);
-        window.ethosChart(ids.prot).setOption({ ...axis, yAxis: { type: 'value' }, series: [Object.assign(window.bkArea('#3b82f6', { fillOpacity: 0.15 }), { data: by.map((b, i) => (logged[i] ? b.p : null)), connectNulls: true, markLine: { silent: true, symbol: 'none', lineStyle: { color: 'rgba(240,240,240,.38)', type: 'dashed' }, data: tg.protein ? [{ yAxis: tg.protein }] : [], label: { formatter: 'TARGET', color: 'rgba(240,240,240,.38)', fontSize: 9 } } })] }, true);
-        const lg = by.filter((_, i) => logged[i]), tot = { p: S.sum(lg.map(b => b.p)) * 4, c: S.sum(lg.map(b => b.c)) * 4, f: S.sum(lg.map(b => b.f)) * 9 };
-        const sc = window.ethosChart(ids.split);
-        if (lg.length) sc.setOption({ tooltip: { trigger: 'item', formatter: '{b}: {d}%' }, series: [Object.assign(window.bkPie({ radius: ['55%', '85%'] }), { data: [{ name: 'Protein', value: tot.p, itemStyle: { color: '#3b82f6' } }, { name: 'Carbs', value: tot.c, itemStyle: { color: '#14b8a6' } }, { name: 'Fat', value: tot.f, itemStyle: { color: '#f59e0b' } }], label: { show: true, formatter: '{b} {d}%', color: 'rgba(240,240,240,.65)', fontSize: 9 } })] }, true);
-        else document.getElementById(ids.split).innerHTML = G.empty('NOTHING LOGGED IN THIS RANGE');
+        const defData = dates.map((d, i) => {
+          const b = store.burn[d] || (tg.plan?.tdee || 2400);
+          const intake = by[i].cal;
+          const def = b - intake;
+          const colr = def >= targetDeficit ? '#76b372' : def >= 0 ? '#3b6839' : '#f97316';
+          return { value: def, itemStyle: { color: colr, borderRadius: def >= 0 ? [4, 4, 0, 0] : [0, 0, 4, 4] } };
+        });
+
+        const axis = { grid: { left: 42, right: 14, top: 18, bottom: 24 }, xAxis: { type: 'category', data: x, axisLabel: { interval: Math.max(0, Math.ceil(x.length / 8) - 1) } } };
+        
+        // Deficit tracking chart
+        window.ethosChart(ids.defChart).setOption({
+          ...axis,
+          tooltip: {
+            trigger: 'axis',
+            formatter: (p) => {
+              const idx = p[0].dataIndex, dt = dates[idx], b = store.burn[dt] || (tg.plan?.tdee || 2400), i = by[idx].cal, def = b - i;
+              return `${dt}<br>Burn: ${b} kcal<br>Intake: ${i} kcal<br><b>Deficit: ${def >= 0 ? '+' : ''}${def} kcal</b> (Target: ${targetDeficit} kcal)`;
+            }
+          },
+          yAxis: { type: 'value', name: 'kcal', nameTextStyle: { color: 'rgba(240,240,240,.38)', fontSize: 9 } },
+          series: [{
+            type: 'bar',
+            barMaxWidth: 22,
+            data: defData,
+            markLine: {
+              silent: true,
+              symbol: 'none',
+              data: [
+                { yAxis: targetDeficit, lineStyle: { color: '#a5f79e', type: 'dashed' }, label: { formatter: 'TARGET ' + targetDeficit, color: '#a5f79e', fontSize: 9 } },
+                { yAxis: 0, lineStyle: { color: 'rgba(255,255,255,.15)', type: 'solid' }, label: { show: false } }
+              ]
+            }
+          }]
+        }, true);
+
+        // Protein chart
+        window.ethosChart(ids.protChart).setOption({
+          ...axis,
+          tooltip: { trigger: 'axis' },
+          yAxis: { type: 'value', name: 'g', nameTextStyle: { color: 'rgba(240,240,240,.38)', fontSize: 9 } },
+          series: [Object.assign(window.bkArea('#3b82f6', { fillOpacity: 0.15 }), {
+            data: by.map((b, i) => (logged[i] ? b.p : null)),
+            connectNulls: true,
+            markLine: { silent: true, symbol: 'none', lineStyle: { color: 'rgba(240,240,240,.38)', type: 'dashed' }, data: tg.protein ? [{ yAxis: tg.protein }] : [], label: { formatter: 'TARGET', color: 'rgba(240,240,240,.38)', fontSize: 9 } }
+          })]
+        }, true);
       };
 
       const msg = (t, action) => { const el = root.querySelector('#qlMsg'); if (!el) return; el.innerHTML = esc(t) + (action ? ` <button class="hl-btn pri" id="qlAct">${action}</button>` : ''); };
@@ -263,6 +440,48 @@
           else if (e.key === 'Escape') { inp.value = ''; sug.innerHTML = ''; }
         };
         root.querySelector('#qlGo').onclick = submit;
+        
+        // Calories burned saving
+        const saveBurn = root.querySelector('#saveBurnBtn');
+        if (saveBurn) {
+          saveBurn.onclick = async () => {
+            const val = parseInt(root.querySelector('#burnInp').value, 10);
+            if (!(val >= 0 && val <= 15000)) return G.toast('ENTER A VALID CALORIE BURN (0 - 15,000)');
+            try {
+              await store.setBurn(st.date, val);
+              G.toast(`BURN SAVED FOR ${st.date}: ${val} KCAL`);
+              await draw();
+            } catch (e) {
+              G.toast((e.message || 'COULD NOT SAVE BURN').toUpperCase());
+            }
+          };
+        }
+
+        // Goal mode buttons
+        root.querySelectorAll('[data-goal]').forEach(b => {
+          b.onclick = async () => {
+            try {
+              await store.applyGoal(b.dataset.goal);
+              G.toast(`GOAL SWITCHED TO ${b.dataset.goal.toUpperCase()}`);
+              await draw();
+            } catch (e) {
+              G.toast((e.message || 'COULD NOT UPDATE GOAL').toUpperCase());
+            }
+          };
+        });
+
+        // Deficit target input
+        const dtInp = root.querySelector('#defTgInp');
+        if (dtInp) {
+          dtInp.onchange = (e) => {
+            const v = parseInt(e.target.value, 10);
+            if (v > 0) {
+              localStorage.setItem('nutritionDeficitTarget', String(v));
+              draw();
+            }
+          };
+        }
+
         root.querySelectorAll('[data-d]').forEach(b => b.onclick = () => { const n = +b.dataset.d; st.date = n === 0 ? today : addDays(st.date, n); if (st.date > today) st.date = today; draw(); });
         root.querySelectorAll('[data-del]').forEach(x => x.onclick = async () => { try { await store.delFood(x.dataset.del); } catch (e) { G.toast('DELETE FAILED'); } draw(); });
         root.querySelectorAll('[data-w]').forEach(b => b.onclick = async () => { try { await store.setWater(st.date, Math.max(0, (store.water[st.date] || 0) + +b.dataset.w)); } catch (e) { G.toast('SAVE FAILED'); } draw(); });

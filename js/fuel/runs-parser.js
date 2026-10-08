@@ -4,7 +4,7 @@
 (function (root) {
   const PAUSE_GAP_S = 30;        // a gap longer than this between points is a pause, not running
   const MIN_SPEED = 0.5;         // m/s: slower than this counts as stopped
-  const BEST_TARGETS = [1000, 1609, 3000, 5000, 10000, 21098];
+  const BEST_TARGETS = [1000, 1609, 3000, 5000, 10000, 15000, 21098];
   const MAX_STREAM = 300;
 
   const rad = (d) => (d * Math.PI) / 180;

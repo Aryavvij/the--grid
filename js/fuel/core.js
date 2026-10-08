@@ -139,7 +139,7 @@
 
   /** Data access: demo mode reads seeded mock data, login mode calls the API (through the cache above). */
   const fetchFresh = async (kind, params) => {
-    const map = { runs: '/api/runs', presets: '/api/nutrition/presets', foodlog: '/api/nutrition/log', targets: '/api/nutrition/targets', water: '/api/nutrition/water' };
+    const map = { runs: '/api/runs', presets: '/api/nutrition/presets', foodlog: '/api/nutrition/log', targets: '/api/nutrition/targets', water: '/api/nutrition/water', burn: '/api/progress/burn' };
     const qs = new URLSearchParams(Object.entries(params).filter(([, v]) => v != null && v !== '')).toString();
     const timeout = new Promise((_, rej) => setTimeout(() => rej({ message: 'request timed out after 20s' }), 20000));
     const r = await Promise.race([gridFetch(map[kind] + (qs ? '?' + qs : ''), { cache: 'no-store' }), timeout]);
