@@ -105,17 +105,22 @@
     }
 
     c.setOption({
-      grid: { left: 46, right: 46, top: 24, bottom: 26 },
+      grid: { left: 48, right: 48, top: 40, bottom: 26 },
       tooltip: { trigger: 'axis' },
-      legend: { top: 0, right: 0 },
+      legend: {
+        top: 4,
+        right: 48,
+        itemGap: 24,
+        textStyle: { color: 'rgba(240,240,240,0.65)', fontSize: 10 }
+      },
       xAxis: {
         type: 'category',
         data: pts.map(p => F?.short ? F.short(p.date) : p.date.slice(5)),
         axisLabel: { interval: Math.max(0, Math.ceil(pts.length / 10) - 1) }
       },
       yAxis: [
-        { type: 'value', scale: true, name: 'e1RM kg', nameTextStyle: { color: 'rgba(240,240,240,.38)', fontSize: 9 } },
-        { type: 'value', scale: true, name: 'kg', splitLine: { show: false }, nameTextStyle: { color: 'rgba(240,240,240,.38)', fontSize: 9 } }
+        { type: 'value', scale: true, name: 'e1RM (kg)', nameTextStyle: { color: 'rgba(240,240,240,.38)', fontSize: 9 } },
+        { type: 'value', scale: true, splitLine: { show: false } }
       ],
       series: [
         Object.assign(window.bkArea ? window.bkArea('#76b372', { fillOpacity: 0.12 }) : {}, {
@@ -143,10 +148,10 @@
   window.renderGymExerciseProgression = renderGymExerciseProgression;
 
   function initIfActive() {
+    const split = document.getElementById('gym-split');
+    if (split && split.style.display !== 'none') renderGymTrainingCalendar();
     const muscle = document.getElementById('gym-muscle');
     if (muscle && muscle.style.display !== 'none') renderGymExerciseProgression();
-    const log = document.getElementById('gym-log');
-    if (log && log.style.display !== 'none') renderGymTrainingCalendar();
   }
 
   if (document.readyState === 'loading') {

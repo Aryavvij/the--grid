@@ -5362,6 +5362,20 @@ html, body {
         <!-- Dynamic 7-day columns -->
         <div class="gym-days-grid" id="gymDaysGrid"></div>
 
+        <!-- Training Calendar Heatmap -->
+        <div class="gym-telemetry" style="padding:20px; margin-top:14px; margin-bottom:14px;">
+          <div class="gym-tel-head" style="margin-bottom:12px;">
+            <div style="display:flex;align-items:center;gap:8px">
+              <svg viewBox="0 0 24 24" width="14" height="14" stroke="var(--green)" fill="none" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              <span class="gym-tel-title">TRAINING CALENDAR</span>
+            </div>
+            <div class="gym-tel-sub">Session volume heatmap (past 6 months)</div>
+          </div>
+          <div style="height:140px; width:100%;">
+            <div id="gymTrainingCalendar" style="width:100%;height:100%"></div>
+          </div>
+        </div>
+
         <!-- Session Logger -->
         <div class="gym-bottom-grid">
 
@@ -5418,8 +5432,11 @@ html, body {
             </div>
             <div class="gym-tel-sub">LINE = ESTIMATED 1RM · DOTS = TOP SET WEIGHT · NEON = NEW PR</div>
           </div>
-          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;align-items:center">
-            <select id="exProgSel" style="font:inherit;font-size:11px;color:var(--text);background:var(--carbon-1);border:1px solid var(--carbon-4);border-radius:6px;padding:7px 10px"></select>
+          <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:14px;align-items:center">
+            <div style="display:flex;align-items:center;gap:8px">
+              <span style="font-size:9px;color:var(--text-muted);letter-spacing:1.5px;text-transform:uppercase">EXERCISE</span>
+              <select id="exProgSel" style="height:28px;line-height:26px;font-family:var(--font);font-size:10px;font-weight:700;letter-spacing:1px;color:var(--text);background:var(--carbon-1);border:1px solid var(--card-border);border-radius:4px;padding:0 12px;cursor:pointer;text-transform:uppercase;outline:none"></select>
+            </div>
             <div class="hl-pills" id="exProgPills">
               <button class="hl-pill" data-rng="90">90D</button>
               <button class="hl-pill on" data-rng="180">6M</button>
@@ -5475,20 +5492,6 @@ html, body {
         <div class="gym-split-title" style="margin-bottom:6px">OVERVIEW &amp; LOG</div>
         <div class="gym-split-sub" style="margin-bottom:20px">Session history and biometric telemetry feed</div>
 
-        <!-- Training Calendar Heatmap -->
-        <div class="gym-telemetry" style="padding:20px; margin-bottom:14px;">
-          <div class="gym-tel-head" style="margin-bottom:12px;">
-            <div style="display:flex;align-items:center;gap:8px">
-              <svg viewBox="0 0 24 24" width="14" height="14" stroke="var(--green)" fill="none" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-              <span class="gym-tel-title">TRAINING CALENDAR</span>
-            </div>
-            <div class="gym-tel-sub">Session volume heatmap (past 6 months)</div>
-          </div>
-          <div style="height:140px; width:100%;">
-            <div id="gymTrainingCalendar" style="width:100%;height:100%"></div>
-          </div>
-        </div>
-        
         <!-- Muscle balance radar — new, sits alongside the existing charts -->
         <div class="gym-telemetry" style="padding:20px; margin-bottom:14px;">
           <div class="gym-tel-head">
@@ -7943,6 +7946,7 @@ function initGym() {
   initGymData();
   renderWeeklySplit();
   renderSessionLogger();   // logger is on the default (split) tab now
+  if (window.renderGymTrainingCalendar) window.renderGymTrainingCalendar();
   updateVolumeTelemetry();
   buildMuscleGrid();
   updateRecalTimer();
@@ -7952,6 +7956,7 @@ function initGym() {
     if (!changed) return;
     renderWeeklySplit();
     renderSessionLogger();
+    if (window.renderGymTrainingCalendar) window.renderGymTrainingCalendar();
     updateVolumeTelemetry();
     buildMuscleGrid();
   });
@@ -7968,13 +7973,13 @@ function gymTab(el, tab) {
   if (tab === 'split') {
     renderWeeklySplit();
     renderSessionLogger();
+    if (window.renderGymTrainingCalendar) window.renderGymTrainingCalendar();
   } else if (tab === 'muscle') {
     buildMuscleGrid();
     if (window.renderGymExerciseProgression) window.renderGymExerciseProgression();
   } else if (tab === 'log') {
     renderOverviewLog();
     renderLogDiary();
-    if (window.renderGymTrainingCalendar) window.renderGymTrainingCalendar();
     try { renderGymRadar(); } catch (e) { console.warn('gym radar:', e); }
   }
 }

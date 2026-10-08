@@ -279,41 +279,79 @@
 
           <div class="fin-group-label" style="margin-top:16px">TODAY</div>
           <div class="hl-grid hl-g3">
-            ${G.card('CALORIES', `<div class="hl-ring" id="${ids.ringC}"></div><div class="fx-sub" style="text-align:center">${noPlan ? t.cal + ' kcal eaten · set a plan to see your target' : t.cal + ' of ' + tg.calories + ' kcal · ' + (tg.calories - t.cal >= 0 ? (tg.calories - t.cal) + ' left' : (t.cal - tg.calories) + ' over')}</div>`)}
-            ${G.card('MACRO SPLIT · % OF CALORIES', `<div class="hl-chart" id="${ids.splitRing}" style="height:140px;width:100%"></div><div class="fx-sub" style="text-align:center">${totKcalFromMacros ? `P ${t.p}g (${protPct}%) · C ${t.c}g (${carbPct}%) · F ${t.f}g (${fatPct}%)` : 'No macros logged today'}</div>`)}
-            ${G.card('WATER', `<div class="fin-stat-val">${(water / 1000).toFixed(1)}<span class="u">of ${(tg.waterMl / 1000).toFixed(1)} L</span></div>
-              <div style="height:8px;border-radius:4px;background:rgba(255,255,255,.07);margin:14px 0"><div style="height:100%;width:${Math.min(100, water / tg.waterMl * 100)}%;background:var(--blue);border-radius:4px;transition:width .3s"></div></div>
-              <button class="hl-btn" data-w="-250">− 250 ML</button> <button class="hl-btn pri" data-w="250">+ 250 ML</button>`)}
+            ${G.card('CALORIES', `
+              <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:160px;text-align:center">
+                <div class="hl-ring" id="${ids.ringC}" style="margin:0 auto 10px auto"></div>
+                <div class="fx-sub" style="text-align:center">${noPlan ? t.cal + ' kcal eaten · set a plan to see your target' : t.cal + ' of ' + tg.calories + ' kcal · ' + (tg.calories - t.cal >= 0 ? (tg.calories - t.cal) + ' left' : (t.cal - tg.calories) + ' over')}</div>
+              </div>`)}
+            ${G.card('MACRO SPLIT · % OF CALORIES', `
+              <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:160px;text-align:center">
+                <div class="hl-chart" id="${ids.splitRing}" style="height:140px;width:100%"></div>
+                <div class="fx-sub" style="text-align:center">${totKcalFromMacros ? `P ${t.p}g (${protPct}%) · C ${t.c}g (${carbPct}%) · F ${t.f}g (${fatPct}%)` : 'No macros logged today'}</div>
+              </div>`)}
+            ${G.card('WATER', `
+              <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:160px;text-align:center">
+                <div class="fin-stat-val" style="display:flex;align-items:baseline;justify-content:center;gap:6px;margin-bottom:12px">
+                  <span style="font-size:32px;font-weight:700;color:var(--text);letter-spacing:-0.5px">${(water / 1000).toFixed(1)}</span>
+                  <span class="u" style="font-size:11px;color:var(--text-muted);letter-spacing:1.2px;text-transform:uppercase">OF ${(tg.waterMl / 1000).toFixed(1)} L</span>
+                </div>
+                <div style="width:85%;max-width:260px;height:8px;border-radius:4px;background:rgba(255,255,255,.07);margin-bottom:18px;overflow:hidden">
+                  <div style="height:100%;width:${Math.min(100, water / tg.waterMl * 100)}%;background:var(--blue);border-radius:4px;transition:width .3s"></div>
+                </div>
+                <div style="display:flex;gap:10px;justify-content:center">
+                  <button class="hl-btn" data-w="-250" style="padding:6px 14px">− 250 ML</button>
+                  <button class="hl-btn pri" data-w="250" style="padding:6px 14px">+ 250 ML</button>
+                </div>
+              </div>`)}
           </div>
           <div class="hl-grid hl-g21">
-            ${G.card('DIARY', SLOTS.map(s => {
-              const es = rows.filter(e => e.slot === s);
-              const slotKcal = Math.round(S.sum(es.map(e => e.calories)));
-              return `<div style="margin-bottom:18px">
-                <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid rgba(255,255,255,0.06);margin-bottom:8px">
-                  <span style="font-size:10px;font-weight:700;letter-spacing:1.5px;color:var(--text-muted);text-transform:uppercase">${s}</span>
-                  <span style="font-size:11px;font-family:monospace;letter-spacing:1px;color:var(--text);tabular-nums">${slotKcal} KCAL</span>
-                </div>
-                ${es.length ? `
-                  <div style="display:flex;flex-direction:column;gap:5px">
-                    ${es.map(e => `
-                      <div style="display:grid;grid-template-columns:minmax(180px,1fr) 90px 140px 50px;align-items:center;padding:6px 8px;border-radius:4px;transition:background .15s;font-size:11px" onmouseover="this.style.background='rgba(255,255,255,0.02)'" onmouseout="this.style.background='transparent'">
-                        <div style="display:flex;align-items:center;gap:10px;overflow:hidden;padding-right:10px">
-                          ${e.presetCode ? `<span class="hl-code" style="color:var(--green);border-color:rgba(118,179,114,0.3);padding:2px 6px;font-size:10px">${esc(e.presetCode)}</span>` : ''}
-                          <span style="color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(e.name)}${e.qty && e.qty !== 1 ? ' <span style="color:var(--text-muted);font-size:10px">×' + e.qty + '</span>' : ''}</span>
-                        </div>
-                        <div style="font-family:monospace;text-align:right;color:var(--text);tabular-nums">${e.calories} kcal</div>
-                        <div style="font-family:monospace;text-align:right;color:var(--text-muted);tabular-nums">P ${e.protein} C ${e.carbs} F ${e.fat}</div>
-                        <div style="text-align:right;white-space:nowrap">
-                          <span class="hl-x" data-editfood="${e.id}" title="Edit" style="cursor:pointer;opacity:0.6;margin-right:6px">✎</span>
-                          <span class="hl-x" data-del="${e.id}" title="Delete" style="cursor:pointer;opacity:0.6">✕</span>
-                        </div>
-                      </div>
-                    `).join('')}
+            ${G.card('DIARY', `
+              <div style="display:grid;grid-template-columns:minmax(180px,2fr) 95px 75px 75px 75px 46px;align-items:center;padding:8px 10px;font-size:9px;font-weight:700;letter-spacing:1.2px;color:var(--text-muted);text-transform:uppercase;border-bottom:1px solid rgba(255,255,255,0.08);margin-bottom:10px">
+                <span>FOOD ITEM</span>
+                <span style="text-align:right">CALORIES</span>
+                <span style="text-align:right">PROTEIN</span>
+                <span style="text-align:right">CARBS</span>
+                <span style="text-align:right">FAT</span>
+                <span></span>
+              </div>
+              ${SLOTS.map(s => {
+                const es = rows.filter(e => e.slot === s);
+                const slotKcal = Math.round(S.sum(es.map(e => e.calories)));
+                return `<div style="margin-bottom:18px">
+                  <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.04);margin-bottom:8px">
+                    <span style="font-size:10px;font-weight:700;letter-spacing:1.5px;color:var(--text-muted);text-transform:uppercase">${s}</span>
+                    <span style="font-size:11px;font-family:monospace;letter-spacing:1px;color:var(--text);tabular-nums">${slotKcal} KCAL</span>
                   </div>
-                ` : `<div style="padding:4px 8px;font-size:11px;color:var(--text-muted);letter-spacing:2px">—</div>`}
-              </div>`;
-            }).join(''), '<button class="hl-btn" id="copyDay" title="Copy yesterday\'s entries onto this day">COPY PREVIOUS DAY</button> <button class="hl-btn" id="expFood">EXPORT CSV</button>')}
+                  ${es.length ? `
+                    <div style="display:flex;flex-direction:column;gap:4px">
+                      ${es.map(e => `
+                        <div style="display:grid;grid-template-columns:minmax(180px,2fr) 95px 75px 75px 75px 46px;align-items:center;padding:6px 10px;border-radius:4px;transition:background .15s;font-size:11px" onmouseover="this.style.background='rgba(255,255,255,0.02)'" onmouseout="this.style.background='transparent'">
+                          <div style="display:flex;align-items:center;gap:10px;overflow:hidden;padding-right:10px">
+                            ${e.presetCode ? `<span class="hl-code" style="color:var(--green);border-color:rgba(118,179,114,0.3);padding:2px 6px;font-size:10px">${esc(e.presetCode)}</span>` : ''}
+                            <span style="color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(e.name)}${e.qty && e.qty !== 1 ? ' <span style="color:var(--text-muted);font-size:10px">×' + e.qty + '</span>' : ''}</span>
+                          </div>
+                          <div style="font-family:monospace;text-align:right;color:var(--text);tabular-nums">${e.calories} <span style="font-size:9px;color:var(--text-muted)">kcal</span></div>
+                          <div style="font-family:monospace;text-align:right;color:var(--text-muted);tabular-nums">${e.protein}<span style="font-size:9px">g</span></div>
+                          <div style="font-family:monospace;text-align:right;color:var(--text-muted);tabular-nums">${e.carbs}<span style="font-size:9px">g</span></div>
+                          <div style="font-family:monospace;text-align:right;color:var(--text-muted);tabular-nums">${e.fat}<span style="font-size:9px">g</span></div>
+                          <div style="text-align:right;white-space:nowrap">
+                            <span class="hl-x" data-editfood="${e.id}" title="Edit" style="cursor:pointer;opacity:0.6;margin-right:6px">✎</span>
+                            <span class="hl-x" data-del="${e.id}" title="Delete" style="cursor:pointer;opacity:0.6">✕</span>
+                          </div>
+                        </div>
+                      `).join('')}
+                    </div>
+                  ` : `<div style="padding:4px 10px;font-size:11px;color:var(--text-muted);letter-spacing:2px">—</div>`}
+                </div>`;
+              }).join('')}
+              <div style="display:grid;grid-template-columns:minmax(180px,2fr) 95px 75px 75px 75px 46px;align-items:center;padding:12px 10px;margin-top:14px;border-top:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.02);border-radius:4px;font-size:11px;font-weight:700">
+                <div style="color:var(--green);letter-spacing:1.5px;font-size:10px;text-transform:uppercase">TOTAL</div>
+                <div style="font-family:monospace;text-align:right;color:var(--text);tabular-nums">${t.cal} <span style="font-size:9px;color:var(--text-muted);font-weight:normal">kcal</span></div>
+                <div style="font-family:monospace;text-align:right;color:var(--text-muted);tabular-nums">${t.p}<span style="font-size:9px;font-weight:normal">g</span></div>
+                <div style="font-family:monospace;text-align:right;color:var(--text-muted);tabular-nums">${t.c}<span style="font-size:9px;font-weight:normal">g</span></div>
+                <div style="font-family:monospace;text-align:right;color:var(--text-muted);tabular-nums">${t.f}<span style="font-size:9px;font-weight:normal">g</span></div>
+                <div></div>
+              </div>`, '<button class="hl-btn" id="copyDay" title="Copy yesterday\'s entries onto this day">COPY PREVIOUS DAY</button> <button class="hl-btn" id="expFood">EXPORT CSV</button>')}
             ${G.card('MEAL PRESETS', `${store.presets.length ? '' : `<div class="hl-empty" style="padding:18px 8px">NO PRESETS YET<br>A preset is a saved meal: type its code (like S1) to log it in one go.<br><br><button class="hl-btn pri" id="starter">ADD 10 STARTER PRESETS</button></div>`}<table class="hl-table">${store.presets.slice().sort((a, b) => (b.favorite - a.favorite) || (b.useCount - a.useCount) || a.code.localeCompare(b.code)).map(p => `<tr><td><span class="hl-x" data-fav="${p.id}" style="color:${p.favorite ? 'var(--sig-900)' : 'inherit'}">${p.favorite ? '★' : '☆'}</span></td><td data-log="${p.code}" style="cursor:pointer"><span class="hl-code">${esc(p.code)}</span> ${esc(p.name)}</td><td>${p.calories}</td>
               <td style="white-space:nowrap"><span class="hl-x" data-edit="${p.id}" title="Edit">✎</span> <span class="hl-x" data-dup="${p.id}" title="Duplicate">⧉</span> <span class="hl-x" data-delp="${p.id}" title="Delete">✕</span></td></tr>`).join('')}</table>`, '<button class="hl-btn pri" id="newPreset">+ NEW PRESET</button>')}
           </div>

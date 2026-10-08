@@ -173,11 +173,6 @@
           visualMap: { show: false, dimension: 2, min: 0, max: 11, inRange: { color: ['#3b6839', '#a5f79e'] } },
           xAxis: { type: 'value', scale: true, name: 'min/km', nameLocation: 'middle', nameGap: 20, nameTextStyle: { color: 'rgba(240,240,240,.38)', fontSize: 9 }, inverse: true }, yAxis: { type: 'value', scale: true, name: 'bpm', nameTextStyle: { color: 'rgba(240,240,240,.38)', fontSize: 9 } },
           series: [{ type: 'scatter', symbolSize: 8, data: withHr.map(r => [+(pace(r) / 60).toFixed(2), r.avgHr, +r.date.slice(5, 7) - 1, r.date]) }] }, true);
-        const gear = {}; inP.forEach(r => { if (r.gear) gear[r.gear] = (gear[r.gear] || 0) + r.distanceM / 1000; });
-        const allGear = {}; all.forEach(r => { if (r.gear) allGear[r.gear] = (allGear[r.gear] || 0) + r.distanceM / 1000; });
-        root.querySelector('#gear').innerHTML = Object.keys(allGear).length ? Object.entries(allGear).sort((a, b) => b[1] - a[1]).map(([g, km]) =>
-          `<div style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;font-size:10px;letter-spacing:1.2px;margin-bottom:5px"><span>${esc(g)}</span><span style="color:var(--text-muted)">${F.num(km)} / 700 KM${gear[g] ? ' · ' + F.num(gear[g]) + ' THIS PERIOD' : ''}</span></div>
-            <div style="height:6px;border-radius:3px;background:rgba(255,255,255,.07)"><div style="height:100%;width:${Math.min(100, km / 7)}%;border-radius:3px;background:${km > 600 ? 'var(--orange)' : 'var(--green)'}"></div></div></div>`).join('') : G.empty('NO GEAR RECORDED<br>Gear comes from activities.csv');
       };
 
       const pbs = () => {
