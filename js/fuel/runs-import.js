@@ -1,8 +1,7 @@
 /* Strava export import: .fit .gpx .tcx (+ .gz), .zip bulk exports, activities.csv.
-   Everything is parsed in the browser; only normalised runs are uploaded. No libraries except a lazily loaded FIT parser. */
+   Everything is parsed in the browser (FIT by js/fuel/fit-decoder.js, no downloaded libraries); only normalised runs are uploaded. */
 (function () {
   const G = window.Grid, RP = () => G.runParser;
-  const FIT_CDN = 'https://cdn.jsdelivr.net/npm/fit-file-parser@2.2.2/+esm';
   const MAX_ZIP_BYTES = 1.5 * 1024 * 1024 * 1024;
   const BATCH_BYTES = 600 * 1024, BATCH_RUNS = 40;
   const tick = () => new Promise(r => setTimeout(r, 0));
@@ -93,18 +92,8 @@
     }));
     return { points, meta: { sport: act.getAttribute('Sport') } };
   }
-  let fitParserP;
-  async function parseFit(bytes) {
-    fitParserP = fitParserP || import(FIT_CDN).then(m => m.default);
-    const FitParser = await fitParserP;
-    const fp = new FitParser({ force: true, speedUnit: 'm/s', lengthUnit: 'm', mode: 'list' });
-    const d = await new Promise((res, rej) => fp.parse(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength), (e, o) => (e ? rej(new Error(String(e).slice(0, 80))) : res(o))));
-    const points = (d.records || []).map(r => ({
-      t: r.timestamp ? +new Date(r.timestamp) : NaN, lat: r.position_lat, lon: r.position_long, ele: r.enhanced_altitude ?? r.altitude, dist: r.distance, hr: r.heart_rate, cad: r.cadence,
-    }));
-    const s = (d.sessions || [])[0] || {};
-    return { points, meta: { sport: s.sport || (d.sports && d.sports[0] && d.sports[0].sport) || null, calories: s.total_calories || null } };
-  }
+  /** FIT -> { points, meta }, through the built-in reader. */
+  function parseFit(bytes) { return G.fit.toRun(G.fit.decode(bytes)); }
 
   // ── Strava activities.csv ────────────────────────────────────
   function csvRows(str) {

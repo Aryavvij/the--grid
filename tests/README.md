@@ -9,6 +9,7 @@ node tests/runparser.test.js # one suite
 
 | Suite | What it checks |
 |---|---|
+| `fit.test.js` | built-in FIT reader: a Garmin-encoded fixture, compressed timestamps, big-endian, developer fields, invalid values, chained and truncated files, treadmill files, multisport |
 | `runparser.test.js` | run metrics from track points: pace, pauses, splits, best efforts, HR zones, elevation, cadence |
 | `plan.test.js`, `calc.test.js` | BMR/TDEE/plan maths with hand-calculated answers and safety floors |
 | `presets.test.js` | quick-log parser (`S1`, `2x S1`, `S1 dinner`) |
