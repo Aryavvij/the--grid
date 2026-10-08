@@ -10,7 +10,6 @@ node tests/runparser.test.js # one suite
 | Suite | What it checks |
 |---|---|
 | `runparser.test.js` | run metrics from track points: pace, pauses, splits, best efforts, HR zones, elevation, cadence |
-| `deficit.test.js` | burn vs eaten, counted-day rules, estimates, cumulative, weekly, weight trend |
 | `plan.test.js`, `calc.test.js` | BMR/TDEE/plan maths with hand-calculated answers and safety floors |
 | `presets.test.js` | quick-log parser (`S1`, `2x S1`, `S1 dinner`) |
 | `gym.test.js` | e1RM, PRs, plateaus, weekly muscle sets, malformed data |

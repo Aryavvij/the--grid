@@ -19,20 +19,28 @@
         Object.assign(store, demo); return;
       }
       const [presets, log, water, targets] = await Promise.all([G.data('presets'), G.data('foodlog', { from, to: today }), G.data('water', { from, to: today }), G.data('targets')]);
-      Object.assign(store, { presets, log, water: Object.fromEntries(water.map(w => [w.date, w.ml])), targets });
+      Object.assign(store, { presets, log, water: Object.fromEntries(water.map(w => [w.date, w.ml])), targets, _q: { from, to: today } });
+    },
+    /** Saves change the store in place; write it back to the page cache so the next visit opens on it. */
+    persist() {
+      if (G.isDemo() || !store._q || !G.cacheSet) return;
+      G.cacheSet('presets', {}, store.presets);
+      G.cacheSet('foodlog', store._q, store.log);
+      G.cacheSet('water', store._q, Object.entries(store.water).map(([date, ml]) => ({ date, ml })));
+      G.cacheSet('targets', {}, store.targets);
     },
     async addFood(e) {
       if (G.isDemo()) { const row = { id: 'n' + Date.now() + Math.random().toString(36).slice(2, 5), qty: 1, confidence: 'estimated', ...e }; demo.log.push(row); return row; }
-      const row = await gridFetch('/api/nutrition/log', { method: 'POST', body: JSON.stringify(e) }); store.log.push(row); return row;
+      const row = await gridFetch('/api/nutrition/log', { method: 'POST', body: JSON.stringify(e) }); store.log.push(row); store.persist(); return row;
     },
     async logPreset(cmd, preset, date, slot) {
       if (G.isDemo()) { preset.useCount = (preset.useCount || 0) + 1; return store.addFood({ date, slot, name: preset.name, serving: preset.serving, qty: cmd.qty, presetCode: preset.code, confidence: 'exact', ...P().scale(preset, cmd.qty) }); }
-      const row = await gridFetch('/api/nutrition/log-preset', { method: 'POST', body: JSON.stringify({ code: cmd.code, qty: cmd.qty, slot: cmd.slot || undefined, date }) }); store.log.push(row); return row;
+      const row = await gridFetch('/api/nutrition/log-preset', { method: 'POST', body: JSON.stringify({ code: cmd.code, qty: cmd.qty, slot: cmd.slot || undefined, date }) }); store.log.push(row); store.persist(); return row;
     },
     async editFood(id, patch) {
       if (G.isDemo()) { const row = store.log.find(e => e.id === id); Object.assign(row, patch); return row; }
       const row = await gridFetch('/api/nutrition/log/' + id, { method: 'PUT', body: JSON.stringify(patch) });
-      store.log = store.log.map(e => (e.id === id ? row : e)); return row;
+      store.log = store.log.map(e => (e.id === id ? row : e)); store.persist(); return row;
     },
     /** Copy every entry of one day onto another (preset links are not kept; the numbers are). */
     async copyDay(from, to) {
@@ -42,7 +50,7 @@
     },
     async delFood(id) {
       if (!G.isDemo()) await gridFetch('/api/nutrition/log/' + id, { method: 'DELETE' });
-      store.log = store.log.filter(e => e.id !== id); if (demo) demo.log = store.log;
+      store.log = store.log.filter(e => e.id !== id); if (demo) demo.log = store.log; store.persist();
     },
     async savePreset(p, id) {
       if (G.isDemo()) {
@@ -50,11 +58,11 @@
         if (id) Object.assign(store.presets.find(x => x.id === id), p); else store.presets.push({ id: 'p' + Date.now(), useCount: 0, favorite: false, ...p }); return;
       }
       const saved = await gridFetch(id ? '/api/nutrition/presets/' + id : '/api/nutrition/presets', { method: id ? 'PUT' : 'POST', body: JSON.stringify(p) });
-      store.presets = id ? store.presets.map(x => (x.id === id ? saved : x)) : [...store.presets, saved];
+      store.presets = id ? store.presets.map(x => (x.id === id ? saved : x)) : [...store.presets, saved]; store.persist();
     },
-    async delPreset(id) { if (!G.isDemo()) await gridFetch('/api/nutrition/presets/' + id, { method: 'DELETE' }); store.presets = store.presets.filter(x => x.id !== id); if (demo) demo.presets = store.presets; },
-    async setWater(date, ml) { if (!G.isDemo()) await gridFetch('/api/nutrition/water/' + date, { method: 'PUT', body: JSON.stringify({ ml }) }); store.water[date] = ml; },
-    async saveTargets(t) { if (!G.isDemo()) store.targets = await gridFetch('/api/nutrition/targets', { method: 'PUT', body: JSON.stringify(t) }); else store.targets = demo.targets = { ...t }; },
+    async delPreset(id) { if (!G.isDemo()) await gridFetch('/api/nutrition/presets/' + id, { method: 'DELETE' }); store.presets = store.presets.filter(x => x.id !== id); if (demo) demo.presets = store.presets; store.persist(); },
+    async setWater(date, ml) { if (!G.isDemo()) await gridFetch('/api/nutrition/water/' + date, { method: 'PUT', body: JSON.stringify({ ml }) }); store.water[date] = ml; store.persist(); },
+    async saveTargets(t) { if (!G.isDemo()) store.targets = await gridFetch('/api/nutrition/targets', { method: 'PUT', body: JSON.stringify(t) }); else store.targets = demo.targets = { ...t }; store.persist(); },
   };
 
   const modal = G.modal, field = G.field, inp = G.input, sel = G.select, formData = G.formData;
@@ -177,14 +185,14 @@
         const noPlan = !store.targets || !store.targets.calories;
         const tg = noPlan ? { calories: 0, protein: 0, carbs: 0, fat: 0, waterMl: 3000, plan: null } : store.targets;
         const rows = dayLog(), t = totals(rows), water = store.water[st.date] || 0, isToday = st.date === today;
-        const ids = {}; ['ringC', 'ringM', 'tr', 'split', 'prot', 'io'].forEach(k => { ids[k] = G.uid(); });
+        const ids = {}; ['ringC', 'ringM', 'tr', 'split', 'prot'].forEach(k => { ids[k] = G.uid(); });
         const pretty = new Date(st.date + 'T12:00:00').toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
 
         root.innerHTML = `
           <div class="hl-grid" style="grid-template-columns:auto 1fr auto;align-items:center;margin-bottom:12px">
             <div class="hl-pills"><button class="hl-pill" data-d="-1">‹ PREV</button><button class="hl-pill ${isToday ? 'on' : ''}" data-d="0">TODAY</button><button class="hl-pill" data-d="1" ${isToday ? 'disabled style="opacity:.35;cursor:default"' : ''}>NEXT ›</button></div>
             <div class="hl-note" style="text-transform:uppercase">${pretty}</div><div><button class="hl-btn" id="foodBtn">+ CUSTOM FOOD</button> <button class="hl-btn ${noPlan ? 'pri' : ''}" id="planBtn">${noPlan ? 'SET UP PLAN' : 'EDIT PLAN'}</button></div></div>
-          ${noPlan ? G.card('SET UP YOUR PLAN', `<div class="hl-note" style="text-transform:none;line-height:1.8;font-size:10px;margin-bottom:12px">You can already log food below. Add your age, height, weight and goal to get a daily calorie target, macros, water goal and a timeline, calculated with the standard Mifflin-St Jeor formula (never below 1,500 kcal for men or 1,200 for women). The Deficit page also uses it to estimate days you don't log your burn.</div><button class="hl-btn pri" id="planBtn2">SET UP MY PLAN</button>`) : ''}
+          ${noPlan ? G.card('SET UP YOUR PLAN', `<div class="hl-note" style="text-transform:none;line-height:1.8;font-size:10px;margin-bottom:12px">You can already log food below. Add your age, height, weight and goal to get a daily calorie target, macros, water goal and a timeline, calculated with the standard Mifflin-St Jeor formula (never below 1,500 kcal for men or 1,200 for women).</div><button class="hl-btn pri" id="planBtn2">SET UP MY PLAN</button>`) : ''}
           ${G.card('QUICK LOG', `<div class="hl-quick"><input id="ql" autocomplete="off" spellcheck="false" placeholder="type a preset code…  S1   ·   2x S1   ·   S1 dinner"><button class="hl-btn pri" id="qlGo">LOG</button></div><div id="qlSug"></div><div id="qlMsg" class="hl-note" style="margin-top:6px"></div>`)}
           <div class="fin-group-label" style="margin-top:16px">TODAY</div>
           <div class="hl-grid hl-g3">
@@ -204,7 +212,7 @@
           <div class="fin-group-label">TRENDS & PLAN</div>
           ${G.card('TRENDS', `<div class="hl-pills" style="margin-bottom:12px"><button class="hl-pill ${st.range === 7 ? 'on' : ''}" data-r="7">7D</button><button class="hl-pill ${st.range === 30 ? 'on' : ''}" data-r="30">30D</button></div>
             <div class="hl-grid hl-g2" style="margin-bottom:0"><div><div class="hl-label" style="margin-bottom:6px">CALORIES VS TARGET</div><div class="hl-chart sm" id="${ids.tr}"></div></div><div><div class="hl-label" style="margin-bottom:6px">PROTEIN VS TARGET · G</div><div class="hl-chart sm" id="${ids.prot}"></div></div>
-            <div><div class="hl-label" style="margin-bottom:6px">CALORIES IN VS OUT</div><div class="hl-chart sm" id="${ids.io}"></div><div class="hl-note" id="ioNote" style="margin-top:4px"></div></div><div><div class="hl-label" style="margin-bottom:6px">MACRO SPLIT · % OF CALORIES</div><div class="hl-chart sm" id="${ids.split}"></div></div></div>`)}
+            <div><div class="hl-label" style="margin-bottom:6px">MACRO SPLIT · % OF CALORIES</div><div class="hl-chart sm" id="${ids.split}"></div></div></div>`)}
           ${G.card('YOUR PLAN', noPlan ? G.empty('NO PLAN YET<br>Use SET UP PLAN above to calculate your targets.') : `<table class="hl-table"><tr><td>BMR</td><td>${tg.plan?.bmr ? F.num(tg.plan.bmr) + ' kcal' : '—'}</td><td>TDEE</td><td>${tg.plan?.tdee ? F.num(tg.plan.tdee) + ' kcal' : '—'}</td></tr>
             <tr><td>Daily target</td><td>${F.num(tg.calories)} kcal</td><td>Macros</td><td>P ${tg.protein} · C ${tg.carbs} · F ${tg.fat} g</td></tr>
             <tr><td>Water</td><td>${(tg.waterMl / 1000).toFixed(1)} L</td><td>Timeline</td><td>${tg.plan?.weeks ? '~' + tg.plan.weeks + ' weeks to goal' : '—'}</td></tr></table>`)}`;
@@ -225,13 +233,6 @@
         const sc = window.ethosChart(ids.split);
         if (lg.length) sc.setOption({ tooltip: { trigger: 'item', formatter: '{b}: {d}%' }, series: [Object.assign(window.bkPie({ radius: ['55%', '85%'] }), { data: [{ name: 'Protein', value: tot.p, itemStyle: { color: '#3b82f6' } }, { name: 'Carbs', value: tot.c, itemStyle: { color: '#14b8a6' } }, { name: 'Fat', value: tot.f, itemStyle: { color: '#f59e0b' } }], label: { show: true, formatter: '{b} {d}%', color: 'rgba(240,240,240,.65)', fontSize: 9 } })] }, true);
         else document.getElementById(ids.split).innerHTML = G.empty('NOTHING LOGGED IN THIS RANGE');
-        // calories in vs out: burn comes from the health data (Fitbit); skipped quietly when it is not synced
-        const burn = (await G.data('burn', { from: dates[0], to: today })).reduce((o, r) => (o[r.date] = r.kcal, o), {});
-        const out = dates.map(d => burn[d] ?? null);
-        window.ethosChart(ids.io).setOption({ ...axis, yAxis: { type: 'value' }, legend: { top: 0, right: 0 }, series: [Object.assign(window.bkBar('#76b372', { count: x.length }), { name: 'In', data: by.map(b => b.cal || null) }), { type: 'line', name: 'Out', data: out, symbol: 'none', lineStyle: { color: '#f97316', width: 2 }, connectNulls: true }] }, true);
-        const both = dates.map((_, i) => (logged[i] && out[i] != null ? by[i].cal - out[i] : null)).filter(v => v != null);
-        const note = document.getElementById('ioNote');
-        if (note) note.textContent = both.length ? `NET OVER ${both.length} LOGGED DAYS: ${S.sum(both) >= 0 ? '+' : ''}${F.num(S.sum(both))} KCAL (${S.sum(both) >= 0 ? 'SURPLUS' : 'DEFICIT'})` : 'NEEDS FOOD LOGS AND BURN ENTRIES (LOG THEM ON THE DEFICIT PAGE)';
       };
 
       const msg = (t, action) => { const el = root.querySelector('#qlMsg'); if (!el) return; el.innerHTML = esc(t) + (action ? ` <button class="hl-btn pri" id="qlAct">${action}</button>` : ''); };

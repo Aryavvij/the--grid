@@ -1,9 +1,9 @@
-# HANDOFF: Runs, Nutrition, Deficit and Gym PROGRESS
+# HANDOFF: Runs, Nutrition and Gym PROGRESS
 
 Written 2026-10-06 so a new Claude chat opened inside the Grid folder can continue this work. Read this first, then `CLAUDE.md` (repo guide) and `tests/README.md`.
 
 ## What was built, in one paragraph
-Four additions to Grid, all in the same visual language as the existing app: **Runs** (Strava file import and run analytics), **Nutrition** (preset-based quick-log, diary, plan), **Deficit** (calories burned vs eaten, weight, progress photos) and a **PROGRESS tab on Gym** (strength trends, PRs). Originally this was a larger "health website" fed by a Fitbit Air through Google Health, with pages for heart, sleep, activity and recovery. **That was removed on purpose** (the user reads that data in the Google Health app). A separate standalone site, "Metriq / grid-health", was retired and deleted. Do not rebuild Fitbit or Google Health sync unless the user asks again.
+Three additions to Grid, all in the same visual language as the existing app: **Runs** (Strava file import and run analytics), **Nutrition** (preset-based quick-log, diary, plan) and a **PROGRESS tab on Gym** (strength trends, PRs). A fourth, **Deficit** (calories burned vs eaten, weight, progress photos), was built and then removed from the site on 2026-10-08 at the user's request (see "Deficit page removed" below). Originally this was a larger "health website" fed by a Fitbit Air through Google Health, with pages for heart, sleep, activity and recovery. **That was removed on purpose** (the user reads that data in the Google Health app). A separate standalone site, "Metriq / grid-health", was retired and deleted. Do not rebuild Fitbit or Google Health sync unless the user asks again.
 
 ## Current state
 - Live frontend: https://the-grid-tracker.vercel.app (Vercel project `the-grid`, **not** Git-connected: deploy by running `vercel --prod --yes` from the Grid root).
@@ -17,13 +17,12 @@ Four additions to Grid, all in the same visual language as the existing app: **R
 ## How the code is organised
 | Path | Role |
 |---|---|
-| `index.html` | Sidebar entries (Runs, Nutrition, Deficit), empty mount divs `page-runs` / `page-nutrition` / `page-deficit`, `<script defer>` tags for `js/fuel/*`, and one hook in `navigate()` that calls `Grid.show(page)`. Nothing else was changed in the 15k-line file. |
+| `index.html` | Sidebar entries (Runs, Nutrition), empty mount divs `page-runs` / `page-nutrition`, `<script defer>` tags for `js/fuel/*`, and one hook in `navigate()` that calls `Grid.show(page)`. Nothing else was changed in the 15k-line file. |
 | `css/fuel.css` | Small helper stylesheet. Components come from Grid's own classes: `page-header`/`page-subtitle`, `fin-section`, `fin-stat-card`, `fin-group-label`, `fin-budget-table`, `form-*`, `btn-*`, `modal-overlay`/`modal`. |
 | `js/fuel/core.js` | `Grid.registerPage`, `Grid.show` (loading state, error panel, "could not load" notice with RETRY), `Grid.data(kind, params)` (demo vs login switch, 20 s timeout, `cache:no-store`, response-shape validation), formatting, `Grid.modal`, `Grid.toast`, `Grid.csv`. |
 | `js/fuel/charts.js` | Stat cards, section cards, sparkline, line / bar / stacked / heatmap helpers. Built on Grid's existing ECharts theme (`ethosChart`, `bkBar`, `bkArea`, `gridGauge`, `gridRingChart`). |
 | `js/fuel/runs-parser.js`, `runs-import.js`, `runs.js` | Run metrics maths, file reading (FIT / GPX / TCX / .gz / .zip / activities.csv), and the page. |
 | `js/fuel/presets.js`, `calc.js`, `nutrition.js` | Quick-log parser (`S1`, `2x S1 dinner`), BMR / TDEE / plan maths, and the page. |
-| `js/fuel/deficit-calc.js`, `deficit.js` | Deficit maths and the page (weight, burn, photos). |
 | `js/fuel/gym-calc.js`, `gym-progress.js` | PROGRESS tab. It injects a tab and panel into the existing gym page by wrapping the global `gymTab()`. Existing gym code is untouched. |
 | `js/fuel/seed-demo.js` | Fake data for demo mode (deterministic, relative to today). |
 | `grid-backend/src/routes/runs.js`, `nutrition.js`, `progress.js` | The API. All routes use `requireAuth` and zod `validate(...)`. |
@@ -53,15 +52,7 @@ Grid runs in two modes (see `CLAUDE.md`). The new pages follow the same rule: `G
 - **Meal presets:** create / edit / duplicate / delete / favourite. Code must be 1-12 letters, digits or `_`, unique per user. The form warns when calories disagree with macros by more than 10% (4/4/9 kcal per g). First-time users can add 10 starter presets in one click.
 - **Diary:** grouped Breakfast / Lunch / Dinner / Snacks, day navigation, edit any entry (changing quantity rescales numbers live), delete, **copy previous day**, CSV export, **custom food** (optionally saved as a preset), water (+/- 250 ml).
 - **Plan:** works without one (banner invites setup). The plan editor uses `calc.plan()`: Mifflin-St Jeor BMR, activity multipliers, calorie floors 1,500 (male) and 1,200 (female), protein 0.8-1.0 g/lb (1.0 when losing or athlete), fat 0.35 g/lb, carbs the remainder, water by activity, and a weeks-to-goal estimate at about 3,500 kcal per lb.
-- **Trends (7 / 30 days):** calories vs target (green within +/-5%), protein vs target, calories in vs out (burn comes from Deficit entries), macro split.
-
-### Deficit
-- **Core idea:** deficit = calories burned minus calories eaten, day by day.
-- **Burn is typed in by hand** from the Google Health app (`+ LOG BURN`, or click any burn number). It is stored in the existing `health_daily.calories_total` column with `source = 'manual'`. Days without an entry use the plan's TDEE and are marked **EST**; a toggle switches between counting estimates and typed-in days only.
-- **Only trustworthy days count** (`deficit-calc.js`): not today, not days with no food log (would fake a huge deficit), not days under 800 kcal eaten, not days with no burn and no estimate. Skipped days show the reason.
-- **Views:** tiles (average deficit vs planned, total deficit and about kg at 7,700 kcal/kg, weight change vs predicted, streak), burned vs eaten, daily deficit bars, cumulative deficit vs predicted and actual weight, weekly table, recent days, CSV export, a "Get started" checklist (plan, food, burn, weight, photo).
-- **Weight log:** entries, weekly trend.
-- **Progress photos:** pictures are shrunk in the browser to a JPEG of about 200 KB plus a 10 KB thumbnail, stored in Postgres as base64 text (400-photo cap). The server accepts JPEG only, checked by prefix **and** magic bytes. Pick two photos for side by side or a slider comparison with days and kg between them.
+- **Trends (7 / 30 days):** calories vs target (green within +/-5%), protein vs target, macro split. (A calories in vs out chart was removed with the Deficit page: burn could only be entered there.)
 
 ### Gym PROGRESS tab
 Reads the same `localStorage.gymLogs` that the existing logger writes (hydrated from `/api/gym/logs` in login mode). Shows sessions, volume and sets over 30 days vs the previous 30, estimated 1RM (Epley, same as the logger) with PR markers, a plateau flag (3+ sessions in 4 weeks without a new best), a PR board, weekly sets per muscle group vs a 10-20 guide, and a training calendar. Malformed log entries are skipped rather than thrown on.
@@ -84,7 +75,9 @@ New: `run_activities` (unique user + file hash), `meal_presets`, `food_logs`, `w
 - Conventions: lowercase scope-prefixed commit messages (`runs: ...`), validate every new route with `validate(schema)`, keep new frontend code in `js/fuel/` and plain `<script defer>` (no build step).
 
 ## Decisions and why
-- Fitbit / Google Health removed: user views that in the Google Health app; the site is for runs, food, deficit and gym.
+- **Instant Runs and Nutrition (2026-10-08).** These pages used to wait 2-3 s on the cross-origin API on every visit while the older pages drew from `localStorage`. `js/fuel/core.js` now keeps every `G.data()` answer per account in IndexedDB (`grid-fuel-cache`), mirrored in memory. `G.show` draws from the saved copy at once, refreshes in the background (stale-while-revalidate) and redraws only if the data changed and the user hasn't clicked or typed in the page. Requests are keyed with dates relative to today so yesterday's copy still serves today. Pages that write call `G.cacheSet(...)` so the next visit opens on the user's own change (see `store.persist()` in `nutrition.js`; Runs reloads after each write, which refreshes the cache). A failed refresh keeps the copy on screen with a "SHOWING YOUR LAST SAVED COPY" notice. After login, `G.prefetch()` warms pages never opened on the device and skips pages refreshed in the last 10 minutes. `handleLogout()` clears the cache. Measured with a simulated 2.5 s server: cold 2.7 s, warm 54-435 ms. **Any new fuel page gets this by reading data only through `G.data()`.**
+- **Deficit page removed (2026-10-08, user's call: "not needed for this website").** Gone from the site: sidebar entry, page, `deficit.js`, `deficit-calc.js`, `deficit.test.js`, and Nutrition's "calories in vs out" chart (burn could only be typed in on that page). **Deliberately kept:** the backend `/api/progress` routes (weight, burn, photos), their tables (`weight_logs`, `progress_photos`, and `health_daily` rows with `source = 'manual'`), `progress.test.js`, and the weight / burn / photo data in `seed-demo.js` (changing it would shift the demo's random sequence). Nothing was deleted from the database. If the user wants it fully gone, drop those routes and tables with a migration (ask first: it destroys saved weights and photos). The deleted code is in git history (last present at commit `84c7b94`).
+- Fitbit / Google Health removed: user views that in the Google Health app; the site is for runs, food and gym.
 - Burn is manual: no device integration means the user types the daily total; estimates fill gaps and are always labelled.
 - Photos in Postgres: simplest for one person's progress photos; move to object storage if volume grows.
 - Strava: file uploads only (no Strava API), to avoid API terms and rate limits.
@@ -104,7 +97,7 @@ Every page was exercised in demo mode, then end to end against a local backend +
 2. ~~Demo data thinner than real use~~ Done 2026-10-06: food, burn and weight now span 12 months like runs, following one story (cut, ~3-month maintenance block, second cut, 79.0 → 72.5 kg). Before this, the Deficit 90D view showed 37 skipped days because food stopped at 60 days. Still no demo progress photos, deliberately (no fake body photos).
 3. Optional cleanup: drop the unused `health_sleep` / `health_tokens` tables (needs a migration and the user's OK).
 4. Small known gaps: run splits list only full kilometres (no partial last split); the habit modal's "Target Goal Score" field is not stored or used.
-5. Possible features: edit a run's date, merge duplicate runs, weekly summary email or digest, a goal-weight line on the deficit chart, barcode lookup for food.
+5. Possible features: edit a run's date, merge duplicate runs, weekly summary email or digest, barcode lookup for food.
 6. The Metriq folder on disk and Docker Desktop are leftovers the user said they will handle.
 
 ## Files worth knowing about

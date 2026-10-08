@@ -4810,7 +4810,7 @@ html, body {
       <svg viewBox="0 0 24 24"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>
       GYM
     </div>
-    <!-- Fuel pages (js/fuel/*): Runs, Nutrition, Deficit mount into the empty page-* divs below. -->
+    <!-- Fuel pages (js/fuel/*): Runs and Nutrition mount into the empty page-* divs below. -->
     <div class="nav-item" data-page="runs" onclick="navigate('runs')">
       <svg viewBox="0 0 24 24"><path d="M3 17l6-6 4 4 8-8"/><polyline points="14 7 21 7 21 14"/></svg>
       Runs
@@ -4818,10 +4818,6 @@ html, body {
     <div class="nav-item" data-page="nutrition" onclick="navigate('nutrition')">
       <svg viewBox="0 0 24 24"><path d="M3 2v7c0 1.1.9 2 2 2h2c1.1 0 2-.9 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3zm0 0v7"/></svg>
       Nutrition
-    </div>
-    <div class="nav-item" data-page="deficit" onclick="navigate('deficit')">
-      <svg viewBox="0 0 24 24"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/><polyline points="17 18 23 18 23 12"/></svg>
-      Deficit
     </div>
 
     <!-- Window: PROJECTS = Runway + Focus (execution). Weekly stays separate
@@ -5977,10 +5973,9 @@ html, body {
     </div><!-- /page-resume -->
 
 
-    <!-- Fuel pages (Runs, Nutrition, Deficit): rendered by js/fuel/*.js -->
+    <!-- Fuel pages (Runs, Nutrition): rendered by js/fuel/*.js -->
     <div class="page" id="page-runs"></div>
     <div class="page" id="page-nutrition"></div>
-    <div class="page" id="page-deficit"></div>
   </main>
 </div>
 
@@ -6934,7 +6929,9 @@ function handleLogout() {
   sessionStorage.removeItem('gridMode');
   sessionStorage.removeItem('gridIsSandbox');
   localStorage.removeItem('gridActiveMode');
-  location.reload();
+  // Runs / Nutrition keep a copy of their data for instant loading; drop it.
+  const cleared = (window.Grid && Grid.clearCache) ? Grid.clearCache() : null;
+  Promise.race([Promise.resolve(cleared), new Promise(r => setTimeout(r, 600))]).finally(() => location.reload());
 }
 
 /**
@@ -15376,13 +15373,11 @@ function renderGymRadar() {
 <script defer src="js/fuel/calc.js"></script>
 <script defer src="js/fuel/charts.js"></script>
 <script defer src="js/fuel/presets.js"></script>
-<script defer src="js/fuel/deficit-calc.js"></script>
 <script defer src="js/fuel/seed-demo.js"></script>
 <script defer src="js/fuel/runs-parser.js"></script>
 <script defer src="js/fuel/runs-import.js"></script>
 <script defer src="js/fuel/runs.js"></script>
 <script defer src="js/fuel/nutrition.js"></script>
-<script defer src="js/fuel/deficit.js"></script>
 <script defer src="js/fuel/gym-calc.js"></script>
 <script defer src="js/fuel/gym-progress.js"></script>
 <script defer src="js/resume-pdf.js"></script>

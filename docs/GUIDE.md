@@ -1,19 +1,19 @@
-# Grid: the three new pages, and getting back into the site
+# Grid: the new pages, and getting back into the site
 
-Written 2026-10-06. Plain-language guide to **Runs**, **Nutrition** and **Deficit**, what the full check of the site found, and what is left to do (yours and mine) before you start using it again.
+Written 2026-10-06. Plain-language guide to **Runs** and **Nutrition**, what the full check of the site found, and what is left to do (yours and mine) before you start using it again.
 
 ---
 
 ## 1. Before you start again
 
-### What I need from you first
-1. **Say yes to the deploy.** Everything below is built and tested on my machine but not live yet. One change needs a small database update on the live site (two new columns: project progress, and the gym exercise list). With your OK I will, in this order: update the live database, push the code, deploy the site. It takes a few minutes and nothing you have saved is touched.
+### Status
+The fixes in section 4 went live on 2026-10-08. Since then: the **Deficit page was removed** (your call), and **Runs and Nutrition now open instantly** (they show the last saved copy at once and refresh in the background; the first-ever visit on a new device still waits for the server once). Those two changes are built and tested but waiting for your OK to deploy.
 
-### Then, on your side (about 15 minutes)
+### On your side (about 15 minutes)
 1. **Open the site on the device where you set your gym PRs, and visit the Gym page once.** Until now your exercise list and the PRs you typed in were saved only in that one browser. The first visit after the update copies them to your account, so your other devices get them too.
 2. **Weekly timetable: look for blocks you didn't add.** New accounts used to start with a sample week (SLEEP, ALGOS_LAB, PHYSICS_SIM…), and the first edit saved all of it to the account. If you see any of those, click the block and press delete.
 3. **Weekly timetable: re-check your end times.** The block editor used to ignore the end time when nothing came straight after a block, so "Lecture 9–11" ran on until the next block. That's fixed for any block you save from now on. Open one or two days and fix any block that looks too long.
-4. **Nutrition → SET UP MY PLAN.** Age, height, weight, goal. Deficit uses it to fill in days you don't type a burn number.
+4. **Nutrition → SET UP MY PLAN.** Age, height, weight, goal. It gives you a daily calorie target, macros and a water goal.
 5. **Résumé → PDF GENERATOR → HEADER & SKILLS.** Add phone, LinkedIn, GitHub and the four skills rows. Then edit each entry once to add its **Organisation** (company / degree / tech stack), **Location**, and **bullet points, one per line**.
 6. **Runs: import your Strava history** (steps in section 2).
 7. **Log out and back in once on each device.** This picks up the new version cleanly.
@@ -88,41 +88,15 @@ Written 2026-10-06. Plain-language guide to **Runs**, **Nutrition** and **Defici
 - You can log food without a plan; the plan just adds the targets.
 
 **Trends (7 or 30 days)**
-- Calories vs target (green when within 5%), protein vs target, calories in vs out (the "out" comes from Deficit), macro split.
+- Calories vs target (green when within 5%), protein vs target, macro split.
 
 ---
 
-## 4. Deficit
-
-**What it's for:** whether you're really eating less than you burn, day by day, and whether your weight agrees.
-
-**How it decides**
-- **Deficit = calories burned − calories eaten.**
-- **Eaten** comes from your Nutrition diary.
-- **Burned** is the daily total you type in from the Google Health app (**+ LOG BURN**, or click any burn number). On days you don't type one, it uses your plan's daily burn estimate and marks that day **EST**. A switch lets you count only the days you typed in.
-- **It only counts days it can trust.** Today is left out until it's over. Days with no food logged, or under 800 kcal eaten, are skipped (they'd show a fake huge deficit). Each skipped day shows the reason.
-
-**What you see**
-- Range: 14 / 30 / 60 / 90 days.
-- Tiles: average deficit vs what your plan expects, total deficit and roughly how many kg that is (7,700 kcal ≈ 1 kg), weight change vs predicted, your streak.
-- Charts: burned vs eaten, daily deficit, running total vs predicted and actual weight.
-- A weekly table, recent days, and a CSV download.
-- A **Get started** checklist (plan, food on 3+ days, burn, two weigh-ins, a photo).
-
-**Weight**
-- Log your weight from the Weight card; it shows the trend and checks it against your deficit.
-
-**Progress photos**
-- **+ ADD PHOTOS**. Pictures are shrunk before upload and saved privately to your account.
-- Pick two photos to compare side by side or with a slider, with the days and kg between them.
-
----
-
-## 5. What the full check found
+## 4. What the full check found
 
 I tested every page in demo mode, then signed up a throwaway account on a private copy of the site (never your real account or the live database). On that copy I added data on every page, wiped the browser completely (like a new phone, or Safari clearing storage), logged back in and checked everything came back.
 
-**Working, nothing to fix:** Habits (ticks save and come back), Weekly tasks, Finances budget and expenses, Gym split, workout logging and the `(CHEST)` muscle tags, Runs import, Nutrition (presets, quick log, water, plan maths checked by hand), Deficit (burn, weight, photos), Work page study sessions, Résumé, sign-up and login. All 12 pages load in demo mode with no errors.
+**Working, nothing to fix:** Habits (ticks save and come back), Weekly tasks, Finances budget and expenses, Gym split, workout logging and the `(CHEST)` muscle tags, Runs import, Nutrition (presets, quick log, water, plan maths checked by hand), Work page study sessions, Résumé, sign-up and login. All 12 pages load in demo mode with no errors.
 
 **Fixed (live once you OK the deploy):**
 
@@ -146,7 +120,6 @@ I tested every page in demo mode, then signed up a throwaway account on a privat
 | Server | Several save routes accepted any fields (could even move a record to another account) and error messages exposed internal details | Every route checks its input; errors are plain |
 
 **Known limits (not bugs):**
-- Burn is typed in by hand; nothing reads your watch automatically.
 - Run splits list full kilometres only.
 - The habit form's "Target Goal Score" box isn't used for anything yet.
 - In demo mode, changes vanish when you reload; that's on purpose.

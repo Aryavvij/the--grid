@@ -1,4 +1,4 @@
-/* Runs, Nutrition, Deficit and the Gym PROGRESS tab.
+/* Runs, Nutrition and the Gym PROGRESS tab.
    Built from Grid's own components (page-header, fin-section, fin-stat-card, fin-budget-table, form-*, btn-*, modal-*).
    This file only adds layout helpers, chart sizes and a few small widgets, all using Grid's tokens. */
 
@@ -59,6 +59,9 @@
 
 .hl-note { font-size: 9px; letter-spacing: 1.2px; color: var(--text-muted); text-transform: uppercase; }
 .hl-empty { padding: 30px 12px; text-align: center; font-size: 10px; letter-spacing: 1.5px; color: var(--text-muted); text-transform: uppercase; line-height: 1.9; }
+/* The first-paint LOADING line only shows if the page is still waiting after half a second (a cached page draws before then). */
+.fx-wait { animation: fx-wait-in .2s ease .5s both; }
+@keyframes fx-wait-in { from { opacity: 0; } to { opacity: 1; } }
 .hl-code { display: inline-block; font-size: 9px; font-weight: 700; letter-spacing: 1px; color: var(--green); border: 1px solid rgba(118,179,114,.35); border-radius: 3px; padding: 1px 6px; }
 .hl-chip { display: inline-flex; align-items: center; gap: 6px; font-size: 9px; letter-spacing: 1.4px; padding: 3px 8px; border-radius: 3px; color: var(--text-muted); border: 1px solid rgba(255,255,255,.08); text-transform: uppercase; }
 .hl-chip .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); }
